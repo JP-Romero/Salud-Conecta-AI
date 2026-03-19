@@ -1,0 +1,183 @@
+/* styles.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f8ff;
+    color: #333;
+    line-height: 1.6;
+}
+
+.main-header {
+    background-color: #4CAF50;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    position: sticky; /* Mantenerlo visible al hacer scroll */
+    top: 0;
+    z-index: 100;
+}
+
+.main-header h1 {
+    font-size: 1.8rem;
+}
+
+.main-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: #e0e0e0;
+}
+
+.main-nav button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.main-nav button:hover {
+    background-color: #45a049;
+}
+
+.main-content {
+    max-width: 1200px;
+    margin: auto;
+    padding: 1rem;
+    padding-bottom: 4rem; /* Espacio para el footer fijo */
+}
+
+.feature-section {
+    margin-bottom: 2rem;
+}
+
+.feature-section h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #2E7D32;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.feature-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.feature-card h3 {
+    color: #4CAF50;
+    margin-bottom: 0.5rem;
+}
+
+#dynamic-content {
+    margin-top: 2rem;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Estilos para el chat */
+#triage-container {
+    display: flex;
+    flex-direction: column;
+    height: 500px; /* Altura fija para el chat */
+}
+
+#chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fafafa;
+    margin-bottom: 1rem;
+}
+
+.bot-message {
+    background-color: #e3f2fd;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    align-self: flex-start;
+}
+
+.user-message {
+    background-color: #c8e6c9;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    align-self: flex-end;
+}
+
+#input-area {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#send-btn {
+    padding: 0.5rem 1rem;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#send-btn:hover {
+    background-color: #45a049;
+}
+
+/* Estilos para el mapa */
+#map-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#map-container h3 {
+    margin-bottom: 1rem;
+    color: #2E7D32;
+}
+
+#map-container iframe {
+    border-radius: 8px;
+    /* height se define en el HTML */
+}
+
+#map-loading {
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+    color: #666;
+}
+
+.main-footer {
+    background-color: #e0e0e0;
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
