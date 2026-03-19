@@ -63,10 +63,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Inicializar mapa de Leaflet
                 const map = L.map('map').setView([latitude, longitude], 14);
 
-                // Añadir capa de OpenStreetMap
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                // Capas base
+                const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
+                });
+
+                // Capas de Google Maps usando GoogleMutant
+                const googleRoadmap = L.gridLayer.googleMutant({ type: 'roadmap' });
+                const googleSatellite = L.gridLayer.googleMutant({ type: 'satellite' });
+                const googleHybrid = L.gridLayer.googleMutant({ type: 'hybrid' });
+                const googleTerrain = L.gridLayer.googleMutant({ type: 'terrain' });
+
+                // Añadir la capa inicial
+                osm.addTo(map);
+
+                // Control de capas
+                const baseMaps = {
+                    "OpenStreetMap": osm,
+                    "Google Roadmap": googleRoadmap,
+                    "Google Satélite": googleSatellite,
+                    "Google Híbrido": googleHybrid,
+                    "Google Terreno": googleTerrain
+                };
+
+                L.control.layers(baseMaps, null, { collapsed: false }).addTo(map);
 
                 // Marcador para la posición del usuario
                 const userIcon = L.icon({
@@ -111,9 +131,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('map-status').textContent = 'No se pudo obtener la ubicación. Mostrando vista predeterminada.';
                 // Vista por defecto (ej. CDMX o ubicación central)
                 const map = L.map('map').setView([19.4326, -99.1332], 12);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+                const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; OpenStreetMap contributors'
-                }).addTo(map);
+                });
+
+                const googleRoadmap = L.gridLayer.googleMutant({ type: 'roadmap' });
+                googleRoadmap.addTo(map);
+
+                const baseMaps = {
+                    "OpenStreetMap": osm,
+                    "Google Roadmap": googleRoadmap
+                };
+                L.control.layers(baseMaps).addTo(map);
             }
         );
     }

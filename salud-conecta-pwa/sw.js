@@ -1,5 +1,5 @@
 // sw.js
-const CACHE_NAME = 'salud-conecta-v2';
+const CACHE_NAME = 'salud-conecta-v4';
 const urlsToCache = [
   '/',
   'index.html',
@@ -7,7 +7,8 @@ const urlsToCache = [
   'js/app.js',
   'manifest.json',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+  'https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.0/dist/Leaflet.GoogleMutant.js'
 ];
 
 self.addEventListener('install', function(event) {
@@ -39,9 +40,12 @@ self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
-        // Devuelve la respuesta del cache si existe, sino hace fetch
-        return response || fetch(event.request).then(function(response) {
-            // Guardar en cache recursos externos importantes
+        if (response) {
+          return response;
+        }
+        return fetch(event.request).then(function(response) {
+            // Guardar en cache recursos externos importantes que no sean de Google Maps API
+            // Google Maps API no suele cachearse bien por service worker debido a su naturaleza dinámica
             if (event.request.url.includes('unpkg.com') || event.request.url.includes('openstreetmap.org')) {
                 const responseToCache = response.clone();
                 caches.open(CACHE_NAME).then(function(cache) {
