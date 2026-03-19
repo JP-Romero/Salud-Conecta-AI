@@ -1,11 +1,13 @@
 // sw.js
-const CACHE_NAME = 'salud-conecta-v1';
+const CACHE_NAME = 'salud-conecta-v2';
 const urlsToCache = [
   '/',
   'index.html',
   'css/styles.css',
   'js/app.js',
-  'manifest.json'
+  'manifest.json',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
 self.addEventListener('install', function(event) {
@@ -18,13 +20,39 @@ self.addEventListener('install', function(event) {
   );
 });
 
+self.addEventListener('activate', function(event) {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
 self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
         // Devuelve la respuesta del cache si existe, sino hace fetch
-        return response || fetch(event.request);
+        return response || fetch(event.request).then(function(response) {
+            // Guardar en cache recursos externos importantes
+            if (event.request.url.includes('unpkg.com') || event.request.url.includes('openstreetmap.org')) {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then(function(cache) {
+                    cache.put(event.request, responseToCache);
+                });
+            }
+            return response;
+        });
       }
-    )
+    ).catch(function() {
+        // Opcional: Fallback si no hay red ni cache
+    })
   );
 });

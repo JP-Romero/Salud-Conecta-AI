@@ -1,4 +1,4 @@
-// app.js - Versión Mejorada
+// app.js - Versión Leaflet
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('./sw.js')
@@ -15,13 +15,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnMap = document.getElementById('btn-map');
     const dynamicContent = document.getElementById('dynamic-content');
 
-    // Función para manejar el estado activo de los botones de navegación
     function setActiveNav(buttonId) {
         [btnTriage, btnMap].forEach(btn => btn.classList.remove('active'));
         document.getElementById(buttonId).classList.add('active');
     }
 
-    // Función para cargar la interfaz de triaje
     function loadTriageInterface() {
         setActiveNav('btn-triage');
         dynamicContent.innerHTML = `
@@ -41,53 +39,85 @@ document.addEventListener('DOMContentLoaded', function() {
         setupChatLogic();
     }
 
-    // Función para cargar la interfaz del mapa
+    // Nueva interfaz con Leaflet
     function loadMapInterface() {
         setActiveNav('btn-map');
-        const mapContainer = document.createElement('div');
-        mapContainer.id = 'map-container';
-        mapContainer.innerHTML = `<h3>Centros Médicos Cercanos</h3><p id="map-loading">Buscando tu ubicación...</p>`;
-        dynamicContent.innerHTML = '';
-        dynamicContent.appendChild(mapContainer);
+        dynamicContent.innerHTML = `
+            <div id="map-container">
+                <h3>Centros Médicos Cercanos</h3>
+                <div id="map" style="height: 450px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+                <p id="map-status" style="text-align: center; margin-top: 10px; color: #666;">Buscando tu ubicación...</p>
+            </div>
+        `;
 
         if (!navigator.geolocation) {
-            document.getElementById('map-loading').textContent = 'La geolocalización no es soportada por tu navegador.';
+            document.getElementById('map-status').textContent = 'La geolocalización no es soportada por tu navegador.';
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                const mapIframe = document.createElement('iframe');
-                mapIframe.width = '100%';
-                mapIframe.height = '450';
-                mapIframe.style.border = '0';
-                mapIframe.loading = 'lazy';
-                mapIframe.allowFullscreen = true;
-                mapIframe.referrerpolicy = 'no-referrer-when-downgrade';
+                document.getElementById('map-status').textContent = 'Ubicación encontrada. Mostrando centros cercanos.';
 
-                // Usamos la API de visualización de Google Maps (sin clave para este ejemplo básico o con placeholder)
-                mapIframe.src = `https://www.google.com/maps/embed/v1/view?key=YOUR_GOOGLE_MAPS_API_KEY&center=${latitude},${longitude}&zoom=14`;
+                // Inicializar mapa de Leaflet
+                const map = L.map('map').setView([latitude, longitude], 14);
 
-                document.getElementById('map-loading').remove();
-                mapContainer.appendChild(mapIframe);
+                // Añadir capa de OpenStreetMap
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                // Marcador para la posición del usuario
+                const userIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+
+                L.marker([latitude, longitude], {icon: userIcon})
+                    .addTo(map)
+                    .bindPopup('<b>Tú estás aquí</b>')
+                    .openPopup();
+
+                // Simular centros médicos cercanos (ejemplos a pocos metros/km)
+                const mockCenters = [
+                    { name: "Hospital Central", lat: latitude + 0.005, lon: longitude + 0.003, type: "Hospital" },
+                    { name: "Clínica Salud", lat: latitude - 0.004, lon: longitude - 0.002, type: "Clínica" },
+                    { name: "Farmacia 24h", lat: latitude + 0.002, lon: longitude - 0.005, type: "Farmacia" }
+                ];
+
+                const medicalIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+
+                mockCenters.forEach(center => {
+                    L.marker([center.lat, center.lon], {icon: medicalIcon})
+                        .addTo(map)
+                        .bindPopup(`<b>${center.name}</b><br>${center.type}`);
+                });
+
+                console.log(`Mapa inicializado en: ${latitude}, ${longitude}`);
             },
             (error) => {
-                let errorMessage = 'Error al obtener tu ubicación: ';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage += "Permiso denegado. Por favor, habilita la geolocalización.";
-                        break;
-                    default:
-                        errorMessage += "Información no disponible.";
-                        break;
-                }
-                document.getElementById('map-loading').innerHTML = `<p>${errorMessage}</p><p style="font-size: 0.9rem;">Mientras tanto, puedes buscar manualmente en Google Maps.</p>`;
+                document.getElementById('map-status').textContent = 'No se pudo obtener la ubicación. Mostrando vista predeterminada.';
+                // Vista por defecto (ej. CDMX o ubicación central)
+                const map = L.map('map').setView([19.4326, -99.1332], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
             }
         );
     }
 
-    // Lógica del chat mejorada
     function setupChatLogic() {
         const input = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
@@ -96,44 +126,27 @@ document.addEventListener('DOMContentLoaded', function() {
         function addMessage(text, sender) {
             const messageWrapper = document.createElement('div');
             messageWrapper.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
-            messageWrapper.innerHTML = `<strong>${sender === 'user' ? 'Tú' : 'Asistente'}:</strong> ${text}`;
+
+            const senderLabel = document.createElement('strong');
+            senderLabel.textContent = (sender === 'user' ? 'Tú' : 'Asistente') + ': ';
+
+            const textSpan = document.createElement('span');
+            textSpan.textContent = text;
+
+            messageWrapper.appendChild(senderLabel);
+            messageWrapper.appendChild(textSpan);
+
             messagesDiv.appendChild(messageWrapper);
             messagesDiv.scrollTo({ top: messagesDiv.scrollHeight, behavior: 'smooth' });
         }
 
         function getBotResponse(userMessage) {
             const msg = userMessage.toLowerCase();
-
-            // Lógica de respuesta más estructurada
-            if (msg.length < 3) {
-                return "Por favor, cuéntame un poco más sobre cómo te sientes para poder orientarte mejor.";
-            }
-
-            if (msg.includes("hola") || msg.includes("buenos días") || msg.includes("buenas tardes")) {
-                return "¡Hola! Estoy listo para ayudarte con un triaje preliminar. ¿Qué síntomas o molestias presentas?";
-            }
-
-            if (msg.includes("pecho") || msg.includes("respirar") || msg.includes("aire")) {
-                return "⚠️ Detecto síntomas que podrían ser graves. Si sientes opresión en el pecho o gran dificultad para respirar, te recomiendo acudir de inmediato a urgencias o llamar a emergencias.";
-            }
-
-            if (msg.includes("dolor de cabeza") || msg.includes("migraña")) {
-                return "Entiendo, el dolor de cabeza puede tener muchas causas. ¿Es un dolor intenso, repentino, o viene acompañado de fiebre o visión borrosa?";
-            }
-
-            if (msg.includes("fiebre") || msg.includes("temperatura")) {
-                return "La fiebre es una señal de que tu cuerpo está combatiendo algo. ¿Has medido tu temperatura? Si supera los 39°C o persiste por más de 48h, consulta a un médico.";
-            }
-
-            if (msg.includes("estomago") || msg.includes("vómito") || msg.includes("diarrea")) {
-                return "Los problemas estomacales son comunes. Recuerda mantenerte muy bien hidratado con suero oral. Si el dolor es muy fuerte en el lado derecho del abdomen, busca atención médica.";
-            }
-
-            if (msg.includes("gracias") || msg.includes("adios") || msg.includes("chau")) {
-                return "¡De nada! Espero que te sientas mejor pronto. No olvides que estoy aquí si necesitas más información.";
-            }
-
-            return "He tomado nota de lo que comentas. Recuerda que soy una IA y mi consejo no reemplaza a un médico. ¿Hay algún otro síntoma que deba saber?";
+            if (msg.length < 3) return "Por favor, cuéntame un poco más sobre cómo te sientes.";
+            if (msg.includes("hola")) return "¡Hola! ¿En qué puedo orientarte hoy?";
+            if (msg.includes("pecho") || msg.includes("respirar")) return "⚠️ Síntomas de alerta. Busca atención médica inmediata si sientes opresión en el pecho.";
+            if (msg.includes("fiebre")) return "¿Has medido tu temperatura? Si supera los 39°C o persiste, consulta a un médico.";
+            return "He tomado nota. Recuerda que esta es una orientación informativa. ¿Tienes algún otro síntoma?";
         }
 
         sendBtn.addEventListener('click', function() {
@@ -141,31 +154,22 @@ document.addEventListener('DOMContentLoaded', function() {
             if (message) {
                 addMessage(message, 'user');
                 input.value = '';
-
-                // Efecto de "escribiendo..."
                 const typing = document.createElement('div');
                 typing.classList.add('bot-message');
                 typing.id = 'typing-indicator';
-                typing.innerHTML = "<em>Escribiendo...</em>";
+                const typingContent = document.createElement('em');
+                typingContent.textContent = "Escribiendo...";
+                typing.appendChild(typingContent);
                 messagesDiv.appendChild(typing);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
                 setTimeout(() => {
                     const indicator = document.getElementById('typing-indicator');
                     if (indicator) indicator.remove();
-                    const botReply = getBotResponse(message);
-                    addMessage(botReply, 'bot');
+                    addMessage(getBotResponse(message), 'bot');
                 }, 1000);
             }
         });
 
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendBtn.click();
-            }
-        });
-
-        // Focus inicial
+        input.addEventListener('keypress', (e) => e.key === 'Enter' && sendBtn.click());
         input.focus();
     }
 
