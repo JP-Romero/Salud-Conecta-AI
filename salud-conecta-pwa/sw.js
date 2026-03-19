@@ -2,10 +2,10 @@
 const CACHE_NAME = 'salud-conecta-v1';
 const urlsToCache = [
   '/',
-  '/index.html',
-  '/css/styles.css',
-  '/js/app.js',
-  // Agrega aquí otros archivos estáticos que quieras cachear
+  'index.html',
+  'css/styles.css',
+  'js/app.js',
+  'manifest.json'
 ];
 
 self.addEventListener('install', function(event) {
