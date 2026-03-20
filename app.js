@@ -544,6 +544,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       showTyping(false);
       addDrugCard(drugData, getShortTime());
+
+      // Después de addDrugCard(), agregar mensaje con farmacias
+setTimeout(() => {
+  addMessage('¿Necesitas conseguir este medicamento? Estas farmacias en Granada pueden ayudarte:\n\n' + showNearbyPharmacies(), 'ai', null, getShortTime());
+}, 500);
       
     } catch (error) {
       showTyping(false);
@@ -1047,4 +1052,22 @@ function translateMedicalText(text) {
   translated = translated.replace(/\*/g, '').replace(/\[/g, '(').replace(/\]/g, ')');
   
   return translated;
+}
+// === FARMACIAS RECOMENDADAS EN GRANADA ===
+const GRANADA_PHARMACIES = [
+  { name: "Farmacia Del Pueblo", location: "Parque Central, Granada", hours: "24 horas" },
+  { name: "Farmacia San Nicolás", location: "Calle La Calzada", hours: "8am - 9pm" },
+  { name: "Farmacia Cruz Verde", location: "Centro Comercial", hours: "8am - 10pm" },
+  { name: "Farmacia Guadalajara", location: "Barrio San Antonio", hours: "7am - 9pm" }
+];
+
+function showNearbyPharmacies() {
+  const pharmacyList = GRANADA_PHARMACIES.map(pharmacy => 
+    '<li style="margin-bottom:8px;"><strong>' + pharmacy.name + '</strong><br><small>📍 ' + pharmacy.location + ' • 🕐 ' + pharmacy.hours + '</small></li>'
+  ).join('');
+  
+  return '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-top:12px;">' +
+    '<strong style="color:#0369a1;display:block;margin-bottom:8px;">💊 Farmacias en Granada:</strong>' +
+    '<ul style="margin:0;padding-left:20px;">' + pharmacyList + '</ul>' +
+    '</div>';
 }
