@@ -2,7 +2,7 @@
   "name": "Salud-Conecta AI",
   "short_name": "SaludConecta",
   "description": "Orientación médica preliminar y acceso a servicios de salud en Nicaragua.",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0077b6",
