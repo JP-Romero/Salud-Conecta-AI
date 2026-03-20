@@ -1,6 +1,6 @@
 const CACHE_NAME = 'salud-conecta-v1';
 
-// ✅ Rutas relativas (sin barra inicial)
+// ✅ Rutas relativas para GitHub Pages
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const STATIC_ASSETS = [
   './manifest.json'
 ];
 
+// 1. Instalación: Cachear activos estáticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,6 +19,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// 2. Activación: Limpiar cachés viejas
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -28,15 +30,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// 3. Fetch: Estrategia híbrida
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 🚫 No cachear datos sensibles
+  // 🚫 PRIVACIDAD: Nunca cachear rutas con datos personales
   if (url.pathname.includes('/api/perfil') || url.pathname.includes('/api/sintomas')) {
     return; 
   }
 
-  // ✅ openFDA: Network First
+  // ✅ API Públicas (openFDA): Network First
   if (url.hostname.includes('api.fda.gov')) {
     event.respondWith(
       fetch(event.request)
@@ -52,7 +55,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ✅ Estáticos: Cache First
+  // ✅ Activos Estáticos: Cache First
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
