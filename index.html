@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-NI">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,6 +26,7 @@
           <li>🚑 <strong>Emergencias:</strong> Si tienes dolor de pecho o dificultad para respirar, llama al 133 (Emergencias Nicaragua).</li>
           <li>🤖 <strong>IA:</strong> Las respuestas son generadas por inteligencia artificial y pueden tener errores.</li>
           <li>🌍 <strong>Datos:</strong> La información de medicamentos es internacional (FDA), verifica disponibilidad local.</li>
+          <li>📍 <strong>Ubicación:</strong> Solo se usa para mostrar centros cercanos y NUNCA se guarda sin tu permiso.</li>
         </ul>
         <div class="checkbox-container">
           <input type="checkbox" id="accept-terms">
@@ -41,7 +42,7 @@
   <!-- 🏠 Contenido Principal -->
   <main id="app-content" style="display:none;">
     
-    <!-- Header con botón de Exportar -->
+    <!-- Header con botones de acción -->
     <header class="app-header">
       <div class="header-content">
         <h1>Salud-Conecta AI</h1>
@@ -65,6 +66,7 @@
           <div class="message-content">
             <p>¡Bendiciones! Soy tu asistente de salud en Granada. ¿Cómo te sientes hoy?</p>
             <p class="message-disclaimer">Puedes describir síntomas o preguntar por medicamentos.</p>
+            <span class="message-time">Ahora</span>
           </div>
         </div>
       </div>
@@ -137,6 +139,18 @@
           <label class="checkbox-container">
             <input type="checkbox" id="anonymize-export" checked>
             <label for="anonymize-export">Ocultar información personal (recomendado)</label>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="include-location" checked>
+            <label for="include-location">Incluir ubicación aproximada (Granada)</label>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="include-med-history" checked>
+            <label for="include-med-history">Incluir historial de medicamentos buscados</label>
+          </label>
+          <label class="checkbox-container">
+            <input type="checkbox" id="include-summary" checked>
+            <label for="include-summary">Incluir resumen clínico para médico</label>
           </label>
         </div>
 
