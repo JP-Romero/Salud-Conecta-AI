@@ -557,101 +557,123 @@ document.addEventListener('DOMContentLoaded', () => {
       addMessage('No encontre informacion especifica sobre "' + drugName + '" en la base internacional.' + suggestion + ' En Granada, consulta en farmacias locales para informacion precisa.', 'ai', null, getShortTime());
     }
   }
+  // === SEND MESSAGE FUNCTION (ACTUALIZADA) ===
+function sendMessage(text) {
+  if (!text.trim()) return;
 
-  // === SEND MESSAGE FUNCTION ===
-  function sendMessage(text) {
-    if (!text.trim()) return;
+  const timestamp = getShortTime();
+  addMessage(text, 'user', null, timestamp);
+  userInput.value = '';
+  btnSend.disabled = true;
+  showTyping(true);
 
-    const timestamp = getShortTime();
-    addMessage(text, 'user', null, timestamp);
-    userInput.value = '';
-    btnSend.disabled = true;
-    showTyping(true);
+  const lowerText = text.toLowerCase();
 
-    const lowerText = text.toLowerCase();
-
-    const foundDrugDirect = COMMON_DRUGS.find(drug => 
-      lowerText === drug || 
-      lowerText.includes(' ' + drug + ' ') || 
-      lowerText.includes(' ' + drug) || 
-      lowerText.startsWith(drug)
-    );
-
-    const isDrugQuery = DRUG_KEYWORDS.some(keyword => lowerText.includes(keyword));
-    const foundDrugWithKeyword = COMMON_DRUGS.find(drug => lowerText.includes(drug));
-
-    if (foundDrugDirect) {
-      appState.medicationSearches.push({
-        drug: foundDrugDirect,
-        timestamp: getLocalTimestamp(),
-        query: text
-      });
-      
-      setTimeout(() => {
-        fetchDrugInfo(foundDrugDirect);
-        btnSend.disabled = false;
-        userInput.focus();
-      }, 1000);
-      return;
-    }
-
-    if (isDrugQuery && foundDrugWithKeyword) {
-      appState.medicationSearches.push({
-        drug: foundDrugWithKeyword,
-        timestamp: getLocalTimestamp(),
-        query: text
-      });
-      
-      setTimeout(() => {
-        fetchDrugInfo(foundDrugWithKeyword);
-        btnSend.disabled = false;
-        userInput.focus();
-      }, 1000);
-      return;
-    }
-
-    if (lowerText.includes('mapa') || lowerText.includes('centro') || 
-        lowerText.includes('hospital') || lowerText.includes('farmacia') ||
-        lowerText.includes('clinica') || lowerText.includes('cerca')) {
-      setTimeout(() => {
-        showTyping(false);
-        showNearbyHealthCenters();
-        btnSend.disabled = false;
-        userInput.focus();
-      }, 1000);
-      return;
-    }
-
-    if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
-      setTimeout(() => {
-        showTyping(false);
-        initReportForm();
-        btnSend.disabled = false;
-      }, 1000);
-      return;
-    }
-
-    if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
-      setTimeout(() => {
-        showTyping(false);
-        showReportsList();
-        btnSend.disabled = false;
-      }, 1000);
-      return;
-    }
-
-    const delay = Math.random() * 1500 + 1500;
+  // 1. Detectar acción de buscar medicamento (desde botón rápido)
+  if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
     setTimeout(() => {
       showTyping(false);
-      const urgency = detectUrgency(text);
-      const response = generateResponse(urgency);
-      addMessage(response.text + '\n\n' + response.action, 'ai', response.urgency, getShortTime());
-      scrollToBottom();
+      addMessage('Claro, puedo ayudarte a buscar información sobre un medicamento. 💊\n\nPor favor, escribe el **nombre del medicamento** que buscas (ej: Paracetamol, Ibuprofeno, Omeprazol).', 'ai', null, getShortTime());
       btnSend.disabled = false;
       userInput.focus();
-    }, delay);
+      userInput.placeholder = 'Escribe el nombre del medicamento...';
+    }, 500);
+    return;
   }
 
+  // 2. Detectar medicamento DIRECTO en el texto del usuario
+  const foundDrugDirect = COMMON_DRUGS.find(drug => 
+    lowerText === drug || 
+    lowerText.includes(' ' + drug + ' ') || 
+    lowerText.includes(' ' + drug) || 
+    lowerText.startsWith(drug + ' ') ||
+    lowerText.endsWith(' ' + drug)
+  );
+
+  // 3. Detectar palabras clave + medicamento
+  const isDrugQuery = DRUG_KEYWORDS.some(keyword => lowerText.includes(keyword));
+  const foundDrugWithKeyword = COMMON_DRUGS.find(drug => lowerText.includes(drug));
+
+  // ✅ PRIORIDAD 1: Nombre de medicamento directo
+  if (foundDrugDirect) {
+    appState.medicationSearches.push({
+      drug: foundDrugDirect,
+      timestamp: getLocalTimestamp(),
+      query: text
+    });
+    
+    setTimeout(() => {
+      fetchDrugInfo(foundDrugDirect);
+      btnSend.disabled = false;
+      userInput.placeholder = 'Describe tus síntomas...';
+      userInput.focus();
+    }, 1000);
+    return;
+  }
+
+  // ✅ PRIORIDAD 2: Palabras clave + medicamento
+  if (isDrugQuery && foundDrugWithKeyword) {
+    appState.medicationSearches.push({
+      drug: foundDrugWithKeyword,
+      timestamp: getLocalTimestamp(),
+      query: text
+    });
+    
+    setTimeout(() => {
+      fetchDrugInfo(foundDrugWithKeyword);
+      btnSend.disabled = false;
+      userInput.placeholder = 'Describe tus síntomas...';
+      userInput.focus();
+    }, 1000);
+    return;
+  }
+
+  // 4. Mapa/centros de salud
+  if (lowerText.includes('mapa') || lowerText.includes('centro') || 
+      lowerText.includes('hospital') || lowerText.includes('farmacia') ||
+      lowerText.includes('clinica') || lowerText.includes('cerca')) {
+    setTimeout(() => {
+      showTyping(false);
+      showNearbyHealthCenters();
+      btnSend.disabled = false;
+      userInput.focus();
+    }, 1000);
+    return;
+  }
+
+  // 5. Reportar centro
+  if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
+    setTimeout(() => {
+      showTyping(false);
+      initReportForm();
+      btnSend.disabled = false;
+    }, 1000);
+    return;
+  }
+
+  // 6. Ver reportes
+  if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
+    setTimeout(() => {
+      showTyping(false);
+      showReportsList();
+      btnSend.disabled = false;
+    }, 1000);
+    return;
+  }
+
+  // 7. Triage normal
+  const delay = Math.random() * 1500 + 1500;
+  setTimeout(() => {
+    showTyping(false);
+    const urgency = detectUrgency(text);
+    const response = generateResponse(urgency);
+    addMessage(response.text + '\n\n' + response.action, 'ai', response.urgency, getShortTime());
+    scrollToBottom();
+    btnSend.disabled = false;
+    userInput.placeholder = 'Describe tus síntomas...';
+    userInput.focus();
+  }, delay);
+}
   function detectUrgency(text) {
     const lowerText = text.toLowerCase();
     if (URGENCY_KEYWORDS.HIGH.some(k => lowerText.includes(k))) return 'HIGH';
@@ -871,8 +893,17 @@ window.expandDrugContent = function(contentId, btn) {
   userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(userInput.value); });
   
   quickBtns.forEach(btn => {
-    btn.addEventListener('click', () => sendMessage(btn.getAttribute('data-symptom')));
+  btn.addEventListener('click', () => {
+    const action = btn.getAttribute('data-action');
+    const symptom = btn.getAttribute('data-symptom');
+    
+    if (action === 'search-drug') {
+      sendMessage('Buscar medicamento');
+    } else if (symptom) {
+      sendMessage(symptom);
+    }
   });
+});
 
   btnEmergency.addEventListener('click', () => emergencyModal.style.display = 'flex');
   btnCloseEmergency.addEventListener('click', () => emergencyModal.style.display = 'none');
