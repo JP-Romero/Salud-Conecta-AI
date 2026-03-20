@@ -705,27 +705,44 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.appendChild(messageDiv);
     scrollToBottom();
   }
-
   function addDrugCard(data, timestamp) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ai-message';
-    
-    messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
-      '<div class="message-content">' +
-      '<p>Informacion sobre <strong>' + data.name + '</strong>:</p>' +
-      '<div class="drug-card">' +
-      '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Uso indicado</div><div class="drug-section-content">' + truncateText(data.usage, 100) + '</div><button class="btn-expand-drug" onclick="this.previousElementSibling.style.webkitLineClamp=\'10\'">Leer mas</button></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Advertencias</div><div class="drug-section-content" style="color: var(--danger);">' + truncateText(data.warnings, 100) + '</div></div>' +
-      '<div class="drug-footer">' + data.source + '</div>' +
-      '</div>' +
-      '<p class="message-disclaimer">No te automediques.</p>' +
-      '<span class="message-time">' + timestamp + '</span>' +
-      '</div>';
-    
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message ai-message';
+  
+  // Crear IDs únicos para cada tarjeta
+  const cardId = 'drug-card-' + Date.now();
+  const contentId = 'drug-content-' + Date.now();
+  
+  messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
+    '<div class="message-content">' +
+    '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
+    '<div class="drug-card" id="' + cardId + '">' +
+    '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
+    '<div class="drug-section"><div class="drug-section-title">Uso indicado</div>' +
+    '<div class="drug-section-content drug-content" id="' + contentId + '">' + translateMedicalText(truncateText(data.usage, 150)) + '</div>' +
+    '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer más</button></div>' +
+    '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
+    '<div class="drug-section-content drug-content">' + translateMedicalText(truncateText(data.warnings, 150)) + '</div></div>' +
+    '<div class="drug-footer">' + data.source + '</div>' +
+    '</div>' +
+    '<p class="message-disclaimer">No te automediques. Consulta a un farmacéutico en Nicaragua.</p>' +
+    '<span class="message-time">' + timestamp + '</span>' +
+    '</div>';
+  
+  chatMessages.appendChild(messageDiv);
+  scrollToBottom();
+}
+
+// Función global para expandir contenido
+window.expandDrugContent = function(contentId, btn) {
+  const content = document.getElementById(contentId);
+  if (content) {
+    content.style.webkitLineClamp = 'unset';
+    content.style.maxHeight = 'none';
+    content.style.overflow = 'visible';
+    btn.style.display = 'none';
   }
+};
 
   // === EXPORT LOGIC ===
   function generateClinicalSummary() {
@@ -934,3 +951,58 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Salud-Conecta AI v5.0 iniciada');
   }
 });
+// === DICCIONARIO DE TRADUCCIÓN MÉDICA (Inglés → Español) ===
+const MEDICAL_TERMS_ES = {
+  'indications and usage': 'Indicaciones y uso',
+  'dosage and administration': 'Dosis y administración',
+  'contraindications': 'Contraindicaciones',
+  'warnings and precautions': 'Advertencias y precauciones',
+  'adverse reactions': 'Reacciones adversas',
+  'drug interactions': 'Interacciones medicamentosas',
+  'use in specific populations': 'Uso en poblaciones específicas',
+  'overdosage': 'Sobredosis',
+  'description': 'Descripción',
+  'clinical pharmacology': 'Farmacología clínica',
+  'nonclinical toxicology': 'Toxicología no clínica',
+  'clinical studies': 'Estudios clínicos',
+  'references': 'Referencias',
+  'how supplied': 'Cómo se suministra',
+  'patient counseling information': 'Información para el paciente',
+  'pain': 'dolor',
+  'fever': 'fiebre',
+  'headache': 'dolor de cabeza',
+  'inflammation': 'inflamación',
+  'infection': 'infección',
+  'treatment': 'tratamiento',
+  'prevention': 'prevención',
+  'symptom': 'síntoma',
+  'adult': 'adulto',
+  'child': 'niño',
+  'tablet': 'tableta',
+  'capsule': 'cápsula',
+  'oral': 'oral',
+  'topical': 'tópico',
+  'injection': 'inyección',
+  'daily': 'diario',
+  'hour': 'hora',
+  'week': 'semana',
+  'month': 'mes'
+};
+
+// Función para traducir texto médico
+function translateMedicalText(text) {
+  if (!text) return 'Información no disponible.';
+  
+  let translated = text;
+  
+  // Traducir términos clave
+  Object.keys(MEDICAL_TERMS_ES).forEach(term => {
+    const regex = new RegExp(term, 'gi');
+    translated = translated.replace(regex, MEDICAL_TERMS_ES[term]);
+  });
+  
+  // Limpiar texto de caracteres especiales problemáticos
+  translated = translated.replace(/\*/g, '').replace(/\[/g, '(').replace(/\]/g, ')');
+  
+  return translated;
+}
