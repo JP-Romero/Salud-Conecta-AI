@@ -1,242 +1,84 @@
 /**
 ═══════════════════════════════════════════════════════════════
-SALUD-CONECTA AI - App Principal
+SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 5.0.0
-📌 ÚLTIMA ACTUALIZACIÓN: 2025-01-15
+📌 VERSIÓN: 6.0.0
+📌 CAMBIOS: Claude API real · corrección bugs · voz · rendimiento
 ═══════════════════════════════════════════════════════════════
 */
 
 document.addEventListener('DOMContentLoaded', () => {
-  
+
   // ═══════════════════════════════════════════════════════════════
-  //  VALIDACIÓN DE BASE DE DATOS (Fallback si no carga)
+  //  VALIDACIÓN BASE DE DATOS
   // ═══════════════════════════════════════════════════════════════
   if (typeof obtenerTodosLosCentros !== 'function') {
     console.warn('⚠️ base-datos-salud.js no cargó. Usando modo básico.');
-    window.obtenerTodosLosCentros = function() { return []; };
-    window.buscarMedicamento = function() { return null; };
-    window.buscarCentrosPorCategoria = function() { return []; };
-    window.buscarSintoma = function() { return null; };
-    window.obtenerTodosLosSintomas = function() { return []; };
-    window.obtenerEmergencias = function() { return []; };
+    window.obtenerTodosLosCentros    = () => [];
+    window.buscarMedicamento         = () => null;
+    window.buscarCentrosPorCategoria = () => [];
+    window.buscarSintoma             = () => null;
+    window.obtenerTodosLosSintomas   = () => [];
+    window.obtenerEmergencias        = () => [];
+    window.calcularDistancia         = () => 0;
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  1. MODAL DE PRIVACIDAD
+  //  CLAUDE API — SISTEMA PROMPT Y CONSTANTES
   // ═══════════════════════════════════════════════════════════════
-  const modal = document.getElementById('privacy-modal');
-  const appContent = document.getElementById('app-content');
-  const checkbox = document.getElementById('accept-terms');
-  const btnEnter = document.getElementById('btn-enter');
+  const CLAUDE_MODEL   = 'claude-sonnet-4-20250514';
+  const MAX_HISTORY    = 20; // mensajes máximos en historial
 
-  const hasAccepted = localStorage.getItem('saludConecta_consent');
-  if (hasAccepted === 'true') {
-    showModal(false);
-  } else {
-    showModal(true);
-  }
+  const CLAUDE_SYSTEM_PROMPT = `Eres SaludConecta AI, asistente de orientación de salud preventiva para Granada, Nicaragua. No eres médico ni reemplazas la consulta médica profesional.
 
-  checkbox.addEventListener('change', (e) => {
-    btnEnter.disabled = !e.target.checked;
-  });
+RECURSOS LOCALES EN GRANADA:
+• Emergencias nacionales: 133 (gratuito, 24h)
+• Cruz Roja Granada: 2552-5555
+• Hospital Virgen de la Asistencia: 2552-2600 — 24h, público, urgencias gratuitas, Centro
+• Hospital Alemán Nicaragüense: 2552-3000 — 24h, privado, Barrio San Antonio
+• Hospital Carlos Roberto Huembes: 2552-5100 — 24h, Carretera a Masaya
+• Farmacia Del Pueblo: 24h, Parque Central
+• Clínica Familiar (MINSA): Lun-Vie 7am-7pm, Barrio El Calvario
+• Clínica de la Mujer: Lun-Vie 8am-6pm, Barrio Guadalupe
 
-  btnEnter.addEventListener('click', () => {
-    localStorage.setItem('saludConecta_consent', 'true');
-    showModal(false);
-  });
-
-  function showModal(show) {
-    modal.style.display = show ? 'flex' : 'none';
-    appContent.style.display = show ? 'none' : 'block';
-  }
+INSTRUCCIONES ESTRICTAS:
+1. Responde SIEMPRE en español nicaragüense, con empatía y lenguaje sencillo
+2. Comienza SIEMPRE con el nivel de urgencia en la primera línea:
+   🔴 URGENCIA ALTA — ir a urgencias o llamar al 133 ahora
+   🟡 URGENCIA MEDIA — consultar médico en 24-48 horas
+   🟢 URGENCIA BAJA — cuidado en casa con vigilancia
+3. Para ALTA: la primera acción es siempre llamar al 133 o ir al hospital más cercano
+4. Para MEDIA: menciona el centro de salud específico de Granada más apropiado
+5. Para BAJA: da 3-5 cuidados caseros seguros y concretos, y señales de alarma para ir al médico
+6. Mantén el contexto de la conversación — si ya describieron síntomas, no los repitas
+7. NUNCA menciones diagnósticos de enfermedades específicas
+8. NUNCA prescribas medicamentos (hay un módulo separado para eso)
+9. Máximo 4 párrafos cortos por respuesta
+10. Termina SIEMPRE con: "⚕️ Esto es orientación informativa. Consulta con un profesional de salud."
+11. Si preguntan por medicamentos o farmacias, sugiere usar el botón 💊 de la app`;
 
   // ═══════════════════════════════════════════════════════════════
-  //  2. ESTADO GLOBAL
+  //  ESTADO GLOBAL
   // ═══════════════════════════════════════════════════════════════
   const appState = {
-    medicationSearches: [],
-    userLocation: null,
+    medicationSearches:    [],
+    userLocation:          null,
     conversationStartTime: new Date(),
-    map: null,
-    userMarker: null,
-    healthMarkers: []
+    map:                   null,
+    userMarker:            null,
+    healthMarkers:         [],
+    conversationHistory:   [],
+    isRecording:           false,
+    recognition:           null,
+    symptomCache:          {},
+    drugCache:             {}
   };
 
   // ═══════════════════════════════════════════════════════════════
-  //  3. PWA INSTALL LOGIC
-  // ═══════════════════════════════════════════════════════════════
-  let deferredPrompt = null;
-  const installBanner = document.getElementById('install-banner');
-  const btnInstall = document.getElementById('btn-install');
-  const btnDismissInstall = document.getElementById('btn-dismiss-install');
-  const installInstructionsModal = document.getElementById('install-instructions-modal');
-  const btnCloseInstallInstructions = document.getElementById('btn-close-install-instructions');
-  const installStepsChrome = document.getElementById('install-steps-chrome');
-  const installStepsSafari = document.getElementById('install-steps-safari');
-
-  const installDismissed = localStorage.getItem('saludConecta_installDismissed');
-
-  if (installBanner) {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (installDismissed !== 'true') {
-        installBanner.style.display = 'block';
-      }
-    });
-
-    window.addEventListener('appinstalled', () => {
-      if (installBanner) installBanner.style.display = 'none';
-      deferredPrompt = null;
-      localStorage.setItem('saludConecta_installed', 'true');
-    });
-
-    if (btnInstall) {
-      btnInstall.addEventListener('click', async () => {
-        if (!deferredPrompt) { showInstallInstructions(); return; }
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          installBanner.style.display = 'none';
-        }
-        deferredPrompt = null;
-      });
-    }
-
-    if (btnDismissInstall) {
-      btnDismissInstall.addEventListener('click', () => {
-        if (installBanner) installBanner.style.display = 'none';
-        localStorage.setItem('saludConecta_installDismissed', 'true');
-      });
-    }
-  }
-
-  function showInstallInstructions() {
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (installStepsChrome) installStepsChrome.style.display = isSafari ? 'none' : 'block';
-    if (installStepsSafari) installStepsSafari.style.display = isSafari ? 'block' : 'none';
-    if (installInstructionsModal) installInstructionsModal.style.display = 'flex';
-  }
-
-  if (btnCloseInstallInstructions) {
-    btnCloseInstallInstructions.addEventListener('click', () => {
-      if (installInstructionsModal) installInstructionsModal.style.display = 'none';
-    });
-  }
-
-  if (installInstructionsModal) {
-    installInstructionsModal.addEventListener('click', (e) => {
-      if (e.target === installInstructionsModal) installInstructionsModal.style.display = 'none';
-    });
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  4. REFERENCIAS DOM
-  // ═══════════════════════════════════════════════════════════════
-  const chatMessages = document.getElementById('chat-messages');
-  const userInput = document.getElementById('user-input');
-  const btnSend = document.getElementById('btn-send');
-  const typingIndicator = document.getElementById('typing-indicator');
-  const quickBtns = document.querySelectorAll('.quick-btn');
-  
-  const btnEmergency = document.getElementById('btn-emergency');
-  const emergencyModal = document.getElementById('emergency-modal');
-  const btnCloseEmergency = document.getElementById('btn-close-emergency');
-  const btnShowMapEmergency = document.getElementById('btn-show-map-emergency');
-  
-  const btnExport = document.getElementById('btn-export');
-  const exportModal = document.getElementById('export-modal');
-  const btnCloseExport = document.getElementById('btn-close-export');
-  const btnExportTxt = document.getElementById('btn-export-txt');
-  const btnExportCopy = document.getElementById('btn-export-copy');
-  const exportFeedback = document.getElementById('export-feedback');
-  const anonymizeCheckbox = document.getElementById('anonymize-export');
-  const includeLocationCheckbox = document.getElementById('include-location');
-  const includeMedHistoryCheckbox = document.getElementById('include-med-history');
-  const includeSummaryCheckbox = document.getElementById('include-summary');
-
-  const mapContainer = document.getElementById('map-container');
-  const mapElement = document.getElementById('map');
-  const mapLoading = document.getElementById('map-loading');
-  const mapResults = document.getElementById('map-results');
-  const btnCloseMap = document.getElementById('btn-close-map');
-  const btnAddCenter = document.getElementById('btn-add-center');
-  
-  const reportFormContainer = document.getElementById('report-form-container');
-  const reportForm = document.getElementById('report-form');
-  const btnCloseForm = document.getElementById('btn-close-form');
-  const btnCancelReport = document.getElementById('btn-cancel-report');
-  const locationStatus = document.getElementById('location-status');
-  const centerLatInput = document.getElementById('center-lat');
-  const centerLngInput = document.getElementById('center-lng');
-  
-  const reportsListContainer = document.getElementById('reports-list-container');
-  const reportsListContent = document.getElementById('reports-list-content');
-  const btnCloseReports = document.getElementById('btn-close-reports');
-  const btnExportReportsJSON = document.getElementById('btn-export-reports-json');
-  const btnExportReportsCSV = document.getElementById('btn-export-reports-csv');
-  const btnClearReports = document.getElementById('btn-clear-reports');
-
-  // ═══════════════════════════════════════════════════════════════
-  //  5. CONSTANTES
-  // ═══════════════════════════════════════════════════════════════
-  const URGENCY_KEYWORDS = {
-    HIGH: ['dolor de pecho', 'dificultad para respirar', 'sangrado', 'inconsciente', 'infarto'],
-    MEDIUM: ['fiebre alta', 'vomitos', 'dolor intenso', 'mareos'],
-    LOW: ['dolor de cabeza', 'cansancio', 'gripe', 'resfriado']
-  };
-
-  const DRUG_KEYWORDS = ['pastilla', 'medicamento', 'droga', 'jarabe', 'tratamiento', 'para que sirve', 'dosis'];
-  
-  const COMMON_DRUGS = [
-    'ibuprofeno', 'paracetamol', 'aspirina', 'amoxicilina', 'omeprazol', 
-    'loratadina', 'metformina', 'losartan', 'amlodipino', 'diclofenaco',
-    'acetaminofen', 'naproxeno', 'cetirizina', 'prednisona', 'azitromicina'
-  ];
-
-  const DRUG_NAME_MAPPING = {
-    'paracetamol': 'acetaminophen',
-    'acetaminofen': 'acetaminophen',
-    'ibuprofeno': 'ibuprofen',
-    'aspirina': 'aspirin',
-    'amoxicilina': 'amoxicillin',
-    'omeprazol': 'omeprazole',
-    'loratadina': 'loratadine',
-    'metformina': 'metformin',
-    'losartan': 'losartan',
-    'amlodipino': 'amlodipine',
-    'diclofenaco': 'diclofenac',
-    'naproxeno': 'naproxen',
-    'cetirizina': 'cetirizine',
-    'prednisona': 'prednisone',
-    'azitromicina': 'azithromycin'
-  };
-
-  const MEDICAL_TERMS_ES = {
-    'indications and usage': 'Indicaciones y uso',
-    'dosage and administration': 'Dosis y administracion',
-    'contraindications': 'Contraindicaciones',
-    'warnings and precautions': 'Advertencias y precauciones',
-    'adverse reactions': 'Reacciones adversas',
-    'pain': 'dolor',
-    'fever': 'fiebre',
-    'headache': 'dolor de cabeza',
-    'inflammation': 'inflamacion',
-    'infection': 'infeccion',
-    'treatment': 'tratamiento',
-    'adult': 'adulto',
-    'child': 'nino',
-    'tablet': 'tableta',
-    'oral': 'oral',
-    'daily': 'diario'
-  };
-
-  // ═══════════════════════════════════════════════════════════════
-  //  6. FUNCIONES DE UTILIDAD
+  //  UTILIDADES
   // ═══════════════════════════════════════════════════════════════
   function getLocalTimestamp() {
-    return new Date().toLocaleString('es-NI', { 
+    return new Date().toLocaleString('es-NI', {
       timeZone: 'America/Managua',
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit'
@@ -244,40 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getShortTime() {
-    return new Date().toLocaleTimeString('es-NI', { 
+    return new Date().toLocaleTimeString('es-NI', {
       timeZone: 'America/Managua',
       hour: '2-digit', minute: '2-digit'
     });
   }
 
-  function getEnglishDrugName(spanishName) {
-    const lower = spanishName.toLowerCase().trim();
-    return DRUG_NAME_MAPPING[lower] || lower;
+  function debounce(fn, delay) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
   }
-
-  function translateMedicalText(text) {
-    if (!text) return 'Informacion no disponible.';
-    let translated = text;
-    Object.keys(MEDICAL_TERMS_ES).forEach(term => {
-      const regex = new RegExp(term, 'gi');
-      translated = translated.replace(regex, MEDICAL_TERMS_ES[term]);
-    });
-    translated = translated.replace(/\*/g, '').replace(/\[/g, '(').replace(/\]/g, ')');
-    return translated;
-  }
-
-  window.expandDrugContent = function(contentId, btn) {
-    const content = document.getElementById(contentId);
-    if (content) {
-      content.style.webkitLineClamp = 'unset';
-      content.style.maxHeight = 'none';
-      content.style.overflow = 'visible';
-      btn.style.display = 'none';
-    }
-  };
 
   function truncateText(text, limit) {
-    if (!text) return 'Sin informacion.';
+    if (!text) return 'Sin información.';
     const clean = text.replace(/<[^>]*>?/gm, '');
     return clean.length > limit ? clean.substring(0, limit) + '...' : clean;
   }
@@ -294,121 +118,493 @@ document.addEventListener('DOMContentLoaded', () => {
   function showExportFeedback() {
     if (exportFeedback) {
       exportFeedback.style.display = 'block';
-      setTimeout(() => exportFeedback.style.display = 'none', 3000);
+      setTimeout(() => { exportFeedback.style.display = 'none'; }, 3000);
     }
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  7. GEOLOCALIZACION Y MAPA
+  //  MODAL DE PRIVACIDAD
+  // ═══════════════════════════════════════════════════════════════
+  const modal      = document.getElementById('privacy-modal');
+  const appContent = document.getElementById('app-content');
+  const checkbox   = document.getElementById('accept-terms');
+  const btnEnter   = document.getElementById('btn-enter');
+
+  if (localStorage.getItem('saludConecta_consent') === 'true') {
+    showModal(false);
+  } else {
+    showModal(true);
+  }
+
+  if (checkbox) checkbox.addEventListener('change', e => { btnEnter.disabled = !e.target.checked; });
+  if (btnEnter) btnEnter.addEventListener('click', () => {
+    localStorage.setItem('saludConecta_consent', 'true');
+    showModal(false);
+  });
+
+  function showModal(show) {
+    if (modal)      modal.style.display      = show ? 'flex' : 'none';
+    if (appContent) appContent.style.display = show ? 'none' : 'block';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  PWA INSTALL
+  // ═══════════════════════════════════════════════════════════════
+  let deferredPrompt = null;
+  const installBanner              = document.getElementById('install-banner');
+  const btnInstall                 = document.getElementById('btn-install');
+  const btnDismissInstall          = document.getElementById('btn-dismiss-install');
+  const installInstructionsModal   = document.getElementById('install-instructions-modal');
+  const btnCloseInstallInstructions= document.getElementById('btn-close-install-instructions');
+  const installStepsChrome         = document.getElementById('install-steps-chrome');
+  const installStepsSafari         = document.getElementById('install-steps-safari');
+  const installDismissed           = localStorage.getItem('saludConecta_installDismissed');
+
+  if (installBanner) {
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installDismissed !== 'true') installBanner.style.display = 'block';
+    });
+    window.addEventListener('appinstalled', () => {
+      if (installBanner) installBanner.style.display = 'none';
+      deferredPrompt = null;
+      localStorage.setItem('saludConecta_installed', 'true');
+    });
+    if (btnInstall) btnInstall.addEventListener('click', async () => {
+      if (!deferredPrompt) { showInstallInstructions(); return; }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') installBanner.style.display = 'none';
+      deferredPrompt = null;
+    });
+    if (btnDismissInstall) btnDismissInstall.addEventListener('click', () => {
+      if (installBanner) installBanner.style.display = 'none';
+      localStorage.setItem('saludConecta_installDismissed', 'true');
+    });
+  }
+
+  function showInstallInstructions() {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (installStepsChrome) installStepsChrome.style.display = isSafari ? 'none' : 'block';
+    if (installStepsSafari) installStepsSafari.style.display = isSafari ? 'block' : 'none';
+    if (installInstructionsModal) installInstructionsModal.style.display = 'flex';
+  }
+  if (btnCloseInstallInstructions) btnCloseInstallInstructions.addEventListener('click', () => {
+    if (installInstructionsModal) installInstructionsModal.style.display = 'none';
+  });
+  if (installInstructionsModal) installInstructionsModal.addEventListener('click', e => {
+    if (e.target === installInstructionsModal) installInstructionsModal.style.display = 'none';
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  //  REFERENCIAS DOM
+  // ═══════════════════════════════════════════════════════════════
+  const chatMessages        = document.getElementById('chat-messages');
+  const userInput           = document.getElementById('user-input');
+  const btnSend             = document.getElementById('btn-send');
+  const btnVoice            = document.getElementById('btn-voice');
+  const typingIndicator     = document.getElementById('typing-indicator');
+  const quickBtns           = document.querySelectorAll('.quick-btn');
+
+  const btnEmergency        = document.getElementById('btn-emergency');
+  const emergencyModal      = document.getElementById('emergency-modal');
+  const btnCloseEmergency   = document.getElementById('btn-close-emergency');
+  const btnShowMapEmergency = document.getElementById('btn-show-map-emergency');
+
+  const btnExport           = document.getElementById('btn-export');
+  const exportModal         = document.getElementById('export-modal');
+  const btnCloseExport      = document.getElementById('btn-close-export');
+  const btnExportTxt        = document.getElementById('btn-export-txt');
+  const btnExportCopy       = document.getElementById('btn-export-copy');
+  const exportFeedback      = document.getElementById('export-feedback');
+  const anonymizeCheckbox       = document.getElementById('anonymize-export');
+  const includeLocationCheckbox = document.getElementById('include-location');
+  const includeMedHistoryCheckbox = document.getElementById('include-med-history');
+  const includeSummaryCheckbox  = document.getElementById('include-summary');
+
+  const mapContainer        = document.getElementById('map-container');
+  const mapElement          = document.getElementById('map');
+  const mapLoading          = document.getElementById('map-loading');
+  const mapResults          = document.getElementById('map-results');
+  const btnCloseMap         = document.getElementById('btn-close-map');
+  const btnAddCenter        = document.getElementById('btn-add-center');
+
+  const reportFormContainer = document.getElementById('report-form-container');
+  const reportForm          = document.getElementById('report-form');
+  const btnCloseForm        = document.getElementById('btn-close-form');
+  const btnCancelReport     = document.getElementById('btn-cancel-report');
+  const locationStatus      = document.getElementById('location-status');
+  const centerLatInput      = document.getElementById('center-lat');
+  const centerLngInput      = document.getElementById('center-lng');
+
+  const reportsListContainer   = document.getElementById('reports-list-container');
+  const reportsListContent     = document.getElementById('reports-list-content');
+  const btnCloseReports        = document.getElementById('btn-close-reports');
+  const btnExportReportsJSON   = document.getElementById('btn-export-reports-json');
+  const btnExportReportsCSV    = document.getElementById('btn-export-reports-csv');
+  const btnClearReports        = document.getElementById('btn-clear-reports');
+
+  const btnSettings            = document.getElementById('btn-settings');
+  const apiKeyModal            = document.getElementById('api-key-modal');
+  const apiKeyInput            = document.getElementById('api-key-input');
+  const btnSaveApiKey          = document.getElementById('btn-save-api-key');
+  const btnClearApiKey         = document.getElementById('btn-clear-api-key');
+  const btnCloseApiKey         = document.getElementById('btn-close-api-key');
+  const apiKeyStatus           = document.getElementById('api-key-status');
+
+  // ═══════════════════════════════════════════════════════════════
+  //  CONSTANTES — KEYWORDS Y MAPEOS
+  // ═══════════════════════════════════════════════════════════════
+  const URGENCY_KEYWORDS = {
+    HIGH:   ['dolor de pecho', 'dificultad para respirar', 'sangrado', 'inconsciente', 'infarto', 'desmayo', 'convulsion', 'paralisis', 'no puedo respirar'],
+    MEDIUM: ['fiebre alta', 'vomito', 'vomitos', 'dolor intenso', 'mareos', 'mareo fuerte', 'dificultad al tragar'],
+    LOW:    ['dolor de cabeza', 'cansancio', 'gripe', 'resfriado', 'tos leve', 'malestar']
+  };
+
+  const DRUG_KEYWORDS = ['pastilla', 'medicamento', 'droga', 'jarabe', 'tratamiento', 'para que sirve', 'dosis', 'medicina'];
+
+  const COMMON_DRUGS = [
+    'ibuprofeno', 'paracetamol', 'aspirina', 'amoxicilina', 'omeprazol',
+    'loratadina', 'metformina', 'losartan', 'amlodipino', 'diclofenaco',
+    'acetaminofen', 'naproxeno', 'cetirizina', 'prednisona', 'azitromicina'
+  ];
+
+  const DRUG_NAME_MAPPING = {
+    'paracetamol':   'acetaminophen',
+    'acetaminofen':  'acetaminophen',
+    'ibuprofeno':    'ibuprofen',
+    'aspirina':      'aspirin',
+    'amoxicilina':   'amoxicillin',
+    'omeprazol':     'omeprazole',
+    'loratadina':    'loratadine',
+    'metformina':    'metformin',
+    'losartan':      'losartan',
+    'amlodipino':    'amlodipine',
+    'diclofenaco':   'diclofenac',
+    'naproxeno':     'naproxen',
+    'cetirizina':    'cetirizine',
+    'prednisona':    'prednisone',
+    'azitromicina':  'azithromycin'
+  };
+
+  const MEDICAL_TERMS_ES = {
+    'indications and usage':          'Indicaciones y uso',
+    'dosage and administration':      'Dosis y administracion',
+    'contraindications':              'Contraindicaciones',
+    'warnings and precautions':       'Advertencias y precauciones',
+    'adverse reactions':              'Reacciones adversas',
+    'pain': 'dolor', 'fever': 'fiebre', 'headache': 'dolor de cabeza',
+    'inflammation': 'inflamacion', 'infection': 'infeccion',
+    'treatment': 'tratamiento', 'adult': 'adulto', 'child': 'nino',
+    'tablet': 'tableta', 'oral': 'oral', 'daily': 'diario'
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  //  CLAUDE API
+  // ═══════════════════════════════════════════════════════════════
+  async function callClaudeAPI(userMessage) {
+    const apiKey = localStorage.getItem('saludConecta_apiKey');
+    if (!apiKey) return null;
+
+    // Añadir mensaje al historial
+    appState.conversationHistory.push({ role: 'user', content: userMessage });
+
+    // Mantener ventana de contexto limitada (evitar tokens excesivos)
+    if (appState.conversationHistory.length > MAX_HISTORY) {
+      appState.conversationHistory.splice(0, 2);
+    }
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: CLAUDE_MODEL,
+          max_tokens: 800,
+          system: CLAUDE_SYSTEM_PROMPT,
+          messages: appState.conversationHistory
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.content[0].text;
+
+      // Añadir respuesta al historial
+      appState.conversationHistory.push({ role: 'assistant', content: assistantMessage });
+
+      return assistantMessage;
+
+    } catch (error) {
+      console.error('Claude API error:', error);
+      // Revertir el mensaje del usuario del historial en caso de error
+      appState.conversationHistory.pop();
+
+      if (error.message.includes('401') || error.message.includes('invalid')) {
+        addMessage('⚠️ API key inválida. Ve a ⚙️ Configuración para corregirla.', 'ai', null, getShortTime());
+        localStorage.removeItem('saludConecta_apiKey');
+        updateApiKeyStatusBadge();
+      }
+      return null;
+    }
+  }
+
+  function detectUrgencyFromResponse(responseText) {
+    if (responseText.includes('🔴') || responseText.includes('URGENCIA ALTA')) return 'ALTA';
+    if (responseText.includes('🟡') || responseText.includes('URGENCIA MEDIA')) return 'MEDIA';
+    return 'BAJA';
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  API KEY MODAL
+  // ═══════════════════════════════════════════════════════════════
+  function updateApiKeyStatusBadge() {
+    const hasKey = !!localStorage.getItem('saludConecta_apiKey');
+    if (btnSettings) {
+      btnSettings.title = hasKey ? 'Configuración (IA activa ✓)' : 'Configuración (sin API key)';
+      btnSettings.classList.toggle('has-key', hasKey);
+    }
+    if (apiKeyStatus) {
+      apiKeyStatus.textContent = hasKey ? '✅ API key configurada — IA real activa' : '⚠️ Sin API key — usando respuestas básicas';
+      apiKeyStatus.style.color = hasKey ? 'var(--success)' : 'var(--danger)';
+    }
+    if (apiKeyInput && hasKey) {
+      apiKeyInput.value = '';
+      apiKeyInput.placeholder = '••••••••••••••••••••••••• (ya configurada)';
+    }
+  }
+
+  if (btnSettings) {
+    btnSettings.addEventListener('click', () => {
+      updateApiKeyStatusBadge();
+      if (apiKeyModal) apiKeyModal.style.display = 'flex';
+    });
+  }
+  if (btnCloseApiKey) btnCloseApiKey.addEventListener('click', () => {
+    if (apiKeyModal) apiKeyModal.style.display = 'none';
+  });
+  if (apiKeyModal) apiKeyModal.addEventListener('click', e => {
+    if (e.target === apiKeyModal) apiKeyModal.style.display = 'none';
+  });
+  if (btnSaveApiKey) btnSaveApiKey.addEventListener('click', () => {
+    const key = apiKeyInput ? apiKeyInput.value.trim() : '';
+    if (!key.startsWith('sk-ant-')) {
+      alert('La API key debe comenzar con "sk-ant-". Obtén una en console.anthropic.com');
+      return;
+    }
+    localStorage.setItem('saludConecta_apiKey', key);
+    updateApiKeyStatusBadge();
+    if (apiKeyModal) apiKeyModal.style.display = 'none';
+    addMessage('✅ API key guardada. Ahora usaré IA real para responderte con mejor orientación de salud.', 'ai', null, getShortTime());
+  });
+  if (btnClearApiKey) btnClearApiKey.addEventListener('click', () => {
+    if (confirm('¿Eliminar la API key? Las respuestas volverán al modo básico.')) {
+      localStorage.removeItem('saludConecta_apiKey');
+      appState.conversationHistory = [];
+      updateApiKeyStatusBadge();
+      if (apiKeyModal) apiKeyModal.style.display = 'none';
+      addMessage('API key eliminada. Modo básico activado.', 'ai', null, getShortTime());
+    }
+  });
+
+  // Inicializar badge al cargar
+  updateApiKeyStatusBadge();
+
+  // ═══════════════════════════════════════════════════════════════
+  //  VOZ — Web Speech API
+  // ═══════════════════════════════════════════════════════════════
+  function initVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition || !btnVoice) {
+      if (btnVoice) btnVoice.style.display = 'none';
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang             = 'es-NI';
+    recognition.continuous       = false;
+    recognition.interimResults   = true;
+    recognition.maxAlternatives  = 1;
+    appState.recognition = recognition;
+
+    recognition.onstart = () => {
+      appState.isRecording = true;
+      btnVoice.classList.add('recording');
+      btnVoice.title = 'Escuchando... (toca para detener)';
+      if (userInput) {
+        userInput.placeholder = '🎙️ Escuchando...';
+        userInput.classList.add('listening');
+      }
+    };
+
+    recognition.onresult = e => {
+      const transcript = Array.from(e.results)
+        .map(r => r[0].transcript)
+        .join('');
+      if (userInput) userInput.value = transcript;
+      if (e.results[e.results.length - 1].isFinal) {
+        sendMessage(transcript);
+      }
+    };
+
+    recognition.onend = () => {
+      appState.isRecording = false;
+      btnVoice.classList.remove('recording');
+      btnVoice.title = 'Hablar (voz)';
+      if (userInput) {
+        userInput.placeholder = 'Describe tus síntomas...';
+        userInput.classList.remove('listening');
+      }
+    };
+
+    recognition.onerror = e => {
+      console.error('Voz error:', e.error);
+      appState.isRecording = false;
+      btnVoice.classList.remove('recording');
+      if (userInput) {
+        userInput.placeholder = 'Describe tus síntomas...';
+        userInput.classList.remove('listening');
+      }
+      if (e.error === 'not-allowed') {
+        addMessage('Para usar el micrófono, permite el acceso cuando el navegador lo solicite.', 'ai', null, getShortTime());
+      }
+    };
+
+    btnVoice.addEventListener('click', () => {
+      if (appState.isRecording) {
+        recognition.stop();
+      } else {
+        if (userInput) userInput.value = '';
+        recognition.start();
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  GEOLOCALIZACION Y MAPA
   // ═══════════════════════════════════════════════════════════════
   async function getUserLocation() {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       if (!navigator.geolocation) {
-        reject(new Error('Geolocalizacion no soportada'));
+        resolve({ lat: 11.9344, lng: -85.9560, fallback: true });
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({ lat: position.coords.latitude, lng: position.coords.longitude, accuracy: position.coords.accuracy });
-        },
-        (error) => {
-          console.error('Error de geolocalizacion:', error);
-          resolve({ lat: 11.9344, lng: -85.9560, fallback: true });
-        },
+        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+        () => resolve({ lat: 11.9344, lng: -85.9560, fallback: true }),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
       );
     });
   }
 
+  // CORRECCIÓN BUG: Reutilizar mapa en lugar de destruirlo y recrearlo
   function initMap(lat, lng) {
+    if (typeof L === 'undefined') { console.error('Leaflet no cargado'); return; }
+
     if (appState.map) {
-      appState.map.remove();
-      appState.healthMarkers = [];
-    }
-    if (typeof L === 'undefined') {
-      console.error('Leaflet no está cargado');
+      // Reutilizar mapa existente: solo centrar y actualizar marcador de usuario
+      appState.map.setView([lat, lng], 14);
+      if (appState.userMarker) appState.userMarker.setLatLng([lat, lng]);
+      appState.map.invalidateSize();
       return;
     }
+
     appState.map = L.map('map').setView([lat, lng], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19
     }).addTo(appState.map);
+
     appState.userMarker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: 'user-marker',
         html: '<div style="background:#0077b6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
+        iconSize: [20, 20], iconAnchor: [10, 10]
       })
-    }).addTo(appState.map).bindPopup('Tu ubicacion').openPopup();
-    setTimeout(() => { appState.map.invalidateSize(); }, 100);
+    }).addTo(appState.map).bindPopup('Tu ubicación').openPopup();
+
+    setTimeout(() => appState.map.invalidateSize(), 100);
   }
 
   async function searchHealthFacilities(lat, lng, radius = 2000) {
     const centrosBD = obtenerTodosLosCentros();
     if (centrosBD.length > 0) {
-      console.log('Usando base de datos local (' + centrosBD.length + ' centros)');
+      // CORRECCIÓN BUG: Propiedad 'distance' consistente (era 'distancia' en el sort)
       return centrosBD.map(centro => ({
         ...centro,
         distance: calcularDistancia(lat, lng, centro.lat, centro.lng)
       }))
       .filter(c => c.distance <= radius)
-      .sort((a, b) => a.distancia - b.distancia);
+      .sort((a, b) => a.distance - b.distance);
     }
-    console.log('Base de datos vacía, usando Overpass API...');
+    // Fallback Overpass API
     const query = `[out:json][timeout:25];(node["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng});way["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng}););out center;`;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Error en Overpass API');
-      const data = await response.json();
+      const resp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+      if (!resp.ok) throw new Error('Overpass error');
+      const data = await resp.json();
       return data.elements;
-    } catch (error) {
-      console.error('Error buscando centros:', error);
+    } catch {
       return [];
     }
   }
 
-  function calcularDistancia(lat1, lng1, lat2, lng2) {
-    const R = 6371000;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return Math.round(R * c);
-  }
+  // CORRECCIÓN BUG: Eliminada función duplicada — se usa calcularDistancia de base-datos-salud.js
 
   function displayHealthFacilities(facilities, userLat, userLng) {
     if (!mapResults) return;
     mapResults.innerHTML = '';
+
     if (appState.healthMarkers) {
-      appState.healthMarkers.forEach(m => appState.map.removeLayer(m));
+      appState.healthMarkers.forEach(m => appState.map && appState.map.removeLayer(m));
       appState.healthMarkers = [];
     }
+
     if (!facilities || facilities.length === 0) {
-      mapResults.innerHTML = '<p style="text-align:center;color:var(--gray-text);">No se encontraron centros. Intenta ampliar la busqueda o reporta uno nuevo.</p>';
+      mapResults.innerHTML = '<p style="text-align:center;color:var(--gray-text);">No se encontraron centros. Intenta ampliar la búsqueda o reporta uno nuevo.</p>';
       return;
     }
+
     facilities.forEach(facility => {
-      const lat = facility.lat || facility.center?.lat;
-      const lng = facility.lon || facility.center?.lon;
+      const lat  = facility.lat  || facility.center?.lat;
+      const lng  = facility.lon  || facility.center?.lon || facility.lng;
       if (!lat || !lng) return;
-      const name = facility.tags?.name || facility.nombre || 'Sin nombre';
-      const type = facility.tags?.amenity || facility.categoria || 'health';
-      const address = facility.tags?.addr?.street || facility.direccion || '';
-      const distance = calcularDistancia(userLat, userLng, lat, lng);
+
+      const name     = facility.tags?.name    || facility.nombre    || 'Sin nombre';
+      const type     = facility.tags?.amenity || facility.categoria || 'health';
+      const address  = facility.tags?.['addr:street'] || facility.direccion || '';
+      // CORRECCIÓN BUG: usar 'distance' consistente
+      const distance = facility.distance !== undefined
+        ? facility.distance
+        : calcularDistancia(userLat, userLng, lat, lng);
+
       const marker = L.marker([lat, lng]).addTo(appState.map)
-        .bindPopup('<strong>' + name + '</strong><br>' + type.toUpperCase() + ' - ' + distance + 'm<br>' + (address ? address : '') + '<br><br><a href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '" target="_blank" style="background:#2a9d8f;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:0.8rem;">Ir</a>');
-      if (appState.healthMarkers) appState.healthMarkers.push(marker);
+        .bindPopup(`<strong>${name}</strong><br>${type.toUpperCase()} — ${distance}m<br>${address}<br><br><a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" style="background:#2a9d8f;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:0.8rem;">Ir ↗</a>`);
+      appState.healthMarkers.push(marker);
+
       const resultItem = document.createElement('div');
       resultItem.className = 'map-result-item';
-      resultItem.innerHTML = '<div class="map-result-info"><div class="map-result-name">' + name + '</div><div class="map-result-type">' + type.toUpperCase() + ' - ' + distance + 'm ' + (address ? '- ' + address : '') + '</div></div><a href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '&origin=' + userLat + ',' + userLng + '" class="btn-directions" target="_blank" rel="noopener">Ir</a>';
+      resultItem.innerHTML = `
+        <div class="map-result-info">
+          <div class="map-result-name">${name}</div>
+          <div class="map-result-type">${type.toUpperCase()} — ${distance}m ${address ? '· ' + address : ''}</div>
+        </div>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&origin=${userLat},${userLng}"
+           class="btn-directions" target="_blank" rel="noopener">Ir ↗</a>`;
       mapResults.appendChild(resultItem);
     });
-    if (appState.map && appState.healthMarkers && appState.healthMarkers.length > 0) {
+
+    if (appState.map && appState.healthMarkers.length > 0) {
       const group = new L.featureGroup([...appState.healthMarkers, appState.userMarker]);
       appState.map.fitBounds(group.getBounds().pad(0.1));
     }
@@ -418,9 +614,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mapContainer) mapContainer.style.display = 'block';
     if (reportFormContainer) reportFormContainer.style.display = 'none';
     if (reportsListContainer) reportsListContainer.style.display = 'none';
-    if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'none';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'none';
     if (mapLoading) mapLoading.style.display = 'block';
     if (mapResults) mapResults.innerHTML = '';
+
     try {
       const location = await getUserLocation();
       appState.userLocation = location;
@@ -428,10 +625,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const facilities = await searchHealthFacilities(location.lat, location.lng);
       displayHealthFacilities(facilities, location.lat, location.lng);
       if (location.fallback) {
-        addMessage('Usando ubicacion aproximada de Granada. Permite acceso a ubicacion para resultados precisos.', 'ai', null, getShortTime());
+        addMessage('Usando ubicación aproximada de Granada. Permite el acceso a ubicación para resultados precisos.', 'ai', null, getShortTime());
       }
-    } catch (error) {
-      console.error('Error mostrando mapa:', error);
+    } catch (err) {
+      console.error('Error mapa:', err);
       if (mapResults) mapResults.innerHTML = '<p style="color:var(--danger);text-align:center;">No se pudo cargar el mapa.</p>';
     } finally {
       if (mapLoading) mapLoading.style.display = 'none';
@@ -439,15 +636,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  8. CROWDSOURCING
+  //  CROWDSOURCING — REPORTES
   // ═══════════════════════════════════════════════════════════════
   async function initReportForm() {
     if (reportFormContainer) reportFormContainer.style.display = 'block';
     if (mapContainer) mapContainer.style.display = 'none';
     if (reportsListContainer) reportsListContainer.style.display = 'none';
-    if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'none';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'none';
+
     if (locationStatus) {
-      locationStatus.innerHTML = '<span class="loading">Obteniendo ubicacion...</span>';
+      locationStatus.innerHTML = '<span class="loading">Obteniendo ubicación...</span>';
       locationStatus.className = 'location-status';
     }
     try {
@@ -455,21 +653,21 @@ document.addEventListener('DOMContentLoaded', () => {
       if (centerLatInput) centerLatInput.value = location.lat;
       if (centerLngInput) centerLngInput.value = location.lng;
       if (locationStatus) {
-        locationStatus.innerHTML = 'Ubicacion capturada: ' + location.lat.toFixed(6) + ', ' + location.lng.toFixed(6);
+        locationStatus.innerHTML = `Ubicación capturada: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
         locationStatus.className = 'location-status success';
       }
-    } catch (error) {
+    } catch {
       if (locationStatus) {
-        locationStatus.innerHTML = 'No se pudo obtener ubicacion. Ingresa manualmente.';
+        locationStatus.innerHTML = 'No se pudo obtener ubicación. Ingresa manualmente.';
         locationStatus.className = 'location-status error';
       }
     }
     if (reportForm) reportForm.reset();
   }
 
-  function saveReport(reportData) {
+  function saveReport(data) {
     const reports = JSON.parse(localStorage.getItem('saludConecta_reports') || '[]');
-    const report = { id: Date.now(), timestamp: getLocalTimestamp(), ...reportData };
+    const report = { id: Date.now(), timestamp: getLocalTimestamp(), ...data };
     reports.push(report);
     localStorage.setItem('saludConecta_reports', JSON.stringify(reports));
     return report;
@@ -480,14 +678,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.deleteReport = function(id) {
-    let reports = getReports();
-    reports = reports.filter(r => r.id !== id);
+    const reports = getReports().filter(r => r.id !== id);
     localStorage.setItem('saludConecta_reports', JSON.stringify(reports));
     showReportsList();
   };
 
   function clearAllReports() {
-    if (confirm('¿Estas seguro de eliminar todos los reportes? Esta accion no se puede deshacer.')) {
+    if (confirm('¿Eliminar todos los reportes? Esta acción no se puede deshacer.')) {
       localStorage.removeItem('saludConecta_reports');
       showReportsList();
     }
@@ -497,455 +694,62 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reportsListContainer) reportsListContainer.style.display = 'block';
     if (mapContainer) mapContainer.style.display = 'none';
     if (reportFormContainer) reportFormContainer.style.display = 'none';
-    if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'none';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'none';
+
     const reports = getReports();
     if (!reportsListContent) return;
+
     if (reports.length === 0) {
-      reportsListContent.innerHTML = '<p style="text-align:center;color:var(--gray-text);padding:2rem;">No hay reportes guardados. ¡Se el primero en reportar un centro!</p>';
+      reportsListContent.innerHTML = '<p style="text-align:center;color:var(--gray-text);padding:2rem;">No hay reportes guardados. ¡Sé el primero en reportar un centro!</p>';
       return;
     }
-    const typeLabels = { hospital: 'Hospital', clinic: 'Clinica', pharmacy: 'Farmacia', doctors: 'Consultorio', laboratory: 'Laboratorio', other: 'Otro' };
-    reportsListContent.innerHTML = '<p style="margin-bottom:1rem;color:var(--gray-text);">Tienes <strong>' + reports.length + '</strong> reporte(s) guardado(s) localmente.</p><div id="reports-list"></div>';
+
+    const typeLabels = { hospital: 'Hospital', clinic: 'Clínica', pharmacy: 'Farmacia', doctors: 'Consultorio', laboratory: 'Laboratorio', other: 'Otro' };
+    reportsListContent.innerHTML = `<p style="margin-bottom:1rem;color:var(--gray-text);">Tienes <strong>${reports.length}</strong> reporte(s) guardado(s) localmente.</p><div id="reports-list"></div>`;
+
     const listContainer = document.getElementById('reports-list');
     if (!listContainer) return;
-    reports.sort((a, b) => b.id - a.id).forEach(report => {
+
+    reports.sort((a, b) => b.id - a.id).forEach(r => {
       const item = document.createElement('div');
       item.className = 'report-item';
-      item.innerHTML = '<div class="report-item-header"><span class="report-item-name">' + report.name + '</span><span class="report-item-type">' + (typeLabels[report.type] || report.type) + '</span></div>' +
-        (report.address ? '<div class="report-item-details">Direccion: ' + report.address + '</div>' : '') +
-        (report.phone ? '<div class="report-item-details">Telefono: ' + report.phone + '</div>' : '') +
-        (report.hours ? '<div class="report-item-details">Horario: ' + report.hours + '</div>' : '') +
-        (report.notes ? '<div class="report-item-details">Notas: ' + report.notes + '</div>' : '') +
-        '<div class="report-item-location">Reportado: ' + report.timestamp + ' - Coordenadas: ' + report.lat.toFixed(4) + ', ' + report.lng.toFixed(4) + '</div>' +
-        '<div class="report-item-actions"><button class="btn-delete-report" onclick="window.deleteReport(' + report.id + ')">Eliminar</button></div>';
+      item.innerHTML = `
+        <div class="report-item-header">
+          <span class="report-item-name">${r.name}</span>
+          <span class="report-item-type">${typeLabels[r.type] || r.type}</span>
+        </div>
+        ${r.address ? `<div class="report-item-details">Dirección: ${r.address}</div>` : ''}
+        ${r.phone   ? `<div class="report-item-details">Teléfono: ${r.phone}</div>` : ''}
+        ${r.hours   ? `<div class="report-item-details">Horario: ${r.hours}</div>` : ''}
+        ${r.notes   ? `<div class="report-item-details">Notas: ${r.notes}</div>` : ''}
+        <div class="report-item-location">Reportado: ${r.timestamp} · Coords: ${r.lat?.toFixed(4)}, ${r.lng?.toFixed(4)}</div>
+        <div class="report-item-actions">
+          <button class="btn-delete-report" onclick="window.deleteReport(${r.id})">Eliminar</button>
+        </div>`;
       listContainer.appendChild(item);
     });
   }
 
   function exportReportsJSON() {
     const reports = getReports();
-    if (reports.length === 0) { alert('No hay reportes para exportar'); return; }
-    const dataStr = JSON.stringify(reports, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'salud-conecta-reportes-' + new Date().toISOString().slice(0,10) + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    alert('Exportados ' + reports.length + ' reportes. Puedes compartir este archivo con OpenStreetMap o autoridades de salud.');
+    if (!reports.length) { alert('No hay reportes para exportar'); return; }
+    const blob = new Blob([JSON.stringify(reports, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `salud-conecta-reportes-${new Date().toISOString().slice(0,10)}.json`);
+    alert(`Exportados ${reports.length} reportes. Puedes compartir este archivo con OpenStreetMap o autoridades de salud.`);
   }
 
   function exportReportsCSV() {
     const reports = getReports();
-    if (reports.length === 0) { alert('No hay reportes para exportar'); return; }
-    const headers = ['ID', 'Fecha', 'Nombre', 'Tipo', 'Direccion', 'Telefono', 'Horario', 'Notas', 'Latitud', 'Longitud'];
-    const rows = reports.map(r => [r.id, r.timestamp, r.name, r.type, r.address || '', r.phone || '', r.hours || '', r.notes || '', r.lat, r.lng]);
-    const csvContent = [headers, ...rows].map(row => row.map(cell => '"' + cell + '"').join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'salud-conecta-reportes-' + new Date().toISOString().slice(0,10) + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    alert('Exportados ' + reports.length + ' reportes en formato CSV.');
+    if (!reports.length) { alert('No hay reportes para exportar'); return; }
+    const headers = ['ID','Fecha','Nombre','Tipo','Direccion','Telefono','Horario','Notas','Latitud','Longitud'];
+    const rows = reports.map(r => [r.id, r.timestamp, r.name, r.type, r.address||'', r.phone||'', r.hours||'', r.notes||'', r.lat, r.lng]);
+    const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `salud-conecta-reportes-${new Date().toISOString().slice(0,10)}.csv`);
+    alert(`Exportados ${reports.length} reportes en CSV.`);
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  //  9. MEDICAMENTOS
-  // ═══════════════════════════════════════════════════════════════
-  async function fetchDrugInfo(drugName) {
-    showTyping(true);
-    const medicamentoBD = buscarMedicamento(drugName);
-    if (medicamentoBD) {
-      showTyping(false);
-      const drugData = {
-        name: medicamentoBD.nombre_es + (medicamentoBD.nombres_comerciales.length > 0 ? ' (' + medicamentoBD.nombres_comerciales.slice(0, 3).join(', ') + ')' : ''),
-        usage: medicamentoBD.uso_principal,
-        warnings: medicamentoBD.contraindicaciones + '. Efectos secundarios: ' + medicamentoBD.efectos_secundarios,
-        source: 'Base de datos local - Nicaragua ✓',
-        dosis: medicamentoBD.dosis_adulto,
-        requiere_receta: medicamentoBD.requiere_receta,
-        precio: medicamentoBD.precio_aproximado
-      };
-      addDrugCardLocal(drugData, getShortTime());
-      setTimeout(() => {
-        const farmacias = buscarCentrosPorCategoria('farmacia');
-        if (farmacias && farmacias.length > 0) {
-          addMessage('💊 Puedes conseguir este medicamento en estas farmacias de Granada:\n\n' + farmacias.slice(0, 5).map(f => '• ' + f.nombre + ' (' + f.horario + ')').join('\n'), 'ai', null, getShortTime());
-        }
-      }, 500);
-      return;
-    }
-    console.log('Medicamento no encontrado en BD local, consultando openFDA...');
-    const englishName = getEnglishDrugName(drugName);
-    const spanishName = drugName;
-    try {
-      let response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + englishName + '&limit=1');
-      if (!response.ok) {
-        response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.brand_name:' + englishName + '&limit=1');
-      }
-      if (!response.ok && englishName !== spanishName.toLowerCase()) {
-        response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + spanishName.toLowerCase() + '&limit=1');
-      }
-      if (!response.ok) throw new Error('No encontrado');
-      const data = await response.json();
-      const result = data.results[0];
-      const drugData = {
-        name: result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
-        usage: translateMedicalText(result.indications_and_usage?.[0] || 'Informacion no disponible.'),
-        warnings: translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su medico.'),
-        source: 'Fuente: openFDA (EE.UU.) - Verificar con farmacéutico en Nicaragua'
-      };
-      showTyping(false);
-      addDrugCard(drugData, getShortTime());
-    } catch (error) {
-      showTyping(false);
-      console.error('Error fetchDrugInfo:', error);
-      addMessage('No encontre informacion sobre "' + drugName + '" en la base local ni en openFDA. En Granada, consulta en farmacias como Del Pueblo, San Nicolas o Cruz Verde.', 'ai', null, getShortTime());
-    }
-  }
-
-  function addDrugCardLocal(data, timestamp) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ai-message';
-    const cardId = 'drug-card-' + Date.now();
-    const contentId = 'drug-content-' + Date.now();
-    messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
-      '<div class="message-content">' +
-      '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
-      '<div class="drug-warning-banner"><strong>✅ Información Verificada - Nicaragua</strong><ul><li>Datos de la base de datos local de Granada</li><li>Información en <strong>español</strong></li><li>Precios aproximados en <strong>Córdobas</strong></li><li>Siempre consulta con un <strong>farmacéutico local</strong></li></ul></div>' +
-      '<div class="drug-card" id="' + cardId + '">' +
-      '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Uso principal</div>' +
-      '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
-      '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
-      (data.dosis ? '<div class="drug-section"><div class="drug-section-title">Dosis adulto</div><div class="drug-section-content">' + data.dosis + '</div></div>' : '') +
-      '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
-      '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
-      (data.requiere_receta ? '<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color: var(--danger);">Sí - Consulta médica obligatoria</div></div>' : '') +
-      (data.precio ? '<div class="drug-section"><div class="drug-section-title">Precio aproximado</div><div class="drug-section-content" style="color: var(--success);">' + data.precio + '</div></div>' : '') +
-      '<div class="drug-footer">' + data.source + '</div>' +
-      '</div>' +
-      '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
-      '<span class="message-time">' + timestamp + '</span>' +
-      '</div>';
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-  }
-
-  function addDrugCard(data, timestamp) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ai-message';
-    const cardId = 'drug-card-' + Date.now();
-    const contentId = 'drug-content-' + Date.now();
-    messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
-      '<div class="message-content">' +
-      '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
-      '<div class="drug-warning-banner"><strong>⚠️ Informacion Importante para Nicaragua</strong><ul><li>Esta informacion es de <strong>Estados Unidos (FDA)</strong></li><li>Las <strong>dosis pueden variar</strong> en Nicaragua</li><li>Los <strong>nombres comerciales</strong> pueden ser diferentes</li><li>Consulta siempre con un <strong>farmaceutico local</strong></li></ul></div>' +
-      '<div class="drug-card" id="' + cardId + '">' +
-      '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Uso indicado</div>' +
-      '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
-      '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
-      '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
-      '<div class="drug-footer">' + data.source + '</div>' +
-      '</div>' +
-      '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
-      '<span class="message-time">' + timestamp + '</span>' +
-      '</div>';
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  10. SÍNTOMAS
-  // ═══════════════════════════════════════════════════════════════
-  function addSintomaCard(sintoma, timestamp) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ai-message';
-    const cardId = 'sintoma-card-' + Date.now();
-    const cuidadosList = sintoma.cuidados_casa.map(c => '<li>' + c + '</li>').join('');
-    const consultarList = sintoma.cuando_consultar.map(c => '<li>' + c + '</li>').join('');
-    const causasList = sintoma.causas_comunes.map(c => c).join(', ');
-    const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : sintoma.urgencia_default === 'MEDIA' ? '#f77f00' : '#0077b6';
-    messageDiv.innerHTML = '<div class="message-avatar">🩺</div>' +
-      '<div class="message-content">' +
-      '<p>Información sobre <strong>' + sintoma.nombre + '</strong>:</p>' +
-      '<div class="sintoma-warning-banner" style="background:#e9f5ff;border-left:4px solid ' + urgenciaColor + ';padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">' +
-      '<strong>📊 Nivel de atención: ' + (sintoma.urgencia_default === 'ALTA' ? '🚨 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '⚠️ Moderado' : '✅ Leve') + '</strong>' +
-      '<p style="margin:6px 0 0 0;font-size:0.8rem;">' + sintoma.descripcion + '</p>' +
-      '</div>' +
-      '<div class="drug-card" id="' + cardId + '">' +
-      '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en Casa</h4></div>' +
-      '<div class="drug-section">' +
-      '<ul style="margin:0;padding-left:20px;">' + cuidadosList + '</ul>' +
-      '</div>' +
-      '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🩺</span><h4 class="drug-title">¿Cuándo Consultar Médico?</h4></div>' +
-      '<div class="drug-section">' +
-      '<ul style="margin:0;padding-left:20px;">' + consultarList + '</ul>' +
-      '</div>' +
-      '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">📋</span><h4 class="drug-title">Causas Comunes</h4></div>' +
-      '<div class="drug-section"><div class="drug-section-content">' + causasList + '</div></div>' +
-      '<div class="drug-footer">Fuente: Base de datos local - Nicaragua ✓</div>' +
-      '</div>' +
-      '<p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. En Granada, consulta en centros de salud locales.</p>' +
-      '<span class="message-time">' + timestamp + '</span>' +
-      '</div>';
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  11. CHAT Y TRIAGE
-  // ═══════════════════════════════════════════════════════════════
-  function sendMessage(text) {
-    if (!text.trim()) return;
-    const timestamp = getShortTime();
-    addMessage(text, 'user', null, timestamp);
-    if (userInput) userInput.value = '';
-    if (btnSend) btnSend.disabled = true;
-    showTyping(true);
-    const lowerText = text.toLowerCase();
-
-    // DETECTAR SÍNTOMAS ESPECÍFICOS DE LA BASE DE DATOS
-    const sintomaEncontrado = buscarSintoma(lowerText);
-    if (sintomaEncontrado) {
-      appState.medicationSearches.push({
-        drug: sintomaEncontrado.nombre,
-        timestamp: getLocalTimestamp(),
-        query: text
-      });
-      setTimeout(() => {
-        showTyping(false);
-        addSintomaCard(sintomaEncontrado, getShortTime());
-        if (btnSend) btnSend.disabled = false;
-        if (userInput) {
-          userInput.placeholder = 'Describe tus síntomas...';
-          userInput.focus();
-        }
-      }, 1000);
-      return;
-    }
-
-    // DETECTAR MEDICAMENTOS
-    if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
-      setTimeout(() => {
-        showTyping(false);
-        addMessage('Claro, puedo ayudarte a buscar informacion sobre un medicamento. 💊\n\nPor favor, escribe el **nombre del medicamento** que buscas (ej: Paracetamol, Ibuprofeno, Omeprazol).\n\n⚠️ *La informacion proviene de bases de datos de EE.UU. y puede diferir de la disponible en Nicaragua.*', 'ai', null, getShortTime());
-        if (btnSend) btnSend.disabled = false;
-        if (userInput) {
-          userInput.focus();
-          userInput.placeholder = 'Escribe el nombre del medicamento...';
-        }
-      }, 500);
-      return;
-    }
-
-    const foundDrugDirect = COMMON_DRUGS.find(drug => 
-      lowerText === drug || 
-      lowerText.includes(' ' + drug + ' ') || 
-      lowerText.includes(' ' + drug) || 
-      lowerText.startsWith(drug + ' ') ||
-      lowerText.endsWith(' ' + drug)
-    );
-
-    const isDrugQuery = DRUG_KEYWORDS.some(keyword => lowerText.includes(keyword));
-    const foundDrugWithKeyword = COMMON_DRUGS.find(drug => lowerText.includes(drug));
-
-    if (foundDrugDirect) {
-      appState.medicationSearches.push({ drug: foundDrugDirect, timestamp: getLocalTimestamp(), query: text });
-      setTimeout(() => {
-        fetchDrugInfo(foundDrugDirect);
-        if (btnSend) btnSend.disabled = false;
-        if (userInput) {
-          userInput.placeholder = 'Describe tus síntomas...';
-          userInput.focus();
-        }
-      }, 1000);
-      return;
-    }
-
-    if (isDrugQuery && foundDrugWithKeyword) {
-      appState.medicationSearches.push({ drug: foundDrugWithKeyword, timestamp: getLocalTimestamp(), query: text });
-      setTimeout(() => {
-        fetchDrugInfo(foundDrugWithKeyword);
-        if (btnSend) btnSend.disabled = false;
-        if (userInput) {
-          userInput.placeholder = 'Describe tus síntomas...';
-          userInput.focus();
-        }
-      }, 1000);
-      return;
-    }
-
-    // MAPA/CENTROS
-    if (lowerText.includes('mapa') || lowerText.includes('centro') || lowerText.includes('hospital') || lowerText.includes('farmacia') || lowerText.includes('clinica') || lowerText.includes('cerca')) {
-      setTimeout(() => {
-        showTyping(false);
-        showNearbyHealthCenters();
-        if (btnSend) btnSend.disabled = false;
-        if (userInput) userInput.focus();
-      }, 1000);
-      return;
-    }
-
-    // REPORTAR
-    if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
-      setTimeout(() => { showTyping(false); initReportForm(); if (btnSend) btnSend.disabled = false; }, 1000);
-      return;
-    }
-
-    // VER REPORTES
-    if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
-      setTimeout(() => { showTyping(false); showReportsList(); if (btnSend) btnSend.disabled = false; }, 1000);
-      return;
-    }
-
-    // TRIAGE NORMAL
-    const delay = Math.random() * 1500 + 1500;
-    setTimeout(() => {
-      showTyping(false);
-      const urgency = detectUrgency(text);
-      const response = generateResponse(urgency);
-      addMessage(response.text + '\n\n' + response.action, 'ai', response.urgency, getShortTime());
-      scrollToBottom();
-      if (btnSend) btnSend.disabled = false;
-      if (userInput) {
-        userInput.placeholder = 'Describe tus síntomas...';
-        userInput.focus();
-      }
-    }, delay);
-  }
-
-  function detectUrgency(text) {
-    const lowerText = text.toLowerCase();
-    if (URGENCY_KEYWORDS.HIGH.some(k => lowerText.includes(k))) return 'HIGH';
-    if (URGENCY_KEYWORDS.MEDIUM.some(k => lowerText.includes(k))) return 'MEDIUM';
-    return 'LOW';
-  }
-
-  function generateResponse(urgency) {
-    const MOCK_RESPONSES = {
-      HIGH: {
-        text: 'Atencion: Los sintomas que describes pueden indicar una condicion grave.',
-        action: 'Te recomiendo buscar atencion medica inmediata. Usa el mapa para ver centros cercanos o llama al 133.',
-        urgency: 'ALTA'
-      },
-      MEDIUM: {
-        text: 'Recomendacion: Deberias consultar con un profesional pronto.',
-        action: 'Programa una cita en Granada. ¿Quieres ver centros en el mapa o reportar uno nuevo?',
-        urgency: 'MEDIA'
-      },
-      LOW: {
-        text: 'Gracias por tu consulta. Los síntomas que mencionas requieren una evaluación más detallada para poder orientarte adecuadamente.',
-        action: 'Te recomiendo consultar con un profesional de salud quien podrá evaluar tu caso específico. En Granada, puedes visitar:\n\n• Centros de salud del MINSA (atención gratuita)\n• Clínicas privadas (con o sin seguro médico)\n• Farmacias con consultorio farmacéutico\n\n¿Te gustaría que te muestre los centros de salud más cercanos a tu ubicación?',
-        urgency: 'BAJA'
-      }
-    };
-    return MOCK_RESPONSES[urgency];
-  }
-
-  function addMessage(text, sender, urgency = null, timestamp) {
-    if (!chatMessages) return;
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ' + sender + '-message';
-    const avatar = sender === 'ai' ? 'AI' : 'TU';
-    let urgencyBadge = '';
-    if (sender === 'ai' && urgency) {
-      const urgencyColors = { 'ALTA': '#d90429', 'MEDIA': '#f77f00', 'BAJA': '#0077b6' };
-      const urgencyLabels = { 'ALTA': 'Urgente', 'MEDIA': 'Moderado', 'BAJA': 'Leve' };
-      urgencyBadge = '<div style="background: ' + urgencyColors[urgency] + '; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 8px; display: inline-block;">' + urgencyLabels[urgency] + '</div>';
-    }
-    const formattedText = text.replace(/\n/g, '<br>');
-    messageDiv.innerHTML = '<div class="message-avatar">' + avatar + '</div>' +
-      '<div class="message-content">' + urgencyBadge +
-      '<p>' + formattedText + '</p>' +
-      (sender === 'ai' ? '<p class="message-disclaimer">Esto es orientacion informativa. Consulta a un profesional.</p>' : '') +
-      '<span class="message-time">' + timestamp + '</span>' +
-      '</div>';
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  12. EXPORTAR CONVERSACION
-  // ═══════════════════════════════════════════════════════════════
-  function generateClinicalSummary() {
-    const messages = Array.from(document.querySelectorAll('.chat-messages .message'));
-    const userMessages = messages.filter(m => m.classList.contains('user-message'));
-    const symptoms = [];
-    userMessages.forEach(msg => {
-      const text = msg.textContent.toLowerCase();
-      Object.values(URGENCY_KEYWORDS).flat().forEach(keyword => {
-        if (text.includes(keyword) && !symptoms.includes(keyword)) symptoms.push(keyword);
-      });
-    });
-    let maxUrgency = 'BAJA';
-    if (symptoms.some(s => URGENCY_KEYWORDS.HIGH.includes(s))) maxUrgency = 'ALTA';
-    else if (symptoms.some(s => URGENCY_KEYWORDS.MEDIUM.includes(s))) maxUrgency = 'MEDIA';
-    return {
-      symptoms: symptoms.length > 0 ? symptoms.join(', ') : 'No especificados',
-      urgency: maxUrgency,
-      drugSearches: appState.medicationSearches.map(m => m.drug).join(', ') || 'Ninguno',
-      duration: Math.round((new Date() - appState.conversationStartTime) / 60000) + ' minutos'
-    };
-  }
-
-  function getChatHistory() {
-    const lines = [];
-    const now = getLocalTimestamp();
-    const summary = generateClinicalSummary();
-    lines.push('SALUD-CONECTA AI - REPORTE DE CONSULTA');
-    lines.push('=====================================');
-    lines.push('');
-    lines.push('Fecha: ' + now);
-    lines.push('Ubicacion: ' + (includeLocationCheckbox && includeLocationCheckbox.checked ? 'Granada, Nicaragua' : '[Ocultada]'));
-    lines.push('Version: 5.0.0');
-    lines.push('');
-    if (includeSummaryCheckbox && includeSummaryCheckbox.checked) {
-      lines.push('RESUMEN CLINICO');
-      lines.push('---------------');
-      lines.push('- Sintomas: ' + summary.symptoms);
-      lines.push('- Urgencia: ' + summary.urgency);
-      lines.push('- Medicamentos: ' + (summary.drugSearches || 'Ninguno'));
-      lines.push('- Duracion: ' + summary.duration);
-      lines.push('');
-    }
-    if (includeMedHistoryCheckbox && includeMedHistoryCheckbox.checked && appState.medicationSearches.length > 0) {
-      lines.push('HISTORIAL DE MEDICAMENTOS');
-      lines.push('-------------------------');
-      appState.medicationSearches.forEach((s, i) => { lines.push((i+1) + '. [' + s.timestamp + '] ' + s.drug); });
-      lines.push('');
-    }
-    if (anonymizeCheckbox && anonymizeCheckbox.checked) { lines.push('[DATOS ANONIMIZADOS]'); lines.push(''); }
-    lines.push('CONVERSACION');
-    lines.push('------------');
-    lines.push('');
-    document.querySelectorAll('.chat-messages .message').forEach(msg => {
-      const isUser = msg.classList.contains('user-message');
-      const sender = isUser ? 'Usuario' : 'IA';
-      const time = msg.querySelector('.message-time')?.textContent || '';
-      const content = msg.querySelector('.message-content')?.cloneNode(true);
-      if (content) content.querySelectorAll('.message-disclaimer, .drug-card').forEach(el => el.remove());
-      const cleanContent = content?.textContent?.trim() || msg.textContent.trim();
-      lines.push('[' + time + '] ' + sender + ': ' + cleanContent);
-      lines.push('');
-    });
-    lines.push('-------------------------------------');
-    lines.push('ADVERTENCIA: No es diagnostico medico. Emergencias: 133');
-    lines.push('Salud-Conecta AI - https://jp-romero.github.io/Salud-Conecta-AI/');
-    return lines.join('\n');
-  }
-
-  function downloadTxt(filename, text) {
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = filename;
@@ -954,70 +758,519 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
   }
 
-  async function copyToClipboard(text) {
-    if (navigator.clipboard) return navigator.clipboard.writeText(text);
-    const textarea = document.createElement('textarea');
-    textarea.value = text; document.body.appendChild(textarea);
-    textarea.select(); document.execCommand('copy');
-    document.body.removeChild(textarea);
+  // ═══════════════════════════════════════════════════════════════
+  //  MEDICAMENTOS
+  // ═══════════════════════════════════════════════════════════════
+  function getEnglishDrugName(name) {
+    return DRUG_NAME_MAPPING[name.toLowerCase().trim()] || name.toLowerCase();
+  }
+
+  function translateMedicalText(text) {
+    if (!text) return 'Información no disponible.';
+    let t = text;
+    Object.entries(MEDICAL_TERMS_ES).forEach(([en, es]) => {
+      t = t.replace(new RegExp(en, 'gi'), es);
+    });
+    return t.replace(/\*/g, '').replace(/\[/g, '(').replace(/\]/g, ')');
+  }
+
+  window.expandDrugContent = function(contentId, btn) {
+    const el = document.getElementById(contentId);
+    if (el) {
+      el.style.webkitLineClamp = 'unset';
+      el.style.maxHeight = 'none';
+      el.style.overflow = 'visible';
+      btn.style.display = 'none';
+    }
+  };
+
+  async function fetchDrugInfo(drugName) {
+    // Cache para evitar búsquedas repetidas
+    if (appState.drugCache[drugName]) {
+      showTyping(false);
+      addDrugCardLocal(appState.drugCache[drugName], getShortTime());
+      return;
+    }
+
+    showTyping(true);
+    const medBD = buscarMedicamento(drugName);
+    if (medBD) {
+      showTyping(false);
+      const drugData = {
+        name: medBD.nombre_es + (medBD.nombres_comerciales.length > 0 ? ` (${medBD.nombres_comerciales.slice(0,3).join(', ')})` : ''),
+        usage:          medBD.uso_principal,
+        warnings:       `${medBD.contraindicaciones}. Efectos secundarios: ${medBD.efectos_secundarios}`,
+        source:         'Base de datos local — Nicaragua ✓',
+        dosis:          medBD.dosis_adulto,
+        requiere_receta: medBD.requiere_receta,
+        precio:         medBD.precio_aproximado
+      };
+      appState.drugCache[drugName] = drugData;
+      addDrugCardLocal(drugData, getShortTime());
+      setTimeout(() => {
+        const farmacias = buscarCentrosPorCategoria('farmacia');
+        if (farmacias?.length > 0) {
+          addMessage(`💊 Puedes conseguirlo en estas farmacias de Granada:\n\n${farmacias.slice(0,5).map(f => `• ${f.nombre} (${f.horario})`).join('\n')}`, 'ai', null, getShortTime());
+        }
+      }, 500);
+      return;
+    }
+
+    // Fallback openFDA
+    const englishName = getEnglishDrugName(drugName);
+    try {
+      let resp = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.generic_name:${englishName}&limit=1`);
+      if (!resp.ok) resp = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.brand_name:${englishName}&limit=1`);
+      if (!resp.ok) throw new Error('No encontrado');
+      const data = await resp.json();
+      const result = data.results[0];
+      const drugData = {
+        name:    result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
+        usage:   translateMedicalText(result.indications_and_usage?.[0] || 'Información no disponible.'),
+        warnings:translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su médico.'),
+        source:  'Fuente: openFDA (EE.UU.) — Verificar con farmacéutico en Nicaragua'
+      };
+      showTyping(false);
+      addDrugCard(drugData, getShortTime());
+    } catch {
+      showTyping(false);
+      addMessage(`No encontré información sobre "${drugName}". En Granada, consulta en farmacias como Del Pueblo, San Nicolás o Cruz Verde.`, 'ai', null, getShortTime());
+    }
+  }
+
+  function addDrugCardLocal(data, timestamp) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    const contentId = 'drug-content-' + Date.now();
+    messageDiv.innerHTML = `
+      <div class="message-avatar">Rx</div>
+      <div class="message-content">
+        <p>Información sobre <strong>${data.name}</strong>:</p>
+        <div class="drug-warning-banner">
+          <strong>✅ Información verificada — Nicaragua</strong>
+          <ul>
+            <li>Datos de la base de datos local de Granada</li>
+            <li>Precios aproximados en <strong>Córdobas</strong></li>
+            <li>Consulta siempre con un <strong>farmacéutico local</strong></li>
+          </ul>
+        </div>
+        <div class="drug-card">
+          <div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">${data.name}</h4></div>
+          <div class="drug-section"><div class="drug-section-title">Uso principal</div>
+            <div class="drug-section-content" id="${contentId}">${truncateText(data.usage, 150)}</div>
+            <button class="btn-expand-drug" onclick="expandDrugContent('${contentId}', this)">Leer más</button></div>
+          ${data.dosis ? `<div class="drug-section"><div class="drug-section-title">Dosis adulto</div><div class="drug-section-content">${data.dosis}</div></div>` : ''}
+          <div class="drug-section"><div class="drug-section-title">Advertencias</div>
+            <div class="drug-section-content">${truncateText(data.warnings, 150)}</div></div>
+          ${data.requiere_receta ? `<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color:var(--danger);">Sí — Consulta médica obligatoria</div></div>` : ''}
+          ${data.precio ? `<div class="drug-section"><div class="drug-section-title">Precio aproximado</div><div class="drug-section-content" style="color:var(--success);">${data.precio}</div></div>` : ''}
+          <div class="drug-footer">${data.source}</div>
+        </div>
+        <p class="message-disclaimer">No te automediques. Consulta con tu farmacéutico o médico.</p>
+        <span class="message-time">${timestamp}</span>
+      </div>`;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+
+  function addDrugCard(data, timestamp) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    const contentId = 'drug-content-' + Date.now();
+    messageDiv.innerHTML = `
+      <div class="message-avatar">Rx</div>
+      <div class="message-content">
+        <p>Información sobre <strong>${data.name}</strong>:</p>
+        <div class="drug-warning-banner">
+          <strong>⚠️ Información de EE.UU. (FDA)</strong>
+          <ul>
+            <li>Las dosis y nombres comerciales pueden diferir en Nicaragua</li>
+            <li>Consulta siempre con un <strong>farmacéutico local</strong></li>
+          </ul>
+        </div>
+        <div class="drug-card">
+          <div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">${data.name}</h4></div>
+          <div class="drug-section"><div class="drug-section-title">Uso indicado</div>
+            <div class="drug-section-content" id="${contentId}">${truncateText(data.usage, 150)}</div>
+            <button class="btn-expand-drug" onclick="expandDrugContent('${contentId}', this)">Leer más</button></div>
+          <div class="drug-section"><div class="drug-section-title">Advertencias</div>
+            <div class="drug-section-content">${truncateText(data.warnings, 150)}</div></div>
+          <div class="drug-footer">${data.source}</div>
+        </div>
+        <p class="message-disclaimer">No te automediques. Consulta con tu médico o farmacéutico.</p>
+        <span class="message-time">${timestamp}</span>
+      </div>`;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  13. EVENT LISTENERS
+  //  SÍNTOMAS
   // ═══════════════════════════════════════════════════════════════
-  if (btnSend) btnSend.addEventListener('click', () => sendMessage(userInput.value));
-  if (userInput) userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(userInput.value); });
-  
+  function addSintomaCard(sintoma, timestamp) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : sintoma.urgencia_default === 'MEDIA' ? '#f77f00' : '#0077b6';
+    messageDiv.innerHTML = `
+      <div class="message-avatar">🩺</div>
+      <div class="message-content">
+        <p>Información sobre <strong>${sintoma.nombre}</strong>:</p>
+        <div style="background:#e9f5ff;border-left:4px solid ${urgenciaColor};padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">
+          <strong>Nivel de atención: ${sintoma.urgencia_default === 'ALTA' ? '🔴 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '🟡 Moderado' : '🟢 Leve'}</strong>
+          <p style="margin:6px 0 0;font-size:0.8rem;">${sintoma.descripcion}</p>
+        </div>
+        <div class="drug-card">
+          <div class="drug-card-header"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en casa</h4></div>
+          <div class="drug-section"><ul style="margin:0;padding-left:20px;">${sintoma.cuidados_casa.map(c => `<li>${c}</li>`).join('')}</ul></div>
+          <div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🩺</span><h4 class="drug-title">¿Cuándo consultar médico?</h4></div>
+          <div class="drug-section"><ul style="margin:0;padding-left:20px;">${sintoma.cuando_consultar.map(c => `<li>${c}</li>`).join('')}</ul></div>
+          <div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">📋</span><h4 class="drug-title">Causas comunes</h4></div>
+          <div class="drug-section"><div class="drug-section-content">${sintoma.causas_comunes.join(', ')}</div></div>
+          <div class="drug-footer">Fuente: Base de datos local — Nicaragua ✓</div>
+        </div>
+        <p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. Emergencias: 133</p>
+        <span class="message-time">${timestamp}</span>
+      </div>`;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  CHAT Y TRIAGE
+  // ═══════════════════════════════════════════════════════════════
+  function detectUrgency(text) {
+    const lower = text.toLowerCase();
+    if (URGENCY_KEYWORDS.HIGH.some(k => lower.includes(k)))   return 'HIGH';
+    if (URGENCY_KEYWORDS.MEDIUM.some(k => lower.includes(k))) return 'MEDIUM';
+    return 'LOW';
+  }
+
+  function generateMockResponse(urgency) {
+    const RESPONSES = {
+      HIGH: {
+        text:    '🔴 URGENCIA ALTA — Los síntomas que describes pueden indicar una condición grave.',
+        action:  'Llama al 133 ahora o dirígete inmediatamente al Hospital Virgen de la Asistencia (Tel: 2552-2600, 24h) o al Hospital Alemán Nicaragüense (Tel: 2552-3000).',
+        urgency: 'ALTA'
+      },
+      MEDIUM: {
+        text:    '🟡 URGENCIA MEDIA — Deberías consultar con un profesional pronto.',
+        action:  'Programa una cita en los próximos 1-2 días. Puedes ir al Hospital Virgen de la Asistencia o a la Clínica Familiar del MINSA. ¿Quieres ver centros cercanos en el mapa?',
+        urgency: 'MEDIA'
+      },
+      LOW: {
+        text:    '🟢 URGENCIA BAJA — Los síntomas que describes son frecuentes y generalmente manejables en casa.',
+        action:  'Descansa, mantente hidratado y vigila si los síntomas empeoran. Si persisten más de 3 días o se intensifican, visita un centro de salud del MINSA (atención gratuita) o una farmacia con consultorio.\n\n⚕️ Esto es orientación informativa. Consulta con un profesional de salud.',
+        urgency: 'BAJA'
+      }
+    };
+    return RESPONSES[urgency];
+  }
+
+  async function sendMessage(text) {
+    if (!text.trim()) return;
+    const timestamp = getShortTime();
+    addMessage(text, 'user', null, timestamp);
+    if (userInput) userInput.value = '';
+    if (btnSend) btnSend.disabled = true;
+    showTyping(true);
+
+    const lowerText = text.toLowerCase();
+
+    // 1. SÍNTOMAS ESPECÍFICOS DE LA BD LOCAL (con cache)
+    const cacheKey = lowerText.trim();
+    let sintomaEncontrado = appState.symptomCache[cacheKey];
+    if (sintomaEncontrado === undefined) {
+      sintomaEncontrado = buscarSintoma(lowerText) || null;
+      appState.symptomCache[cacheKey] = sintomaEncontrado;
+    }
+    if (sintomaEncontrado) {
+      appState.medicationSearches.push({ drug: sintomaEncontrado.nombre, timestamp: getLocalTimestamp(), query: text });
+      setTimeout(() => {
+        showTyping(false);
+        addSintomaCard(sintomaEncontrado, getShortTime());
+        enableInput();
+      }, 800);
+      return;
+    }
+
+    // 2. SOLICITUD DE MEDICAMENTO
+    if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
+      setTimeout(() => {
+        showTyping(false);
+        addMessage('Claro, ¿qué medicamento buscas? Escribe su nombre (ej: Paracetamol, Ibuprofeno, Omeprazol) y te doy información detallada.', 'ai', null, getShortTime());
+        enableInput('Escribe el nombre del medicamento...');
+      }, 400);
+      return;
+    }
+
+    // 3. MEDICAMENTO DIRECTO
+    const foundDrugDirect = COMMON_DRUGS.find(d =>
+      lowerText === d || lowerText.startsWith(d + ' ') || lowerText.endsWith(' ' + d) ||
+      lowerText.includes(' ' + d + ' ')
+    );
+    const isDrugQuery   = DRUG_KEYWORDS.some(k => lowerText.includes(k));
+    const foundDrugKw   = COMMON_DRUGS.find(d => lowerText.includes(d));
+
+    if (foundDrugDirect || (isDrugQuery && foundDrugKw)) {
+      const drugName = foundDrugDirect || foundDrugKw;
+      appState.medicationSearches.push({ drug: drugName, timestamp: getLocalTimestamp(), query: text });
+      setTimeout(() => {
+        fetchDrugInfo(drugName);
+        enableInput();
+      }, 800);
+      return;
+    }
+
+    // 4. MAPA / CENTROS
+    if (['mapa','centro','hospital','farmacia','clinica','cerca'].some(k => lowerText.includes(k))) {
+      setTimeout(() => { showTyping(false); showNearbyHealthCenters(); enableInput(); }, 600);
+      return;
+    }
+
+    // 5. REPORTAR
+    if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
+      setTimeout(() => { showTyping(false); initReportForm(); enableInput(); }, 600);
+      return;
+    }
+
+    // 6. VER REPORTES
+    if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
+      setTimeout(() => { showTyping(false); showReportsList(); enableInput(); }, 600);
+      return;
+    }
+
+    // 7. TRIAGE — CLAUDE API (con fallback a respuestas mock)
+    const apiKey = localStorage.getItem('saludConecta_apiKey');
+    if (apiKey) {
+      try {
+        const response = await callClaudeAPI(text);
+        showTyping(false);
+        if (response) {
+          const urgency = detectUrgencyFromResponse(response);
+          addMessage(response, 'ai', urgency, getShortTime());
+        } else {
+          // Fallback si API falla
+          const urgency = detectUrgency(text);
+          const mock = generateMockResponse(urgency);
+          addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
+        }
+      } catch {
+        showTyping(false);
+        const urgency = detectUrgency(text);
+        const mock = generateMockResponse(urgency);
+        addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
+      }
+      enableInput();
+    } else {
+      // Sin API key — mock + sugerencia única de configurar
+      const delay = 1200 + Math.random() * 800;
+      setTimeout(() => {
+        showTyping(false);
+        const urgency = detectUrgency(text);
+        const mock = generateMockResponse(urgency);
+        addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
+
+        // Mostrar sugerencia de API solo si nunca se ha configurado y no se mostró ya
+        if (!sessionStorage.getItem('apiKeySuggested')) {
+          sessionStorage.setItem('apiKeySuggested', 'true');
+          setTimeout(() => {
+            addMessage('💡 Para respuestas más precisas con IA real, configura tu API key en ⚙️ Configuración.', 'ai', null, getShortTime());
+          }, 1200);
+        }
+        enableInput();
+      }, delay);
+    }
+  }
+
+  function enableInput(placeholder = 'Describe tus síntomas...') {
+    if (btnSend) btnSend.disabled = false;
+    if (userInput) { userInput.placeholder = placeholder; userInput.focus(); }
+  }
+
+  function addMessage(text, sender, urgency = null, timestamp) {
+    if (!chatMessages) return;
+    const div = document.createElement('div');
+    div.className = `message ${sender}-message`;
+    const avatar = sender === 'ai' ? 'AI' : 'TÚ';
+
+    let urgencyBadge = '';
+    if (sender === 'ai' && urgency) {
+      const colors  = { ALTA: '#d90429', MEDIA: '#f77f00', BAJA: '#0077b6' };
+      const labels  = { ALTA: '🔴 Urgente', MEDIA: '🟡 Moderado', BAJA: '🟢 Leve' };
+      urgencyBadge = `<div style="background:${colors[urgency]};color:white;padding:4px 10px;border-radius:4px;font-size:0.75rem;margin-bottom:8px;display:inline-block;">${labels[urgency]}</div>`;
+    }
+
+    div.innerHTML = `
+      <div class="message-avatar">${avatar}</div>
+      <div class="message-content">
+        ${urgencyBadge}
+        <p>${text.replace(/\n/g, '<br>')}</p>
+        ${sender === 'ai' ? '<p class="message-disclaimer">Esto es orientación informativa. Consulta a un profesional.</p>' : ''}
+        <span class="message-time">${timestamp}</span>
+      </div>`;
+    chatMessages.appendChild(div);
+    scrollToBottom();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  EXPORTAR CONVERSACIÓN
+  // ═══════════════════════════════════════════════════════════════
+  function generateClinicalSummary() {
+    const messages   = Array.from(document.querySelectorAll('.chat-messages .message'));
+    const userMsgs   = messages.filter(m => m.classList.contains('user-message'));
+    const symptoms   = [];
+    userMsgs.forEach(msg => {
+      const txt = msg.textContent.toLowerCase();
+      Object.values(URGENCY_KEYWORDS).flat().forEach(kw => {
+        if (txt.includes(kw) && !symptoms.includes(kw)) symptoms.push(kw);
+      });
+    });
+    let maxUrgency = 'BAJA';
+    if (symptoms.some(s => URGENCY_KEYWORDS.HIGH.includes(s)))   maxUrgency = 'ALTA';
+    else if (symptoms.some(s => URGENCY_KEYWORDS.MEDIUM.includes(s))) maxUrgency = 'MEDIA';
+    return {
+      symptoms:   symptoms.join(', ') || 'No especificados',
+      urgency:    maxUrgency,
+      drugSearches: appState.medicationSearches.map(m => m.drug).join(', ') || 'Ninguno',
+      duration:   Math.round((new Date() - appState.conversationStartTime) / 60000) + ' minutos',
+      iaUsed:     !!localStorage.getItem('saludConecta_apiKey')
+    };
+  }
+
+  function getChatHistory() {
+    const lines = [];
+    const now = getLocalTimestamp();
+    const summary = generateClinicalSummary();
+    lines.push('SALUD-CONECTA AI — REPORTE DE CONSULTA');
+    lines.push('=======================================');
+    lines.push(`Fecha: ${now}`);
+    lines.push(`Ubicación: ${includeLocationCheckbox?.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
+    lines.push(`Versión: 6.0.0 · IA: ${summary.iaUsed ? 'Claude API activa' : 'Modo básico'}`);
+    lines.push('');
+
+    if (includeSummaryCheckbox?.checked) {
+      lines.push('RESUMEN CLÍNICO');
+      lines.push('---------------');
+      lines.push(`• Síntomas: ${summary.symptoms}`);
+      lines.push(`• Urgencia: ${summary.urgency}`);
+      lines.push(`• Medicamentos consultados: ${summary.drugSearches}`);
+      lines.push(`• Duración: ${summary.duration}`);
+      lines.push('');
+    }
+    if (includeMedHistoryCheckbox?.checked && appState.medicationSearches.length > 0) {
+      lines.push('HISTORIAL DE MEDICAMENTOS');
+      lines.push('-------------------------');
+      appState.medicationSearches.forEach((s, i) => lines.push(`${i+1}. [${s.timestamp}] ${s.drug}`));
+      lines.push('');
+    }
+    if (anonymizeCheckbox?.checked) { lines.push('[DATOS ANONIMIZADOS]'); lines.push(''); }
+
+    lines.push('CONVERSACIÓN');
+    lines.push('------------');
+    document.querySelectorAll('.chat-messages .message').forEach(msg => {
+      const isUser  = msg.classList.contains('user-message');
+      const sender  = isUser ? 'Usuario' : 'IA';
+      const time    = msg.querySelector('.message-time')?.textContent || '';
+      const content = msg.querySelector('.message-content')?.cloneNode(true);
+      content?.querySelectorAll('.message-disclaimer, .drug-card').forEach(el => el.remove());
+      lines.push(`[${time}] ${sender}: ${(content?.textContent || '').trim()}`);
+      lines.push('');
+    });
+
+    lines.push('-------------------------------------------');
+    lines.push('⚠️ No es diagnóstico médico. Emergencias: 133');
+    lines.push('Salud-Conecta AI v6.0.0');
+    return lines.join('\n');
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard) return navigator.clipboard.writeText(text);
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  EVENT LISTENERS
+  // ═══════════════════════════════════════════════════════════════
+
+  // Chat
+  if (btnSend)  btnSend.addEventListener('click', () => sendMessage(userInput.value));
+  if (userInput) userInput.addEventListener('keypress', e => { if (e.key === 'Enter' && !e.shiftKey) sendMessage(userInput.value); });
+
+  // Quick buttons
   quickBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      const action = btn.getAttribute('data-action');
+      const action  = btn.getAttribute('data-action');
       const symptom = btn.getAttribute('data-symptom');
-      if (action === 'search-drug') {
-        sendMessage('Buscar medicamento');
-      } else if (symptom) {
-        sendMessage(symptom);
-      }
+      if (action === 'search-drug') sendMessage('Buscar medicamento');
+      else if (symptom) sendMessage(symptom);
     });
   });
 
-  if (btnEmergency) btnEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'flex'; });
+  // Emergencia
+  if (btnEmergency)      btnEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'flex'; });
   if (btnCloseEmergency) btnCloseEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'none'; });
   if (btnShowMapEmergency) btnShowMapEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'none'; showNearbyHealthCenters(); });
-  if (emergencyModal) emergencyModal.addEventListener('click', (e) => { if (e.target === emergencyModal) emergencyModal.style.display = 'none'; });
+  if (emergencyModal)    emergencyModal.addEventListener('click', e => { if (e.target === emergencyModal) emergencyModal.style.display = 'none'; });
 
-  if (btnExport) btnExport.addEventListener('click', () => { if (exportModal) { exportModal.style.display = 'flex'; if (exportFeedback) exportFeedback.style.display = 'none'; } });
+  // Exportar conversación
+  if (btnExport)      btnExport.addEventListener('click', () => { if (exportModal) { exportModal.style.display = 'flex'; if (exportFeedback) exportFeedback.style.display = 'none'; } });
   if (btnCloseExport) btnCloseExport.addEventListener('click', () => { if (exportModal) exportModal.style.display = 'none'; });
-  if (exportModal) exportModal.addEventListener('click', (e) => { if (e.target === exportModal) exportModal.style.display = 'none'; });
-  if (btnExportTxt) btnExportTxt.addEventListener('click', () => { downloadTxt('salud-conecta-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.txt', getChatHistory()); showExportFeedback(); });
-  if (btnExportCopy) btnExportCopy.addEventListener('click', async () => { try { await copyToClipboard(getChatHistory()); showExportFeedback(); } catch { alert('Copia manual requerida'); } });
+  if (exportModal)    exportModal.addEventListener('click', e => { if (e.target === exportModal) exportModal.style.display = 'none'; });
+  if (btnExportTxt)   btnExportTxt.addEventListener('click', () => {
+    const blob = new Blob([getChatHistory()], { type: 'text/plain;charset=utf-8' });
+    downloadBlob(blob, `salud-conecta-${new Date().toISOString().slice(0,10).replace(/-/g,'')}.txt`);
+    showExportFeedback();
+  });
+  if (btnExportCopy)  btnExportCopy.addEventListener('click', async () => {
+    try { await copyToClipboard(getChatHistory()); showExportFeedback(); }
+    catch { alert('Copia manual requerida.'); }
+  });
 
-  if (btnCloseMap) btnCloseMap.addEventListener('click', () => { if (mapContainer) mapContainer.style.display = 'none'; if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'flex'; if (appState.map) appState.map.remove(); });
-  if (btnAddCenter) btnAddCenter.addEventListener('click', () => { initReportForm(); });
+  // Mapa — NO destruir al cerrar, solo ocultar
+  if (btnCloseMap) btnCloseMap.addEventListener('click', () => {
+    if (mapContainer) mapContainer.style.display = 'none';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'flex';
+    // Invalidar tamaño para cuando se vuelva a mostrar
+    if (appState.map) setTimeout(() => appState.map.invalidateSize(), 100);
+  });
+  if (btnAddCenter) btnAddCenter.addEventListener('click', initReportForm);
 
-  if (btnCloseForm) btnCloseForm.addEventListener('click', () => { if (reportFormContainer) reportFormContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
+  // Formulario reporte
+  if (btnCloseForm)    btnCloseForm.addEventListener('click', () => { if (reportFormContainer) reportFormContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
   if (btnCancelReport) btnCancelReport.addEventListener('click', () => { if (reportFormContainer) reportFormContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
-  if (reportForm) reportForm.addEventListener('submit', (e) => {
+  if (reportForm) reportForm.addEventListener('submit', e => {
     e.preventDefault();
-    const reportData = {
-      name: document.getElementById('center-name').value,
-      type: document.getElementById('center-type').value,
+    saveReport({
+      name:    document.getElementById('center-name').value,
+      type:    document.getElementById('center-type').value,
       address: document.getElementById('center-address').value,
-      phone: document.getElementById('center-phone').value,
-      hours: document.getElementById('center-hours').value,
-      notes: document.getElementById('center-notes').value,
-      lat: parseFloat(centerLatInput.value),
-      lng: parseFloat(centerLngInput.value)
-    };
-    saveReport(reportData);
-    alert('Reporte guardado localmente. Puedes exportarlo despues desde "Mis Reportes".');
+      phone:   document.getElementById('center-phone').value,
+      hours:   document.getElementById('center-hours').value,
+      notes:   document.getElementById('center-notes').value,
+      lat:     parseFloat(centerLatInput.value),
+      lng:     parseFloat(centerLngInput.value)
+    });
+    alert('Reporte guardado. Puedes exportarlo desde "Mis Reportes".');
     if (reportFormContainer) reportFormContainer.style.display = 'none';
     showReportsList();
   });
 
-  if (btnCloseReports) btnCloseReports.addEventListener('click', () => { if (reportsListContainer) reportsListContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
+  // Lista reportes
+  if (btnCloseReports)      btnCloseReports.addEventListener('click', () => { if (reportsListContainer) reportsListContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
   if (btnExportReportsJSON) btnExportReportsJSON.addEventListener('click', exportReportsJSON);
-  if (btnExportReportsCSV) btnExportReportsCSV.addEventListener('click', exportReportsCSV);
-  if (btnClearReports) btnClearReports.addEventListener('click', clearAllReports);
+  if (btnExportReportsCSV)  btnExportReportsCSV.addEventListener('click', exportReportsCSV);
+  if (btnClearReports)      btnClearReports.addEventListener('click', clearAllReports);
 
-  console.log('Salud-Conecta AI v5.0 iniciada');
+  // ═══════════════════════════════════════════════════════════════
+  //  INICIALIZACIÓN
+  // ═══════════════════════════════════════════════════════════════
+  initVoiceInput();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW error:', err));
+  }
+
+  console.log('🏥 Salud-Conecta AI v6.0.0 iniciada · Claude API:', !!localStorage.getItem('saludConecta_apiKey'));
 });
