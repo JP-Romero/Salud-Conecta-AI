@@ -31,8 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     medicationSearches: [],
     userLocation: null,
     conversationStartTime: new Date(),
-    map: null, // Referencia al mapa Leaflet
-    userMarker: null // Marcador de usuario
+    map: null,
+    userMarker: null,
+    healthMarkers: [] // Marcadores de centros de salud
   };
 
   // === 3. PWA INSTALL LOGIC ===
@@ -55,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
       installBanner.style.display = 'block';
       btnInstallHeader.style.display = 'block';
     }
-    console.log('✅ beforeinstallprompt');
   });
 
   window.addEventListener('appinstalled', () => {
@@ -126,12 +126,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const includeMedHistoryCheckbox = document.getElementById('include-med-history');
   const includeSummaryCheckbox = document.getElementById('include-summary');
 
-  // Mapa
+  // Mapa y Formularios
   const mapContainer = document.getElementById('map-container');
   const mapElement = document.getElementById('map');
   const mapLoading = document.getElementById('map-loading');
   const mapResults = document.getElementById('map-results');
   const btnCloseMap = document.getElementById('btn-close-map');
+  const btnAddCenter = document.getElementById('btn-add-center');
+  
+  const reportFormContainer = document.getElementById('report-form-container');
+  const reportForm = document.getElementById('report-form');
+  const btnCloseForm = document.getElementById('btn-close-form');
+  const btnCancelReport = document.getElementById('btn-cancel-report');
+  const locationStatus = document.getElementById('location-status');
+  const centerLatInput = document.getElementById('center-lat');
+  const centerLngInput = document.getElementById('center-lng');
+  
+  const reportsListContainer = document.getElementById('reports-list-container');
+  const reportsListContent = document.getElementById('reports-list-content');
+  const btnCloseReports = document.getElementById('btn-close-reports');
+  const btnExportReportsJSON = document.getElementById('btn-export-reports-json');
+  const btnExportReportsCSV = document.getElementById('btn-export-reports-csv');
+  const btnClearReports = document.getElementById('btn-clear-reports');
 
   const URGENCY_KEYWORDS = {
     HIGH: ['dolor de pecho', 'dificultad para respirar', 'sangrado', 'inconsciente', 'infarto'],
@@ -159,8 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // === GEOLOCALIZACIÓN Y MAPA ===
-  
-  // Obtener ubicación del usuario
   async function getUserLocation() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -178,31 +192,26 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         (error) => {
           console.error('Error de geolocalización:', error);
-          // Fallback: Coordenadas aproximadas de Granada, Nicaragua
-          resolve({ lat: 11.9344, lng: -85.9560, fallback: true });
+          resolve({ lat: 11.9344, lng: -85.9560, fallback: true }); // Granada, Nicaragua
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
       );
     });
   }
 
-  // Inicializar mapa Leaflet
   function initMap(lat, lng) {
-    // Si ya existe un mapa, removerlo
     if (appState.map) {
       appState.map.remove();
+      appState.healthMarkers = [];
     }
     
-    // Crear nuevo mapa centrado en la ubicación
     appState.map = L.map('map').setView([lat, lng], 14);
     
-    // Agregar capa de OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19
     }).addTo(appState.map);
     
-    // Agregar marcador del usuario
     appState.userMarker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: 'user-marker',
@@ -210,15 +219,13 @@ document.addEventListener('DOMContentLoaded', () => {
         iconSize: [20, 20],
         iconAnchor: [10, 10]
       })
-    }).addTo(appState.map).bindPopup('📍 Tu ubicación aproximada').openPopup();
+    }).addTo(appState.map).bindPopup('📍 Tu ubicación').openPopup();
     
-    // Forzar redibujado del mapa (soluciona problemas de renderizado)
     setTimeout(() => {
       appState.map.invalidateSize();
     }, 100);
   }
 
-  // Buscar centros de salud con Overpass API
   async function searchHealthFacilities(lat, lng, radius = 2000) {
     const query = `
       [out:json][timeout:25];
@@ -237,15 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       return data.elements;
     } catch (error) {
-      console.error('Error buscando centros de salud:', error);
-      // Fallback: lista estática de Granada (reemplazar con datos reales)
+      console.error('Error buscando centros:', error);
       return getFallbackGranadaCenters(lat, lng);
     }
   }
 
-  // Fallback: centros conocidos en Granada (REEMPLAZAR CON DATOS REALES)
   function getFallbackGranadaCenters(userLat, userLng) {
-    // ⚠️ IMPORTANTE: Juan, reemplaza estos con datos reales de Granada
     const knownCenters = [
       { name: "Hospital Virgen de la Asistencia", type: "hospital", lat: 11.9350, lng: -85.9570, address: "Centro, Granada" },
       { name: "Hospital Alemán Nicaragüense", type: "hospital", lat: 11.9320, lng: -85.9540, address: "Barrio San Antonio" },
@@ -253,42 +257,35 @@ document.addEventListener('DOMContentLoaded', () => {
       { name: "Centro Médico Sandoval", type: "clinic", lat: 11.9360, lng: -85.9550, address: "Calle La Calzada" }
     ];
     
-    // Calcular distancia aproximada y ordenar
     return knownCenters.map(center => ({
       ...center,
       distance: calculateDistance(userLat, userLng, center.lat, center.lng)
     })).sort((a, b) => a.distance - b.distance);
   }
 
-  // Calcular distancia aproximada (fórmula de Haversine simplificada)
   function calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371; // Radio de la Tierra en km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
               Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return Math.round(R * c * 1000); // Retornar en metros
+    return Math.round(R * c * 1000);
   }
 
-  // Mostrar centros en el mapa y en lista
   function displayHealthFacilities(facilities, userLat, userLng) {
-    // Limpiar resultados anteriores
     mapResults.innerHTML = '';
+    appState.healthMarkers.forEach(m => appState.map.removeLayer(m));
+    appState.healthMarkers = [];
     
     if (!facilities || facilities.length === 0) {
-      mapResults.innerHTML = '<p style="text-align:center;color:var(--gray-text);">No se encontraron centros de salud en esta zona. Intenta ampliar la búsqueda.</p>';
+      mapResults.innerHTML = '<p style="text-align:center;color:var(--gray-text);">No se encontraron centros. Intenta ampliar la búsqueda o reporta uno nuevo.</p>';
       return;
     }
     
-    // Iconos por tipo
     const icons = {
-      hospital: '🏥',
-      clinic: '🏥',
-      doctors: '👨‍⚕️',
-      pharmacy: '💊',
-      default: '🏥'
+      hospital: '🏥', clinic: '🏥', doctors: '👨‍⚕️', pharmacy: '💊', default: '🏥'
     };
     
     facilities.forEach(facility => {
@@ -302,15 +299,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const distance = calculateDistance(userLat, userLng, lat, lng);
       const icon = icons[type] || icons.default;
       
-      // Agregar marcador al mapa
       const marker = L.marker([lat, lng]).addTo(appState.map)
         .bindPopup(`
           <strong>${icon} ${name}</strong><br>
           <small>${type.toUpperCase()} • ${distance}m</small><br>
           ${address ? `<small>📍 ${address}</small>` : ''}
+          <br><br>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" style="background:#2a9d8f;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:0.8rem;">🗺️ Ir</a>
         `);
       
-      // Agregar a la lista de resultados
+      appState.healthMarkers.push(marker);
+      
       const resultItem = document.createElement('div');
       resultItem.className = 'map-result-item';
       resultItem.innerHTML = `
@@ -318,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="map-result-name">${icon} ${name}</div>
           <div class="map-result-type">${type.toUpperCase()} • ${distance}m ${address ? '• ' + address : ''}</div>
         </div>
-        <a href="https://www.openstreetmap.org/directions?from=${userLat},${userLng}&to=${lat},${lng}" 
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&origin=${userLat},${userLng}" 
            class="btn-directions" target="_blank" rel="noopener">
           🗺️ Ir
         </a>
@@ -326,48 +325,196 @@ document.addEventListener('DOMContentLoaded', () => {
       mapResults.appendChild(resultItem);
     });
     
-    // Ajustar vista del mapa para mostrar todos los marcadores
-    const group = new L.featureGroup(appState.map._layers);
+    const group = new L.featureGroup([...appState.healthMarkers, appState.userMarker]);
     if (group.getLayers().length > 0) {
       appState.map.fitBounds(group.getBounds().pad(0.1));
     }
   }
 
-  // Función principal para mostrar mapa con centros cercanos
   async function showNearbyHealthCenters() {
-    // Mostrar contenedor del mapa
     mapContainer.style.display = 'block';
-    chatMessages.parentElement.style.display = 'none'; // Ocultar chat temporalmente
+    reportFormContainer.style.display = 'none';
+    reportsListContainer.style.display = 'none';
+    chatMessages.parentElement.style.display = 'none';
     
-    // Mostrar loading
     mapLoading.style.display = 'block';
     mapResults.innerHTML = '';
     
     try {
-      // 1. Obtener ubicación del usuario
       const location = await getUserLocation();
       appState.userLocation = location;
       
-      // 2. Inicializar mapa
       initMap(location.lat, location.lng);
-      
-      // 3. Buscar centros de salud
       const facilities = await searchHealthFacilities(location.lat, location.lng);
-      
-      // 4. Mostrar resultados
       displayHealthFacilities(facilities, location.lat, location.lng);
       
       if (location.fallback) {
-        addMessage('🗺️ Usando ubicación aproximada de Granada. Para resultados más precisos, permite el acceso a tu ubicación en tiempo real.', 'ai', null, getShortTime());
+        addMessage('🗺️ Usando ubicación aproximada de Granada. Permite acceso a ubicación para resultados precisos.', 'ai', null, getShortTime());
       }
       
     } catch (error) {
       console.error('Error mostrando mapa:', error);
-      mapResults.innerHTML = '<p style="color:var(--danger);text-align:center;">❌ No se pudo cargar el mapa. Verifica tu conexión a internet.</p>';
+      mapResults.innerHTML = '<p style="color:var(--danger);text-align:center;">❌ No se pudo cargar el mapa.</p>';
     } finally {
       mapLoading.style.display = 'none';
     }
   }
+
+  // === CROWDSOURCING: REPORTAR CENTRO ===
+  
+  async function initReportForm() {
+    reportFormContainer.style.display = 'block';
+    mapContainer.style.display = 'none';
+    reportsListContainer.style.display = 'none';
+    chatMessages.parentElement.style.display = 'none';
+    
+    locationStatus.innerHTML = '<span class="loading">Obteniendo ubicación...</span>';
+    locationStatus.className = 'location-status';
+    
+    try {
+      const location = await getUserLocation();
+      centerLatInput.value = location.lat;
+      centerLngInput.value = location.lng;
+      
+      locationStatus.innerHTML = `✅ Ubicación capturada: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
+      locationStatus.className = 'location-status success';
+    } catch (error) {
+      locationStatus.innerHTML = '❌ No se pudo obtener ubicación. Ingresa manualmente.';
+      locationStatus.className = 'location-status error';
+    }
+    
+    reportForm.reset();
+  }
+
+  function saveReport(reportData) {
+    const reports = JSON.parse(localStorage.getItem('saludConecta_reports') || '[]');
+    const report = {
+      id: Date.now(),
+      timestamp: getLocalTimestamp(),
+      ...reportData
+    };
+    reports.push(report);
+    localStorage.setItem('saludConecta_reports', JSON.stringify(reports));
+    return report;
+  }
+
+  function getReports() {
+    return JSON.parse(localStorage.getItem('saludConecta_reports') || '[]');
+  }
+
+  function deleteReport(id) {
+    let reports = getReports();
+    reports = reports.filter(r => r.id !== id);
+    localStorage.setItem('saludConecta_reports', JSON.stringify(reports));
+    showReportsList();
+  }
+
+  function clearAllReports() {
+    if (confirm('¿Estás seguro de eliminar todos los reportes? Esta acción no se puede deshacer.')) {
+      localStorage.removeItem('saludConecta_reports');
+      showReportsList();
+    }
+  }
+
+  function showReportsList() {
+    reportsListContainer.style.display = 'block';
+    mapContainer.style.display = 'none';
+    reportFormContainer.style.display = 'none';
+    chatMessages.parentElement.style.display = 'none';
+    
+    const reports = getReports();
+    
+    if (reports.length === 0) {
+      reportsListContent.innerHTML = '<p style="text-align:center;color:var(--gray-text);padding:2rem;">No hay reportes guardados. ¡Sé el primero en reportar un centro!</p>';
+      return;
+    }
+    
+    const typeLabels = {
+      hospital: '🏥 Hospital',
+      clinic: '🏥 Clínica',
+      pharmacy: '💊 Farmacia',
+      doctors: '👨‍️ Consultorio',
+      laboratory: '🔬 Laboratorio',
+      other: '📍 Otro'
+    };
+    
+    reportsListContent.innerHTML = `
+      <p style="margin-bottom:1rem;color:var(--gray-text);">Tienes <strong>${reports.length}</strong> reporte(s) guardado(s) localmente.</p>
+      <div id="reports-list"></div>
+    `;
+    
+    const listContainer = document.getElementById('reports-list');
+    reports.sort((a, b) => b.id - a.id).forEach(report => {
+      const item = document.createElement('div');
+      item.className = 'report-item';
+      item.innerHTML = `
+        <div class="report-item-header">
+          <span class="report-item-name">${report.name}</span>
+          <span class="report-item-type">${typeLabels[report.type] || report.type}</span>
+        </div>
+        ${report.address ? `<div class="report-item-details">📍 ${report.address}</div>` : ''}
+        ${report.phone ? `<div class="report-item-details">📞 ${report.phone}</div>` : ''}
+        ${report.hours ? `<div class="report-item-details">🕐 ${report.hours}</div>` : ''}
+        ${report.notes ? `<div class="report-item-details">📝 ${report.notes}</div>` : ''}
+        <div class="report-item-location">🕐 Reportado: ${report.timestamp} • 📍 ${report.lat.toFixed(4)}, ${report.lng.toFixed(4)}</div>
+        <div class="report-item-actions">
+          <button class="btn-delete-report" onclick="window.deleteReport(${report.id})">🗑️ Eliminar</button>
+        </div>
+      `;
+      listContainer.appendChild(item);
+    });
+  }
+
+  function exportReportsJSON() {
+    const reports = getReports();
+    if (reports.length === 0) {
+      alert('No hay reportes para exportar');
+      return;
+    }
+    
+    const dataStr = JSON.stringify(reports, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `salud-conecta-reportes-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert(`✅ Exportados ${reports.length} reportes. Puedes compartir este archivo con OpenStreetMap o autoridades de salud.`);
+  }
+
+  function exportReportsCSV() {
+    const reports = getReports();
+    if (reports.length === 0) {
+      alert('No hay reportes para exportar');
+      return;
+    }
+    
+    const headers = ['ID', 'Fecha', 'Nombre', 'Tipo', 'Dirección', 'Teléfono', 'Horario', 'Notas', 'Latitud', 'Longitud'];
+    const rows = reports.map(r => [
+      r.id, r.timestamp, r.name, r.type, r.address || '', r.phone || '', r.hours || '', r.notes || '', r.lat, r.lng
+    ]);
+    
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `salud-conecta-reportes-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert(`✅ Exportados ${reports.length} reportes en formato CSV.`);
+  }
+
+  // Hacer deleteReport global para onclick
+  window.deleteReport = deleteReport;
 
   // === SEND MESSAGE FUNCTION ===
   function sendMessage(text) {
@@ -379,7 +526,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSend.disabled = true;
     showTyping(true);
 
-    // Detectar consulta de mapa/centros de salud
     if (text.toLowerCase().includes('mapa') || text.toLowerCase().includes('centro') || 
         text.toLowerCase().includes('hospital') || text.toLowerCase().includes('farmacia') ||
         text.toLowerCase().includes('clínica') || text.toLowerCase().includes('cerca')) {
@@ -392,7 +538,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Detectar medicamento
+    if (text.toLowerCase().includes('reportar') || text.toLowerCase().includes('agregar centro')) {
+      setTimeout(() => {
+        showTyping(false);
+        initReportForm();
+        btnSend.disabled = false;
+      }, 1000);
+      return;
+    }
+
+    if (text.toLowerCase().includes('mis reportes') || text.toLowerCase().includes('ver reportes')) {
+      setTimeout(() => {
+        showTyping(false);
+        showReportsList();
+        btnSend.disabled = false;
+      }, 1000);
+      return;
+    }
+
     const isDrugQuery = DRUG_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
     const foundDrug = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
 
@@ -411,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Triage normal
     const delay = Math.random() * 1500 + 1500;
     setTimeout(() => {
       showTyping(false);
@@ -435,12 +597,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const MOCK_RESPONSES = {
       HIGH: {
         text: "⚠️ **Atención:** Los síntomas que describes pueden indicar una condición grave.",
-        action: "Te recomiendo buscar atención médica inmediata. Usa el botón 🗺️ para ver centros cercanos.",
+        action: "Busca atención médica inmediata. Usa 🗺️ para ver centros cercanos o llama al 133.",
         urgency: 'ALTA'
       },
       MEDIUM: {
-        text: "🩺 **Recomendación:** Tus síntomas sugieren que deberías consultar con un profesional pronto.",
-        action: "Programa una cita en una clínica de Granada. ¿Quieres ver centros cercanos en el mapa?",
+        text: "🩺 **Recomendación:** Deberías consultar con un profesional pronto.",
+        action: "Programa una cita en Granada. ¿Quieres ver centros en el mapa o reportar uno nuevo?",
         urgency: 'MEDIA'
       },
       LOW: {
@@ -469,7 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
       addDrugCard(drugData, getShortTime());
     } catch (error) {
       showTyping(false);
-      addMessage(`No encontré información específica sobre "${drugName}" en la base internacional. 🌍\n\nEn Granada, consulta en farmacias locales para información precisa.`, 'ai', null, getShortTime());
+      addMessage(`No encontré información sobre "${drugName}". Consulta en farmacias locales.`, 'ai', null, getShortTime());
     }
   }
 
@@ -482,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sender === 'ai' && urgency) {
       const urgencyColors = { 'ALTA': '#d90429', 'MEDIA': '#f77f00', 'BAJA': '#0077b6' };
       const urgencyLabels = { 'ALTA': '🚨 Urgente', 'MEDIA': '⚠️ Moderado', 'BAJA': '✅ Leve' };
-      urgencyBadge = `<div class="urgency-badge" style="background: ${urgencyColors[urgency]}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 8px; display: inline-block;">${urgencyLabels[urgency]}</div>`;
+      urgencyBadge = `<div style="background: ${urgencyColors[urgency]}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; margin-bottom: 8px; display: inline-block;">${urgencyLabels[urgency]}</div>`;
     }
     
     const formattedText = text.replace(/\n/g, '<br>');
@@ -492,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="message-content">
         ${urgencyBadge}
         <p>${formattedText}</p>
-        ${sender === 'ai' ? '<p class="message-disclaimer">⚠️ Esto es orientación informativa. Consulta a un profesional para diagnóstico.</p>' : ''}
+        ${sender === 'ai' ? '<p class="message-disclaimer">⚠️ Esto es orientación informativa. Consulta a un profesional.</p>' : ''}
         <span class="message-time">${timestamp}</span>
       </div>
     `;
@@ -524,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="drug-footer">${data.source}</div>
         </div>
-        <p class="message-disclaimer">⚠️ No te automediques. Esta información es referencial.</p>
+        <p class="message-disclaimer">⚠️ No te automediques.</p>
         <span class="message-time">${timestamp}</span>
       </div>
     `;
@@ -568,7 +730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push('');
     lines.push(`📅 Fecha: ${now}`);
     lines.push(`📍 Ubicación: ${includeLocationCheckbox.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
-    lines.push(`🔖 Versión: 4.0.0`);
+    lines.push(`🔖 Versión: 5.0.0`);
     lines.push('');
     
     if (includeSummaryCheckbox.checked) {
@@ -694,10 +856,56 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.parentElement.style.display = 'flex';
     if (appState.map) appState.map.remove();
   });
+  
+  btnAddCenter.addEventListener('click', () => {
+    initReportForm();
+  });
+
+  // Formulario de reporte
+  btnCloseForm.addEventListener('click', () => {
+    reportFormContainer.style.display = 'none';
+    mapContainer.style.display = 'flex';
+  });
+  
+  btnCancelReport.addEventListener('click', () => {
+    reportFormContainer.style.display = 'none';
+    mapContainer.style.display = 'flex';
+  });
+  
+  reportForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const reportData = {
+      name: document.getElementById('center-name').value,
+      type: document.getElementById('center-type').value,
+      address: document.getElementById('center-address').value,
+      phone: document.getElementById('center-phone').value,
+      hours: document.getElementById('center-hours').value,
+      notes: document.getElementById('center-notes').value,
+      lat: parseFloat(centerLatInput.value),
+      lng: parseFloat(centerLngInput.value)
+    };
+    
+    saveReport(reportData);
+    
+    alert('✅ Reporte guardado localmente. Puedes exportarlo después desde "Mis Reportes".');
+    
+    reportFormContainer.style.display = 'none';
+    showReportsList();
+  });
+
+  // Lista de reportes
+  btnCloseReports.addEventListener('click', () => {
+    reportsListContainer.style.display = 'none';
+    mapContainer.style.display = 'flex';
+  });
+  
+  btnExportReportsJSON.addEventListener('click', exportReportsJSON);
+  btnExportReportsCSV.addEventListener('click', exportReportsCSV);
+  btnClearReports.addEventListener('click', clearAllReports);
 
   // Inicialización
   if (hasAccepted === 'true') {
-    // No solicitamos ubicación automáticamente para respetar privacidad
-    console.log('App iniciada - ubicación se solicitará solo cuando el usuario busque centros');
+    console.log('Salud-Conecta AI v5.0 iniciada');
   }
 });
