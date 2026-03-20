@@ -5,21 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salud-Conecta AI</title>
   
-  <!-- ✅ FAVICON con Data URI -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230077b6' width='512' height='512' rx='64'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='256' fill='white'%3ESC%3C/text%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230077b6' width='512' height='512' rx='64'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='256' fill='white'%3ESC%3C/text%3E%3C/svg%3E">
   
-  <!-- ✅ Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   
-  <!-- ✅ Manifest y meta tags -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0077b6">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="SaludConecta">
   
-  <!-- ✅ Styles -->
   <link rel="stylesheet" href="styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
@@ -34,11 +29,12 @@
       <div class="modal-body">
         <p><strong>Salud-Conecta AI</strong> es una herramienta de orientación preventiva, <u>no un servicio médico profesional</u>.</p>
         <ul class="privacy-list">
-          <li>🔒 <strong>Privacidad:</strong> No almacenamos tus síntomas ni tu ubicación exacta.</li>
+          <li>🔒 <strong>Privacidad:</strong> No almacenamos tus síntomas ni tu ubicación exacta en servidores.</li>
           <li>🚑 <strong>Emergencias:</strong> Si tienes dolor de pecho o dificultad para respirar, llama al 133 (Nicaragua).</li>
           <li>🤖 <strong>IA:</strong> Las respuestas son generadas por inteligencia artificial y pueden tener errores.</li>
           <li>🌍 <strong>Datos:</strong> La información de medicamentos es internacional (FDA), verifica disponibilidad local.</li>
-          <li>🗺️ <strong>Mapa:</strong> La ubicación solo se usa para mostrar centros cercanos y se descarta al cerrar la app.</li>
+          <li>🗺️ <strong>Mapa:</strong> La ubicación solo se usa para mostrar centros cercanos y se descarta al cerrar.</li>
+          <li>📝 <strong>Crowdsourcing:</strong> Los reportes de centros se guardan localmente y tú decides exportarlos.</li>
         </ul>
         <div class="checkbox-container">
           <input type="checkbox" id="accept-terms">
@@ -87,7 +83,7 @@
           <div class="message-avatar">🤖</div>
           <div class="message-content">
             <p>¡Bendiciones! Soy tu asistente de salud en Granada. ¿Cómo te sientes hoy?</p>
-            <p class="message-disclaimer">Puedes describir síntomas, preguntar por medicamentos o buscar centros de salud cercanos.</p>
+            <p class="message-disclaimer">Puedes describir síntomas, preguntar por medicamentos, buscar centros cercanos o reportar uno nuevo.</p>
             <span class="message-time">Ahora</span>
           </div>
         </div>
@@ -104,7 +100,8 @@
           <button class="quick-btn" data-symptom="Dolor de cabeza">🤕 Dolor</button>
           <button class="quick-btn" data-symptom="Fiebre">🌡️ Fiebre</button>
           <button class="quick-btn" data-symptom="Paracetamol">💊 Medicamentos</button>
-          <button class="quick-btn" data-symptom="Mapa">🗺️ Centros cercanos</button>
+          <button class="quick-btn" data-symptom="Mapa">🗺️ Centros</button>
+          <button class="quick-btn" data-symptom="Reportar">📝 Reportar centro</button>
         </div>
         
         <div class="input-wrapper">
@@ -119,11 +116,14 @@
       </div>
     </div>
 
-    <!-- 🗺️ Contenedor del Mapa (oculto por defecto) -->
+    <!-- 🗺️ Contenedor del Mapa -->
     <div id="map-container" class="map-container" style="display:none;">
       <div class="map-header">
         <h3>🏥 Centros de Salud Cercanos</h3>
-        <button id="btn-close-map" class="btn-close-map">✕</button>
+        <div class="map-header-actions">
+          <button id="btn-add-center" class="btn-add-center" title="Reportar centro faltante">➕ Agregar</button>
+          <button id="btn-close-map" class="btn-close-map">✕</button>
+        </div>
       </div>
       <div id="map" class="map"></div>
       <div class="map-loading" id="map-loading" style="display:none;">
@@ -131,7 +131,92 @@
       </div>
       <div class="map-results" id="map-results"></div>
       <div class="map-footer">
-        <small>📍 Datos: OpenStreetMap • Cobertura puede variar en Nicaragua</small>
+        <small>📍 Datos: OpenStreetMap • ¿Falta un centro? Toca ➕ para reportarlo</small>
+      </div>
+    </div>
+
+    <!-- 📝 Formulario para Reportar Centro -->
+    <div id="report-form-container" class="report-form-container" style="display:none;">
+      <div class="form-header">
+        <h3>📝 Reportar Centro de Salud</h3>
+        <button id="btn-close-form" class="btn-close-form">✕</button>
+      </div>
+      <div class="form-body">
+        <p class="form-description">Ayuda a mejorar el mapa reportando centros de salud, clínicas o farmacias que no aparecen.</p>
+        
+        <form id="report-form">
+          <div class="form-group">
+            <label for="center-name">Nombre del centro *</label>
+            <input type="text" id="center-name" required placeholder="Ej: Farmacia San Juan">
+          </div>
+          
+          <div class="form-group">
+            <label for="center-type">Tipo de centro *</label>
+            <select id="center-type" required>
+              <option value="">Selecciona...</option>
+              <option value="hospital">🏥 Hospital</option>
+              <option value="clinic">🏥 Clínica</option>
+              <option value="pharmacy">💊 Farmacia</option>
+              <option value="doctors">👨‍⚕️ Consultorio médico</option>
+              <option value="laboratory">🔬 Laboratorio</option>
+              <option value="other">📍 Otro</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="center-address">Dirección / Barrio</label>
+            <input type="text" id="center-address" placeholder="Ej: Barrio San Antonio, cerca del parque">
+          </div>
+          
+          <div class="form-group">
+            <label for="center-phone">Teléfono (opcional)</label>
+            <input type="tel" id="center-phone" placeholder="Ej: 2552-0000">
+          </div>
+          
+          <div class="form-group">
+            <label for="center-hours">Horario de atención (opcional)</label>
+            <input type="text" id="center-hours" placeholder="Ej: 24 horas, Lun-Vie 8am-6pm">
+          </div>
+          
+          <div class="form-group location-info">
+            <label>📍 Ubicación</label>
+            <div id="location-status" class="location-status">
+              <span class="loading">Obteniendo ubicación...</span>
+            </div>
+            <input type="hidden" id="center-lat" required>
+            <input type="hidden" id="center-lng" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="center-notes">Notas adicionales (opcional)</label>
+            <textarea id="center-notes" rows="3" placeholder="Ej: Tienen estacionamiento, aceptan seguro..."></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" id="btn-cancel-report" class="btn-secondary">Cancelar</button>
+            <button type="submit" id="btn-submit-report" class="btn-primary">💾 Guardar reporte</button>
+          </div>
+        </form>
+        
+        <div class="form-footer">
+          <small>📌 Los reportes se guardan localmente en tu dispositivo. Puedes exportarlos después para compartir con la comunidad o contribuir a OpenStreetMap.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📋 Lista de Reportes Guardados -->
+    <div id="reports-list-container" class="reports-list-container" style="display:none;">
+      <div class="form-header">
+        <h3>📋 Mis Reportes Guardados</h3>
+        <button id="btn-close-reports" class="btn-close-form">✕</button>
+      </div>
+      <div class="form-body">
+        <div id="reports-list-content"></div>
+        <div class="export-section">
+          <button id="btn-export-reports-json" class="btn-primary">💾 Exportar como JSON</button>
+          <button id="btn-export-reports-csv" class="btn-secondary">📊 Exportar como CSV</button>
+          <button id="btn-clear-reports" class="btn-danger">🗑️ Eliminar todos</button>
+        </div>
       </div>
     </div>
 
@@ -156,7 +241,7 @@
           <li>🧠 Confusión repentina</li>
         </ul>
         <a href="tel:133" class="btn-emergency-call">📞 Llamar al 133</a>
-        <button id="btn-show-map-emergency" class="btn-secondary" style="background: var(--primary-color); margin-top:10px;">🗺️ Ver centros cercanos en mapa</button>
+        <button id="btn-show-map-emergency" class="btn-secondary" style="background: var(--primary-color); margin-top:10px;">🗺️ Ver centros cercanos</button>
       </div>
       <div class="modal-footer">
         <button id="btn-close-emergency" class="btn-secondary">Entiendo, volver</button>
