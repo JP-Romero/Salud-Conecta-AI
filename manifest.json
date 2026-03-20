@@ -18,5 +18,7 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "categories": ["health", "medical", "utilities"],
+  "lang": "es-NI"
 }
