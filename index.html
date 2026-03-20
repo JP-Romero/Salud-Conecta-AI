@@ -48,19 +48,6 @@
     </div>
   </div>
 
-  <!-- 📲 Banner de Instalación PWA -->
-  <div id="install-banner" class="install-banner" style="display:none;">
-    <div class="install-banner-content">
-      <span class="install-icon">📲</span>
-      <div class="install-text">
-        <strong>Instala Salud-Conecta AI</strong>
-        <p>Acceso rápido sin abrir el navegador</p>
-      </div>
-      <button id="btn-install" class="btn-install">Instalar</button>
-      <button id="btn-dismiss-install" class="btn-dismiss">✕</button>
-    </div>
-  </div>
-
   <!-- 🏠 Contenido Principal -->
   <main id="app-content" style="display:none;">
     
@@ -71,7 +58,6 @@
         <p class="subtitle">Granada, Nicaragua</p>
       </div>
       <div class="header-actions">
-        <button id="btn-install-header" class="btn-install-header" title="Instalar app" style="display:none;">📲</button>
         <button id="btn-export" class="btn-export" title="Exportar conversación">📤</button>
         <button id="btn-emergency" class="btn-emergency">🚑</button>
       </div>
@@ -100,7 +86,7 @@
         <div class="quick-actions">
           <button class="quick-btn" data-symptom="Dolor de cabeza">🤕 Dolor</button>
           <button class="quick-btn" data-symptom="Fiebre">🌡️ Fiebre</button>
-          <button class="quick-btn" data-action="search-drug">💊 Buscar medicamento</button>
+          <button class="quick-btn" data-action="search-drug">💊 Medicamentos</button>
           <button class="quick-btn" data-symptom="Mapa">🗺️ Centros</button>
           <button class="quick-btn" data-symptom="Reportar">📝 Reportar centro</button>
         </div>
@@ -291,52 +277,9 @@
     </div>
   </div>
 
-  <!-- 📲 Modal de Instrucciones de Instalación -->
-  <div id="install-instructions-modal" class="modal-overlay" style="display:none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>📲 Cómo Instalar la App</h2>
-      </div>
-      <div class="modal-body">
-        <div id="install-steps-chrome" style="display:none;">
-          <p><strong>En Chrome (Android/PC):</strong></p>
-          <ol class="install-steps">
-            <li>Toca el menú <strong>⋮</strong> (tres puntos)</li>
-            <li>Selecciona <strong>"Instalar aplicación"</strong></li>
-            <li>Confirma la instalación</li>
-          </ol>
-        </div>
-        <div id="install-steps-safari" style="display:none;">
-          <p><strong>En Safari (iPhone/iPad):</strong></p>
-          <ol class="install-steps">
-            <li>Toca el botón <strong>Compartir</strong> (cuadrado con flecha)</li>
-            <li>Desliza y toca <strong>"Agregar a inicio"</strong></li>
-            <li>Toca <strong>"Agregar"</strong></li>
-          </ol>
-        </div>
-        <div id="install-steps-generic">
-          <p><strong>Si no ves la opción:</strong></p>
-          <ul class="install-steps">
-            <li>Usa Chrome o Safari actualizado</li>
-            <li>Verifica conexión a internet</li>
-            <li>Recarga la página</li>
-          </ul>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="btn-close-install-instructions" class="btn-secondary">Entendido</button>
-      </div>
-    </div>
-  </div>
-  <!-- ✅ Base de datos local (ANTES de app.js) -->
-<script src="base-datos-salud.js"></script>
-<script src="app.js"></script>
-  <!-- ✅ Base de datos local (ANTES de app.js) -->
-<script src="base-datos-salud.js"></script>
-<script src="app.js"></script>
-  <!-- ✅ Leaflet JS + App JS -->
+  <!-- ✅ Leaflet JS + Base de Datos + App JS (ORDEN CORRECTO) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="base-datos-salud.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
-
