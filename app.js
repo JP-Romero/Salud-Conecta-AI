@@ -570,16 +570,16 @@ function sendMessage(text) {
   const lowerText = text.toLowerCase();
 
   // 1. Detectar acción de buscar medicamento (desde botón rápido)
-  if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
-    setTimeout(() => {
-      showTyping(false);
-      addMessage('Claro, puedo ayudarte a buscar información sobre un medicamento. 💊\n\nPor favor, escribe el **nombre del medicamento** que buscas (ej: Paracetamol, Ibuprofeno, Omeprazol).', 'ai', null, getShortTime());
-      btnSend.disabled = false;
-      userInput.focus();
-      userInput.placeholder = 'Escribe el nombre del medicamento...';
-    }, 500);
-    return;
-  }
+if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
+  setTimeout(() => {
+    showTyping(false);
+    addMessage('Claro, puedo ayudarte a buscar información sobre un medicamento. 💊\n\nPor favor, escribe el **nombre del medicamento** que buscas (ej: Paracetamol, Ibuprofeno, Omeprazol).\n\n⚠️ *La información proviene de bases de datos de EE.UU. y puede diferir de la disponible en Nicaragua.*', 'ai', null, getShortTime());
+    btnSend.disabled = false;
+    userInput.focus();
+    userInput.placeholder = 'Escribe el nombre del medicamento...';
+  }, 500);
+  return;
+}
 
   // 2. Detectar medicamento DIRECTO en el texto del usuario
   const foundDrugDirect = COMMON_DRUGS.find(drug => 
@@ -731,23 +731,34 @@ function sendMessage(text) {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'message ai-message';
   
-  // Crear IDs únicos para cada tarjeta
   const cardId = 'drug-card-' + Date.now();
   const contentId = 'drug-content-' + Date.now();
   
   messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
     '<div class="message-content">' +
     '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
+    
+    // ⚠️ BANNER DE ADVERTENCIA
+    '<div class="drug-warning-banner">' +
+    '<strong>⚠️ Información Importante para Nicaragua</strong>' +
+    '<ul>' +
+    '<li>Esta información es de <strong>Estados Unidos (FDA)</strong></li>' +
+    '<li>Las <strong>dosis pueden variar</strong> en Nicaragua</li>' +
+    '<li>Los <strong>nombres comerciales</strong> pueden ser diferentes</li>' +
+    '<li>Consulta siempre con un <strong>farmacéutico local</strong></li>' +
+    '</ul>' +
+    '</div>' +
+    
     '<div class="drug-card" id="' + cardId + '">' +
     '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
     '<div class="drug-section"><div class="drug-section-title">Uso indicado</div>' +
-    '<div class="drug-section-content drug-content" id="' + contentId + '">' + translateMedicalText(truncateText(data.usage, 150)) + '</div>' +
+    '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
     '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer más</button></div>' +
     '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
-    '<div class="drug-section-content drug-content">' + translateMedicalText(truncateText(data.warnings, 150)) + '</div></div>' +
+    '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
     '<div class="drug-footer">' + data.source + '</div>' +
     '</div>' +
-    '<p class="message-disclaimer">No te automediques. Consulta a un farmacéutico en Nicaragua.</p>' +
+    '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolás, Cruz Verde, o con tu médico.</p>' +
     '<span class="message-time">' + timestamp + '</span>' +
     '</div>';
   
