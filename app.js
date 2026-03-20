@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // === EVENT LISTENERS ===
+  // === EVENT LISTENERS (CORREGIDOS) ===
   btnSend.addEventListener('click', () => sendMessage(userInput.value));
   userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(userInput.value); });
   
@@ -572,7 +572,12 @@ document.addEventListener('DOMContentLoaded', () => {
     exportModal.style.display = 'flex';
     exportFeedback.style.display = 'none';
   });
-  btnCloseExport.addEventListener('click', () => exportModal.style.display = 'none';
+
+  // ✅ CORRECCIÓN AQUÍ - Paréntesis correctamente cerrados
+  btnCloseExport.addEventListener('click', () => {
+    exportModal.style.display = 'none';
+  });
+
   exportModal.addEventListener('click', (e) => {
     if (e.target === exportModal) exportModal.style.display = 'none';
   });
