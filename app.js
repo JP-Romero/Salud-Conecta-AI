@@ -663,6 +663,53 @@ function obtenerFarmaciasBD() {
   chatMessages.appendChild(messageDiv);
   scrollToBottom();
 }
+  function addSintomaCard(sintoma, timestamp) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message ai-message';
+  
+  const cardId = 'sintoma-card-' + Date.now();
+  const cuidadosId = 'cuidados-content-' + Date.now();
+  const consultarId = 'consultar-content-' + Date.now();
+  
+  // Construir lista de cuidados
+  const cuidadosList = sintoma.cuidados_casa.map(c => '<li>' + c + '</li>').join('');
+  
+  // Construir lista de cuándo consultar
+  const consultarList = sintoma.cuando_consultar.map(c => '<li>' + c + '</li>').join('');
+  
+  // Construir lista de causas
+  const causasList = sintoma.causas_comunes.map(c => c).join(', ');
+  
+  const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : 
+                        sintoma.urgencia_default === 'MEDIA' ? '#f77f00' : '#0077b6';
+  
+  messageDiv.innerHTML = '<div class="message-avatar">🩺</div>' +
+    '<div class="message-content">' +
+    '<p>Información sobre <strong>' + sintoma.nombre + '</strong>:</p>' +
+    '<div class="sintoma-warning-banner" style="background:#e9f5ff;border-left:4px solid ' + urgenciaColor + ';padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">' +
+    '<strong>📊 Nivel de atención: ' + (sintoma.urgencia_default === 'ALTA' ? '🚨 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '⚠️ Moderado' : '✅ Leve') + '</strong>' +
+    '<p style="margin:6px 0 0 0;font-size:0.8rem;">' + sintoma.descripcion + '</p>' +
+    '</div>' +
+    '<div class="drug-card" id="' + cardId + '">' +
+    '<div class="drug-card-header"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en Casa</h4></div>' +
+    '<div class="drug-section">' +
+    '<ul style="margin:0;padding-left:20px;">' + cuidadosList + '</ul>' +
+    '</div>' +
+    '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🩺</span><h4 class="drug-title">¿Cuándo Consultar Médico?</h4></div>' +
+    '<div class="drug-section">' +
+    '<ul style="margin:0;padding-left:20px;">' + consultarList + '</ul>' +
+    '</div>' +
+    '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">📋</span><h4 class="drug-title">Causas Comunes</h4></div>' +
+    '<div class="drug-section"><div class="drug-section-content">' + causasList + '</div></div>' +
+    '<div class="drug-footer">Fuente: Base de datos local - Nicaragua ✓</div>' +
+    '</div>' +
+    '<p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. En Granada, consulta en centros de salud locales.</p>' +
+    '<span class="message-time">' + timestamp + '</span>' +
+    '</div>';
+  
+  chatMessages.appendChild(messageDiv);
+  scrollToBottom();
+}
   // === 10. CHAT Y TRIAGE ===
   function sendMessage(text) {
     if (!text.trim()) return;
@@ -672,6 +719,26 @@ function obtenerFarmaciasBD() {
     btnSend.disabled = true;
     showTyping(true);
     const lowerText = text.toLowerCase();
+
+    // === DETECTAR SÍNTOMAS ESPECÍFICOS DE LA BASE DE DATOS ===
+const sintomaEncontrado = buscarSintoma(lowerText);
+
+if (sintomaEncontrado) {
+  appState.medicationSearches.push({
+    drug: sintomaEncontrado.nombre,
+    timestamp: getLocalTimestamp(),
+    query: text
+  });
+  
+  setTimeout(() => {
+    showTyping(false);
+    addSintomaCard(sintomaEncontrado, getShortTime());
+    btnSend.disabled = false;
+    userInput.placeholder = 'Describe tus síntomas...';
+    userInput.focus();
+  }, 1000);
+  return;
+}
 
     if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
       setTimeout(() => {
