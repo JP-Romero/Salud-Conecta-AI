@@ -34,8 +34,8 @@
           <li>🤖 <strong>IA:</strong> Las respuestas son generadas por inteligencia artificial y pueden tener errores.</li>
           <li>🌍 <strong>Datos:</strong> La información de medicamentos es internacional (FDA), verifica disponibilidad local.</li>
           <li>🗺️ <strong>Mapa:</strong> La ubicación solo se usa para mostrar centros cercanos y se descarta al cerrar.</li>
-          <li>📝 <strong>Crowdsourcing:</strong> Los reportes de centros se guardan localmente y tú decides exportarlos.</li>
           <li>💊 <strong>Medicamentos:</strong> La información es de EE.UU. (FDA). Las dosis y nombres pueden variar en Nicaragua. Siempre consulta con farmacéutico local.</li>
+          <li>📝 <strong>Crowdsourcing:</strong> Los reportes de centros se guardan localmente y tú decides exportarlos.</li>
         </ul>
         <div class="checkbox-container">
           <input type="checkbox" id="accept-terms">
@@ -81,7 +81,7 @@
     <div class="chat-container">
       <div id="chat-messages" class="chat-messages">
         <div class="message ai-message">
-          <div class="message-avatar">🤖</div>
+          <div class="message-avatar">AI</div>
           <div class="message-content">
             <p>¡Bendiciones! Soy tu asistente de salud en Granada. ¿Cómo te sientes hoy?</p>
             <p class="message-disclaimer">Puedes describir síntomas, preguntar por medicamentos, buscar centros cercanos o reportar uno nuevo.</p>
@@ -122,17 +122,17 @@
       <div class="map-header">
         <h3>🏥 Centros de Salud Cercanos</h3>
         <div class="map-header-actions">
-          <button id="btn-add-center" class="btn-add-center" title="Reportar centro faltante">➕ Agregar</button>
+          <button id="btn-add-center" class="btn-add-center" title="Reportar centro faltante">+ Agregar</button>
           <button id="btn-close-map" class="btn-close-map">✕</button>
         </div>
       </div>
       <div id="map" class="map"></div>
       <div class="map-loading" id="map-loading" style="display:none;">
-        🔍 Buscando centros de salud en tu zona...
+        Buscando centros de salud en tu zona...
       </div>
       <div class="map-results" id="map-results"></div>
       <div class="map-footer">
-        <small>📍 Datos: OpenStreetMap • ¿Falta un centro? Toca ➕ para reportarlo</small>
+        <small>📍 Datos: OpenStreetMap - ¿Falta un centro? Toca + Agregar para reportarlo</small>
       </div>
     </div>
 
