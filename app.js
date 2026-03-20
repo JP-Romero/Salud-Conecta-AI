@@ -854,3 +854,4 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Salud-Conecta AI v5.0 iniciada');
   }
 });
+
