@@ -13,6 +13,7 @@
   --gray-light: #e0e0e0;
   --gray-text: #666;
   --success: #2a9d8f;
+  --warning: #e9c46a;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -99,6 +100,7 @@ body {
 }
 .message {
   display: flex; gap: 12px; max-width: 85%; animation: fadeIn 0.3s ease;
+  position: relative;
 }
 .message.ai-message { align-self: flex-start; }
 .message.user-message { align-self: flex-end; flex-direction: row-reverse; }
@@ -111,6 +113,7 @@ body {
 .message-content {
   background: var(--ai-bubble); padding: 12px 16px;
   border-radius: var(--border-radius); border-top-left-radius: 4px;
+  position: relative;
 }
 .user-message .message-content {
   background: var(--user-bubble); color: white;
@@ -120,6 +123,19 @@ body {
 .message-content p:last-child { margin-bottom: 0; }
 .message-disclaimer { font-size: 0.75rem; opacity: 0.8; font-style: italic; margin-top: 8px !important; }
 .user-message .message-disclaimer { color: var(--primary-light); }
+
+/* ✅ Timestamp de mensaje */
+.message-time {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--gray-text);
+  text-align: right;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+.user-message .message-time {
+  color: var(--primary-light);
+}
 
 /* Typing */
 .typing-indicator {
@@ -222,10 +238,42 @@ body {
 
 /* Export Modal */
 .export-options { margin: 1rem 0; }
+.export-options .checkbox-container { margin: 0.5rem 0; }
 .export-actions { display: flex; flex-direction: column; gap: 10px; margin: 1.5rem 0; }
 .export-feedback {
   background: var(--success); color: white; padding: 10px;
   border-radius: 8px; text-align: center; font-weight: 500;
+}
+
+/* ✅ Resumen clínico en export */
+.clinical-summary {
+  background: var(--primary-light);
+  border-left: 4px solid var(--primary-color);
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.clinical-summary-title {
+  font-weight: 600;
+  color: var(--primary-dark);
+  margin-bottom: 5px;
+}
+
+/* ✅ Historial de medicamentos */
+.med-history-section {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0;
+}
+
+.med-history-title {
+  font-weight: 600;
+  color: #856404;
+  margin-bottom: 5px;
 }
 
 /* Animations */
