@@ -24,38 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  //  CLAUDE API — SISTEMA PROMPT Y CONSTANTES
+  //  CONFIGURACIÓN DEL PROXY BACKEND
   // ═══════════════════════════════════════════════════════════════
-  const CLAUDE_MODEL   = 'claude-sonnet-4-20250514';
-  const MAX_HISTORY    = 20; // mensajes máximos en historial
+  // URL del Cloudflare Worker que guarda la API key de forma segura.
+  // El usuario final NUNCA ve ni toca la API key.
+  // Cambia esta URL después de desplegar worker.js en Cloudflare Workers.
+  const WORKER_URL = 'https://salud-conecta.TU-USUARIO.workers.dev/chat';
 
-  const CLAUDE_SYSTEM_PROMPT = `Eres SaludConecta AI, asistente de orientación de salud preventiva para Granada, Nicaragua. No eres médico ni reemplazas la consulta médica profesional.
-
-RECURSOS LOCALES EN GRANADA:
-• Emergencias nacionales: 133 (gratuito, 24h)
-• Cruz Roja Granada: 2552-5555
-• Hospital Virgen de la Asistencia: 2552-2600 — 24h, público, urgencias gratuitas, Centro
-• Hospital Alemán Nicaragüense: 2552-3000 — 24h, privado, Barrio San Antonio
-• Hospital Carlos Roberto Huembes: 2552-5100 — 24h, Carretera a Masaya
-• Farmacia Del Pueblo: 24h, Parque Central
-• Clínica Familiar (MINSA): Lun-Vie 7am-7pm, Barrio El Calvario
-• Clínica de la Mujer: Lun-Vie 8am-6pm, Barrio Guadalupe
-
-INSTRUCCIONES ESTRICTAS:
-1. Responde SIEMPRE en español nicaragüense, con empatía y lenguaje sencillo
-2. Comienza SIEMPRE con el nivel de urgencia en la primera línea:
-   🔴 URGENCIA ALTA — ir a urgencias o llamar al 133 ahora
-   🟡 URGENCIA MEDIA — consultar médico en 24-48 horas
-   🟢 URGENCIA BAJA — cuidado en casa con vigilancia
-3. Para ALTA: la primera acción es siempre llamar al 133 o ir al hospital más cercano
-4. Para MEDIA: menciona el centro de salud específico de Granada más apropiado
-5. Para BAJA: da 3-5 cuidados caseros seguros y concretos, y señales de alarma para ir al médico
-6. Mantén el contexto de la conversación — si ya describieron síntomas, no los repitas
-7. NUNCA menciones diagnósticos de enfermedades específicas
-8. NUNCA prescribas medicamentos (hay un módulo separado para eso)
-9. Máximo 4 párrafos cortos por respuesta
-10. Termina SIEMPRE con: "⚕️ Esto es orientación informativa. Consulta con un profesional de salud."
-11. Si preguntan por medicamentos o farmacias, sugiere usar el botón 💊 de la app`;
+  const MAX_HISTORY = 20;
 
   // ═══════════════════════════════════════════════════════════════
   //  ESTADO GLOBAL
@@ -245,14 +221,6 @@ INSTRUCCIONES ESTRICTAS:
   const btnExportReportsCSV    = document.getElementById('btn-export-reports-csv');
   const btnClearReports        = document.getElementById('btn-clear-reports');
 
-  const btnSettings            = document.getElementById('btn-settings');
-  const apiKeyModal            = document.getElementById('api-key-modal');
-  const apiKeyInput            = document.getElementById('api-key-input');
-  const btnSaveApiKey          = document.getElementById('btn-save-api-key');
-  const btnClearApiKey         = document.getElementById('btn-clear-api-key');
-  const btnCloseApiKey         = document.getElementById('btn-close-api-key');
-  const apiKeyStatus           = document.getElementById('api-key-status');
-
   // ═══════════════════════════════════════════════════════════════
   //  CONSTANTES — KEYWORDS Y MAPEOS
   // ═══════════════════════════════════════════════════════════════
@@ -301,60 +269,42 @@ INSTRUCCIONES ESTRICTAS:
   };
 
   // ═══════════════════════════════════════════════════════════════
-  //  CLAUDE API
+  //  CLAUDE API — VÍA PROXY BACKEND (worker.js)
+  //  La API key vive en el servidor. El usuario nunca la ve ni toca.
   // ═══════════════════════════════════════════════════════════════
   async function callClaudeAPI(userMessage) {
-    const apiKey = localStorage.getItem('saludConecta_apiKey');
-    if (!apiKey) return null;
-
     // Añadir mensaje al historial
     appState.conversationHistory.push({ role: 'user', content: userMessage });
 
-    // Mantener ventana de contexto limitada (evitar tokens excesivos)
+    // Mantener ventana de contexto razonable
     if (appState.conversationHistory.length > MAX_HISTORY) {
       appState.conversationHistory.splice(0, 2);
     }
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: CLAUDE_MODEL,
-          max_tokens: 800,
-          system: CLAUDE_SYSTEM_PROMPT,
-          messages: appState.conversationHistory
-        })
+      const response = await fetch(WORKER_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ messages: appState.conversationHistory })
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `HTTP ${response.status}`);
+        throw new Error(errData.error || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      const assistantMessage = data.content[0].text;
+      const assistantMessage = data.response;
 
-      // Añadir respuesta al historial
+      // Guardar respuesta en historial
       appState.conversationHistory.push({ role: 'assistant', content: assistantMessage });
 
       return assistantMessage;
 
     } catch (error) {
-      console.error('Claude API error:', error);
-      // Revertir el mensaje del usuario del historial en caso de error
+      console.error('Worker error:', error);
+      // Revertir mensaje del usuario del historial
       appState.conversationHistory.pop();
-
-      if (error.message.includes('401') || error.message.includes('invalid')) {
-        addMessage('⚠️ API key inválida. Ve a ⚙️ Configuración para corregirla.', 'ai', null, getShortTime());
-        localStorage.removeItem('saludConecta_apiKey');
-        updateApiKeyStatusBadge();
-      }
       return null;
     }
   }
@@ -364,61 +314,6 @@ INSTRUCCIONES ESTRICTAS:
     if (responseText.includes('🟡') || responseText.includes('URGENCIA MEDIA')) return 'MEDIA';
     return 'BAJA';
   }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  API KEY MODAL
-  // ═══════════════════════════════════════════════════════════════
-  function updateApiKeyStatusBadge() {
-    const hasKey = !!localStorage.getItem('saludConecta_apiKey');
-    if (btnSettings) {
-      btnSettings.title = hasKey ? 'Configuración (IA activa ✓)' : 'Configuración (sin API key)';
-      btnSettings.classList.toggle('has-key', hasKey);
-    }
-    if (apiKeyStatus) {
-      apiKeyStatus.textContent = hasKey ? '✅ API key configurada — IA real activa' : '⚠️ Sin API key — usando respuestas básicas';
-      apiKeyStatus.style.color = hasKey ? 'var(--success)' : 'var(--danger)';
-    }
-    if (apiKeyInput && hasKey) {
-      apiKeyInput.value = '';
-      apiKeyInput.placeholder = '••••••••••••••••••••••••• (ya configurada)';
-    }
-  }
-
-  if (btnSettings) {
-    btnSettings.addEventListener('click', () => {
-      updateApiKeyStatusBadge();
-      if (apiKeyModal) apiKeyModal.style.display = 'flex';
-    });
-  }
-  if (btnCloseApiKey) btnCloseApiKey.addEventListener('click', () => {
-    if (apiKeyModal) apiKeyModal.style.display = 'none';
-  });
-  if (apiKeyModal) apiKeyModal.addEventListener('click', e => {
-    if (e.target === apiKeyModal) apiKeyModal.style.display = 'none';
-  });
-  if (btnSaveApiKey) btnSaveApiKey.addEventListener('click', () => {
-    const key = apiKeyInput ? apiKeyInput.value.trim() : '';
-    if (!key.startsWith('sk-ant-')) {
-      alert('La API key debe comenzar con "sk-ant-". Obtén una en console.anthropic.com');
-      return;
-    }
-    localStorage.setItem('saludConecta_apiKey', key);
-    updateApiKeyStatusBadge();
-    if (apiKeyModal) apiKeyModal.style.display = 'none';
-    addMessage('✅ API key guardada. Ahora usaré IA real para responderte con mejor orientación de salud.', 'ai', null, getShortTime());
-  });
-  if (btnClearApiKey) btnClearApiKey.addEventListener('click', () => {
-    if (confirm('¿Eliminar la API key? Las respuestas volverán al modo básico.')) {
-      localStorage.removeItem('saludConecta_apiKey');
-      appState.conversationHistory = [];
-      updateApiKeyStatusBadge();
-      if (apiKeyModal) apiKeyModal.style.display = 'none';
-      addMessage('API key eliminada. Modo básico activado.', 'ai', null, getShortTime());
-    }
-  });
-
-  // Inicializar badge al cargar
-  updateApiKeyStatusBadge();
 
   // ═══════════════════════════════════════════════════════════════
   //  VOZ — Web Speech API
@@ -1039,47 +934,28 @@ INSTRUCCIONES ESTRICTAS:
       return;
     }
 
-    // 7. TRIAGE — CLAUDE API (con fallback a respuestas mock)
-    const apiKey = localStorage.getItem('saludConecta_apiKey');
-    if (apiKey) {
-      try {
-        const response = await callClaudeAPI(text);
-        showTyping(false);
-        if (response) {
-          const urgency = detectUrgencyFromResponse(response);
-          addMessage(response, 'ai', urgency, getShortTime());
-        } else {
-          // Fallback si API falla
-          const urgency = detectUrgency(text);
-          const mock = generateMockResponse(urgency);
-          addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
-        }
-      } catch {
-        showTyping(false);
+    // 7. TRIAGE — CLAUDE API vía worker backend
+    // Si el worker falla (sin internet, no desplegado), usa respuestas básicas automáticamente
+    showTyping(true);
+    try {
+      const response = await callClaudeAPI(text);
+      showTyping(false);
+      if (response) {
+        const urgency = detectUrgencyFromResponse(response);
+        addMessage(response, 'ai', urgency, getShortTime());
+      } else {
+        // Fallback automático cuando el worker no está disponible
         const urgency = detectUrgency(text);
         const mock = generateMockResponse(urgency);
         addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
       }
-      enableInput();
-    } else {
-      // Sin API key — mock + sugerencia única de configurar
-      const delay = 1200 + Math.random() * 800;
-      setTimeout(() => {
-        showTyping(false);
-        const urgency = detectUrgency(text);
-        const mock = generateMockResponse(urgency);
-        addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
-
-        // Mostrar sugerencia de API solo si nunca se ha configurado y no se mostró ya
-        if (!sessionStorage.getItem('apiKeySuggested')) {
-          sessionStorage.setItem('apiKeySuggested', 'true');
-          setTimeout(() => {
-            addMessage('💡 Para respuestas más precisas con IA real, configura tu API key en ⚙️ Configuración.', 'ai', null, getShortTime());
-          }, 1200);
-        }
-        enableInput();
-      }, delay);
+    } catch {
+      showTyping(false);
+      const urgency = detectUrgency(text);
+      const mock = generateMockResponse(urgency);
+      addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
     }
+    enableInput();
   }
 
   function enableInput(placeholder = 'Describe tus síntomas...') {
@@ -1129,11 +1005,10 @@ INSTRUCCIONES ESTRICTAS:
     if (symptoms.some(s => URGENCY_KEYWORDS.HIGH.includes(s)))   maxUrgency = 'ALTA';
     else if (symptoms.some(s => URGENCY_KEYWORDS.MEDIUM.includes(s))) maxUrgency = 'MEDIA';
     return {
-      symptoms:   symptoms.join(', ') || 'No especificados',
-      urgency:    maxUrgency,
+      symptoms:     symptoms.join(', ') || 'No especificados',
+      urgency:      maxUrgency,
       drugSearches: appState.medicationSearches.map(m => m.drug).join(', ') || 'Ninguno',
-      duration:   Math.round((new Date() - appState.conversationStartTime) / 60000) + ' minutos',
-      iaUsed:     !!localStorage.getItem('saludConecta_apiKey')
+      duration:     Math.round((new Date() - appState.conversationStartTime) / 60000) + ' minutos'
     };
   }
 
@@ -1145,7 +1020,7 @@ INSTRUCCIONES ESTRICTAS:
     lines.push('=======================================');
     lines.push(`Fecha: ${now}`);
     lines.push(`Ubicación: ${includeLocationCheckbox?.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
-    lines.push(`Versión: 6.0.0 · IA: ${summary.iaUsed ? 'Claude API activa' : 'Modo básico'}`);
+    lines.push(`Versión: 6.0.0`);
     lines.push('');
 
     if (includeSummaryCheckbox?.checked) {
@@ -1272,5 +1147,5 @@ INSTRUCCIONES ESTRICTAS:
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW error:', err));
   }
 
-  console.log('🏥 Salud-Conecta AI v6.0.0 iniciada · Claude API:', !!localStorage.getItem('saludConecta_apiKey'));
+  console.log('🏥 Salud-Conecta AI v6.0.0 iniciada · Worker:', WORKER_URL);
 });

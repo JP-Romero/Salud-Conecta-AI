@@ -192,29 +192,6 @@ body {
 }
 .btn-export:hover { transform: scale(1.05); background: #227c70; }
 
-/* Botón de configuración */
-.btn-settings {
-  background: var(--gray-light); color: var(--text-color);
-  border: none; padding: 8px 14px; border-radius: 20px;
-  font-size: 0.9rem; cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
-  position: relative;
-}
-.btn-settings:hover { background: #c8c8c8; transform: scale(1.05); }
-.btn-settings.has-key { background: #d4f1ec; color: var(--success); }
-.btn-settings.has-key:hover { background: #b8e8e0; }
-
-/* Indicador de API activa */
-.btn-settings.has-key::after {
-  content: '';
-  position: absolute;
-  top: -2px; right: -2px;
-  width: 8px; height: 8px;
-  background: var(--success);
-  border-radius: 50%;
-  border: 2px solid white;
-}
-
 /* =========================================
    CHAT
    ========================================= */
@@ -524,52 +501,6 @@ body {
 .export-options .checkbox-container { margin: 0.5rem 0; }
 .export-actions { display: flex; flex-direction: column; gap: 10px; margin: 1.5rem 0; }
 .export-feedback { background: var(--success); color: white; padding: 10px; border-radius: 8px; text-align: center; font-weight: 500; }
-
-/* =========================================
-   API KEY MODAL
-   ========================================= */
-.api-key-info {
-  background: var(--primary-light);
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin: 1rem 0;
-  font-size: 0.85rem;
-  color: var(--primary-dark);
-}
-.api-key-info a { color: var(--primary-color); font-weight: 600; }
-.api-key-info ul { margin: 8px 0 0; padding-left: 18px; }
-.api-key-info li { margin-bottom: 4px; }
-
-#api-key-status {
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: var(--bg-color);
-}
-
-.api-key-input-group { display: flex; flex-direction: column; gap: 8px; margin: 1rem 0; }
-.api-key-input-group label { font-weight: 500; font-size: 0.9rem; }
-.api-key-input-group input {
-  width: 100%; padding: 10px 12px;
-  border: 2px solid var(--gray-light); border-radius: 8px;
-  font-size: 0.95rem; font-family: 'Courier New', monospace;
-  transition: border-color 0.2s;
-}
-.api-key-input-group input:focus { outline: none; border-color: var(--primary-color); }
-
-.api-key-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; }
-.api-key-actions .btn-primary  { margin-bottom: 0; }
-.api-key-actions .btn-secondary { background: #888; }
-.api-key-actions .btn-danger   { width: 100%; }
-
-.api-security-note {
-  margin-top: 1rem; padding: 10px;
-  background: #fff8e1; border-radius: 6px;
-  font-size: 0.8rem; color: #856404;
-  border-left: 3px solid var(--warning);
-}
 
 /* =========================================
    LEAFLET
