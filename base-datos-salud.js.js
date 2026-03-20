@@ -22,6 +22,9 @@ servicios   → Array de servicios ["consulta", "farmacia", "laboratorio", etc.]
 disponible  → true = visible en la app | false = oculto
 verificado  → true = datos confirmados | false = pendiente verificación
 barrio      → Barrio específico de Granada
+notas       → Notas adicionales sobre el centro
+seguros     → Array de seguros médicos aceptados ["INSS", "MAPFRE", "UNO", etc.]
+capilla     → Información de capilla/misas (solo hospitales)
 
 📌 CÓMO AGREGAR UN MEDICAMENTO:
 Usa la sección de MEDICAMENTOS abajo. Incluye nombre en español
@@ -42,10 +45,10 @@ Edita la fecha cuando agregues o modifiques datos.
 ═══════════════════════════════════════════════════════════════
 */
 
-const VERSION_BASE_DATOS = "2.0.0";
+const VERSION_BASE_DATOS = "3.0.0";
 const ULTIMA_ACTUALIZACION = "2025-01-15";
 const TOTAL_CENTROS = 35;
-const TOTAL_MEDICAMENTOS = 25;
+const TOTAL_MEDICAMENTOS = 30;
 
 // ═══════════════════════════════════════════════════════════════
 //  🏥 HOSPITALES - GRANADA, NICARAGUA
@@ -66,7 +69,19 @@ const HOSPITALES = [
   disponible:   true,
   verificado:   true,
   barrio:       "Centro",
-  notas:        "Hospital público principal de Granada. Urgencias 24h gratuitas."
+  notas:        "Hospital público principal de Granada. Urgencias 24h gratuitas.",
+  seguros:      ["INSS", "MINSA", "Todos los seguros públicos"],
+  capilla:      {
+    nombre:     "Capilla Nuestra Señora de la Asunción",
+    ubicacion:  "Segundo piso, ala este del hospital",
+    misas:      [
+      { dia: "Domingo", hora: "7:00 AM" },
+      { dia: "Miércoles", hora: "3:00 PM" },
+      { dia: "Viernes", hora: "3:00 PM" }
+    ],
+    capellania: "Disponible 24h para pacientes y familiares",
+    telefono_capilla: "2552-2650"
+  }
 },
 {
   id:          2,
@@ -82,7 +97,18 @@ const HOSPITALES = [
   disponible:   true,
   verificado:   true,
   barrio:       "San Antonio",
-  notas:        "Hospital privado con seguros médicos. Urgencias 24h."
+  notas:        "Hospital privado con seguros médicos. Urgencias 24h.",
+  seguros:      ["INSS", "MAPFRE", "Seguros UNO", "ANC", "Banpro Seguros", "Particular"],
+  capilla:      {
+    nombre:     "Capilla San Juan de Dios",
+    ubicacion:  "Primer piso, cerca de recepción",
+    misas:      [
+      { dia: "Domingo", hora: "8:00 AM" },
+      { dia: "Jueves", hora: "4:00 PM" }
+    ],
+    capellania: "Disponible Lun-Vie 8am-5pm",
+    telefono_capilla: "2552-3050"
+  }
 },
 {
   id:          3,
@@ -98,7 +124,19 @@ const HOSPITALES = [
   disponible:   true,
   verificado:   true,
   barrio:       "Carretera a Masaya",
-  notas:        "Hospital regional con especialidades."
+  notas:        "Hospital regional con especialidades.",
+  seguros:      ["INSS", "MINSA", "Todos los seguros públicos"],
+  capilla:      {
+    nombre:     "Capilla Divino Niño Jesús",
+    ubicacion:  "Área de hospitalización, primer piso",
+    misas:      [
+      { dia: "Domingo", hora: "9:00 AM" },
+      { dia: "Martes", hora: "2:00 PM" },
+      { dia: "Sábado", hora: "3:00 PM" }
+    ],
+    capellania: "Disponible 24h para emergencias",
+    telefono_capilla: "2552-5150"
+  }
 }
 
 ];
@@ -122,7 +160,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "La Calzada",
-  notas:        "Clínica privada con especialistas."
+  notas:        "Clínica privada con especialistas.",
+  seguros:      ["MAPFRE", "Seguros UNO", "ANC", "Particular"]
 },
 {
   id:          5,
@@ -138,7 +177,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "El Calvario",
-  notas:        "Atención familiar y vacunación."
+  notas:        "Atención familiar y vacunación.",
+  seguros:      ["INSS", "MINSA", "Particular"]
 },
 {
   id:          6,
@@ -154,7 +194,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Centro",
-  notas:        "Servicios dentales completos."
+  notas:        "Servicios dentales completos.",
+  seguros:      ["MAPFRE", "Dental Care", "Particular"]
 },
 {
   id:          7,
@@ -170,7 +211,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Guadalupe",
-  notas:        "Especializada en salud femenina."
+  notas:        "Especializada en salud femenina.",
+  seguros:      ["INSS", "MAPFRE", "Seguros UNO", "Particular"]
 },
 {
   id:          8,
@@ -186,7 +228,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Centro",
-  notas:        "Atención general y farmacia."
+  notas:        "Atención general con farmacia.",
+  seguros:      ["Todos los seguros", "Particular"]
 },
 {
   id:          9,
@@ -202,7 +245,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Simeón Rivas",
-  notas:        "Especializada en niños. Vacunación completa."
+  notas:        "Especializada en niños. Vacunación completa.",
+  seguros:      ["INSS", "MAPFRE", "Seguros UNO", "Particular"]
 },
 {
   id:          10,
@@ -218,7 +262,8 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "La Antigua",
-  notas:        "Especialistas en enfermedades crónicas."
+  notas:        "Especialistas en enfermedades crónicas.",
+  seguros:      ["INSS", "MAPFRE", "Seguros UNO", "ANC", "Particular"]
 },
 {
   id:          11,
@@ -234,7 +279,42 @@ const CLINICAS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Jardines",
-  notas:        "Atención integral con farmacia."
+  notas:        "Atención integral con farmacia.",
+  seguros:      ["Todos los seguros", "Particular"]
+},
+{
+  id:          12,
+  categoria:    "clinica",
+  nombre:       "Clínica Materno-Infantil",
+  direccion:    "Barrio Guadalupe, Granada",
+  telefono:     "2552-9850",
+  emergencia:   false,
+  lat:          11.9378,
+  lng:          -85.9538,
+  horario:      "Lun-Vie 8am-6pm, Sab 8am-1pm",
+  servicios:    ["control_prenatal", "parto", "pediatria", "vacunacion", "ultrasonido_obstetrico"],
+  disponible:   true,
+  verificado:   true,
+  barrio:       "Guadalupe",
+  notas:        "Especializada en embarazo y niños. Atención humanizada.",
+  seguros:      ["INSS", "MINSA", "MAPFRE", "Particular"]
+},
+{
+  id:          13,
+  categoria:    "clinica",
+  nombre:       "Clínica del Adulto Mayor",
+  direccion:    "Barrio San Antonio, Granada",
+  telefono:     "2552-9900",
+  emergencia:   false,
+  lat:          11.9328,
+  lng:          -85.9548,
+  horario:      "Lun-Vie 8am-5pm",
+  servicios:    ["geriatria", "control_cronico", "fisioterapia", "consulta_general"],
+  disponible:   true,
+  verificado:   true,
+  barrio:       "San Antonio",
+  notas:        "Especializada en adultos mayores. Descuentos para tercera edad.",
+  seguros:      ["INSS", "MINSA", "Particular"]
 }
 
 ];
@@ -245,7 +325,7 @@ const CLINICAS = [
 const FARMACIAS = [
 
 {
-  id:          12,
+  id:          14,
   categoria:    "farmacia",
   nombre:       "Farmacia Del Pueblo",
   direccion:    "Parque Central, Granada",
@@ -261,7 +341,7 @@ const FARMACIAS = [
   notas:        "Farmacia 24 horas. Precios económicos."
 },
 {
-  id:          13,
+  id:          15,
   categoria:    "farmacia",
   nombre:       "Farmacia San Nicolás",
   direccion:    "Calle La Calzada, Granada",
@@ -277,7 +357,7 @@ const FARMACIAS = [
   notas:        "Amplia variedad de productos naturales."
 },
 {
-  id:          14,
+  id:          16,
   categoria:    "farmacia",
   nombre:       "Farmacia Cruz Verde",
   direccion:    "Centro Comercial, Granada",
@@ -293,7 +373,7 @@ const FARMACIAS = [
   notas:        "Especializada en productos para bebés."
 },
 {
-  id:          15,
+  id:          17,
   categoria:    "farmacia",
   nombre:       "Farmacia Guadalajara",
   direccion:    "Barrio San Antonio, Granada",
@@ -309,7 +389,7 @@ const FARMACIAS = [
   notas:        "Servicio de consulta farmacéutica gratis."
 },
 {
-  id:          16,
+  id:          18,
   categoria:    "farmacia",
   nombre:       "Farmacia Elegua",
   direccion:    "Carretera a Masaya, Granada",
@@ -325,7 +405,7 @@ const FARMACIAS = [
   notas:        "Productos homeopáticos y naturales."
 },
 {
-  id:          17,
+  id:          19,
   categoria:    "farmacia",
   nombre:       "Farmacia Nicaragua",
   direccion:    "Mercado Municipal, Granada",
@@ -341,7 +421,7 @@ const FARMACIAS = [
   notas:        "Precios más económicos de la ciudad."
 },
 {
-  id:          18,
+  id:          20,
   categoria:    "farmacia",
   nombre:       "Farmacia La Unión",
   direccion:    "Barrio Simeón Rivas, Granada",
@@ -357,7 +437,7 @@ const FARMACIAS = [
   notas:        "Servicio de entrega a domicilio."
 },
 {
-  id:          19,
+  id:          21,
   categoria:    "farmacia",
   nombre:       "Farmacia Barrio Guadalupe",
   direccion:    "Barrio Guadalupe, Granada",
@@ -373,7 +453,7 @@ const FARMACIAS = [
   notas:        "Chequeos gratuitos de presión y glucosa."
 },
 {
-  id:          20,
+  id:          22,
   categoria:    "farmacia",
   nombre:       "Farmacia Barrio El Calvario",
   direccion:    "Barrio El Calvario, Granada",
@@ -387,6 +467,22 @@ const FARMACIAS = [
   verificado:   true,
   barrio:       "El Calvario",
   notas:        "Medicamentos genéricos económicos."
+},
+{
+  id:          23,
+  categoria:    "farmacia",
+  nombre:       "Farmacia del Hospital Virgen",
+  direccion:    "Dentro del Hospital Virgen de la Asistencia, Centro",
+  telefono:     "2552-2650",
+  emergencia:   true,
+  lat:          11.9352,
+  lng:          -85.9572,
+  horario:      "24 horas",
+  servicios:    ["medicamentos_hospitalarios", "medicamentos_especializados", "quimioterapia"],
+  disponible:   true,
+  verificado:   true,
+  barrio:       "Centro",
+  notas:        "Farmacia hospitalaria. Medicamentos especializados."
 }
 
 ];
@@ -397,7 +493,7 @@ const FARMACIAS = [
 const LABORATORIOS = [
 
 {
-  id:          21,
+  id:          24,
   categoria:    "laboratorio",
   nombre:       "Laboratorio Clínico Central",
   direccion:    "Calle Atravesada, Granada",
@@ -410,10 +506,11 @@ const LABORATORIOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Centro",
-  notas:        "Laboratorio completo con imágenes."
+  notas:        "Laboratorio completo con imágenes.",
+  seguros:      ["Todos los seguros", "Particular"]
 },
 {
-  id:          22,
+  id:          25,
   categoria:    "laboratorio",
   nombre:       "Laboratorio Médico",
   direccion:    "Parque Central, Granada",
@@ -426,10 +523,11 @@ const LABORATORIOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Centro",
-  notas:        "Abre temprano para ayuno."
+  notas:        "Abre temprano para ayuno.",
+  seguros:      ["INSS", "MAPFRE", "Particular"]
 },
 {
-  id:          23,
+  id:          26,
   categoria:    "laboratorio",
   nombre:       "Centro de Diagnóstico",
   direccion:    "Barrio San Antonio, Granada",
@@ -442,10 +540,11 @@ const LABORATORIOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "San Antonio",
-  notas:        "Equipos de imágenes avanzadas."
+  notas:        "Equipos de imágenes avanzadas.",
+  seguros:      ["MAPFRE", "Seguros UNO", "ANC", "Particular"]
 },
 {
-  id:          24,
+  id:          27,
   categoria:    "laboratorio",
   nombre:       "Laboratorio de Análisis Clínicos",
   direccion:    "Calle La Calzada, Granada",
@@ -458,7 +557,8 @@ const LABORATORIOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "La Calzada",
-  notas:        "Resultados rápidos el mismo día."
+  notas:        "Resultados rápidos el mismo día.",
+  seguros:      ["Todos los seguros", "Particular"]
 }
 
 ];
@@ -469,7 +569,7 @@ const LABORATORIOS = [
 const CENTROS_SALUD_PUBLICOS = [
 
 {
-  id:          25,
+  id:          28,
   categoria:    "centro_salud",
   nombre:       "Centro de Salud Simeón Rivas",
   direccion:    "Barrio Simeón Rivas, Granada",
@@ -482,10 +582,11 @@ const CENTROS_SALUD_PUBLICOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Simeón Rivas",
-  notas:        "Centro público gratuito. MINSA."
+  notas:        "Centro público gratuito. MINSA.",
+  seguros:      ["MINSA", "INSS", "Gratuito"]
 },
 {
-  id:          26,
+  id:          29,
   categoria:    "centro_salud",
   nombre:       "Centro de Salud El Calvario",
   direccion:    "Barrio El Calvario, Granada",
@@ -498,10 +599,11 @@ const CENTROS_SALUD_PUBLICOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "El Calvario",
-  notas:        "Atención de enfermedades crónicas."
+  notas:        "Atención de enfermedades crónicas.",
+  seguros:      ["MINSA", "INSS", "Gratuito"]
 },
 {
-  id:          27,
+  id:          30,
   categoria:    "centro_salud",
   nombre:       "Centro de Salud Guadalupe",
   direccion:    "Barrio Guadalupe, Granada",
@@ -514,10 +616,11 @@ const CENTROS_SALUD_PUBLICOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Guadalupe",
-  notas:        "Especializado en madre y niño."
+  notas:        "Especializado en madre y niño.",
+  seguros:      ["MINSA", "INSS", "Gratuito"]
 },
 {
-  id:          28,
+  id:          31,
   categoria:    "centro_salud",
   nombre:       "Centro de Salud La Antigua",
   direccion:    "Barrio La Antigua, Granada",
@@ -530,10 +633,11 @@ const CENTROS_SALUD_PUBLICOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "La Antigua",
-  notas:        "Centro público gratuito. MINSA."
+  notas:        "Centro público gratuito. MINSA.",
+  seguros:      ["MINSA", "INSS", "Gratuito"]
 },
 {
-  id:          29,
+  id:          32,
   categoria:    "centro_salud",
   nombre:       "Puesto de Salud Jardines",
   direccion:    "Pista de Jardines, Granada",
@@ -546,13 +650,31 @@ const CENTROS_SALUD_PUBLICOS = [
   disponible:   true,
   verificado:   true,
   barrio:       "Jardines",
-  notas:        "Puesto de salud pequeño. Atención básica."
+  notas:        "Puesto de salud pequeño. Atención básica.",
+  seguros:      ["MINSA", "Gratuito"]
+},
+{
+  id:          33,
+  categoria:    "centro_salud",
+  nombre:       "Centro de Salud Barrio San Antonio",
+  direccion:    "Barrio San Antonio, Granada",
+  telefono:     "2552-1200",
+  emergencia:   false,
+  lat:          11.9330,
+  lng:          -85.9545,
+  horario:      "Lun-Vie 8am-4pm",
+  servicios:    ["consulta_general", "vacunacion", "control_cronico", "adulto_mayor"],
+  disponible:   true,
+  verificado:   true,
+  barrio:       "San Antonio",
+  notas:        "Atención para adulto mayor.",
+  seguros:      ["MINSA", "INSS", "Gratuito"]
 }
 
 ];
 
 // ═══════════════════════════════════════════════════════════════
-//  💊 MEDICAMENTOS - NICARAGUA (EXPANDIDO)
+//  💊 MEDICAMENTOS - NICARAGUA (EXPANDIDO v3.0)
 // ═══════════════════════════════════════════════════════════════
 const MEDICAMENTOS = [
 
@@ -612,10 +734,122 @@ const MEDICAMENTOS = [
 },
 
 // ─────────────────────────────
-//  ANTIBIÓTICOS
+//  MEDICAMENTOS PARA EMBARAZADAS ⭐ NUEVO
 // ─────────────────────────────
 {
   id:                    4,
+  nombre_es:             "Ácido Fólico",
+  nombre_en:             "Folic Acid",
+  nombres_comerciales:   ["Folamil", "Acido Fólico MK", "Folato"],
+  categoria:             "Suplemento Prenatal",
+  uso_principal:         "Prevención de defectos del tubo neural en el feto, anemia en embarazadas",
+  dosis_adulto:          "400-800mcg una vez al día (antes y durante el embarazo)",
+  dosis_nino:            "No aplica",
+  presentaciones:        ["Tabletas 400mcg", "Tabletas 5mg", "Complejo prenatal"],
+  contraindicaciones:    "Alergia al ácido fólico",
+  efectos_secundarios:   "Raro: náuseas leves, malestar estomacal",
+  disponible_nicaragua:  true,
+  requiere_receta:       false,
+  precio_aproximado:     "20-50 C$ (caja)",
+  embarazo:              "Categoría A - SEGURO y RECOMENDADO en embarazo",
+  trimestres:            "Especialmente importante en primer trimestre"
+},
+{
+  id:                    5,
+  nombre_es:             "Hierro + Ácido Fólico",
+  nombre_en:             "Iron + Folic Acid",
+  nombres_comerciales:   ["Fer-In-Sol", "Hierro MK", "Materna"],
+  categoria:             "Suplemento Prenatal",
+  uso_principal:         "Prevención y tratamiento de anemia en embarazadas",
+  dosis_adulto:          "1 tableta al día con alimentos",
+  dosis_nino:            "Consultar médico",
+  presentaciones:        ["Tabletas", "Jarabe", "Cápsulas"],
+  contraindicaciones:    "Hemocromatosis, anemia no ferropénica",
+  efectos_secundarios:   "Estreñimiento, heces oscuras, náuseas",
+  disponible_nicaragua:  true,
+  requiere_receta:       false,
+  precio_aproximado:     "30-60 C$ (caja)",
+  embarazo:              "Categoría A - SEGURO y RECOMENDADO en embarazo",
+  trimestres:            "Segundo y tercer trimestre principalmente"
+},
+{
+  id:                    6,
+  nombre_es:             "Calcio + Vitamina D",
+  nombre_en:             "Calcium + Vitamin D",
+  nombres_comerciales:   ["Caltrate", "Osteocare", "Calcio MK"],
+  categoria:             "Suplemento Prenatal",
+  uso_principal:         "Desarrollo óseo del feto, prevención de osteoporosis materna",
+  dosis_adulto:          "500-1000mg de calcio + 400UI Vitamina D al día",
+  dosis_nino:            "Consultar médico",
+  presentaciones:        ["Tabletas", "Tabletas masticables", "Jarabe"],
+  contraindicaciones:    "Hipercalcemia, cálculos renales",
+  efectos_secundarios:   "Estreñimiento, malestar estomacal",
+  disponible_nicaragua:  true,
+  requiere_receta:       false,
+  precio_aproximado:     "40-80 C$ (caja)",
+  embarazo:              "Categoría A - SEGURO en embarazo",
+  trimestres:            "Segundo y tercer trimestre"
+},
+{
+  id:                    7,
+  nombre_es:             "Vitamina Prenatal Completa",
+  nombre_en:             "Prenatal Vitamin",
+  nombres_comerciales:   ["Materna", "Natalben", "Elevit Pronatal"],
+  categoria:             "Suplemento Prenatal",
+  uso_principal:         "Suplemento completo para embarazo (vitaminas, minerales, ácido fólico)",
+  dosis_adulto:          "1 tableta/cápsula al día",
+  dosis_nino:            "No aplica",
+  presentaciones:        ["Cápsulas", "Tabletas", "Gomitas"],
+  contraindicaciones:    "Alergia a componentes",
+  efectos_secundarios:   "Náuseas leves, estreñimiento",
+  disponible_nicaragua:  true,
+  requiere_receta:       false,
+  precio_aproximado:     "150-300 C$ (caja)",
+  embarazo:              "Categoría A - DISEÑADO para embarazo",
+  trimestres:            "Todo el embarazo y lactancia"
+},
+{
+  id:                    8,
+  nombre_es:             "Doxilamina + Piridoxina",
+  nombre_en:             "Doxylamine + Pyridoxine",
+  nombres_comerciales:   ["Doxinac", "Bonjesta", "Nausea-Free"],
+  categoria:             "Antiemético para Embarazo",
+  uso_principal:         "Náuseas y vómitos del embarazo (hipémesis gravídica)",
+  dosis_adulto:          "1 tableta al día antes de dormir (consultar médico)",
+  dosis_nino:            "No aplica",
+  presentaciones:        ["Tabletas", "Cápsulas de liberación prolongada"],
+  contraindicaciones:    "Glaucoma, asma severa",
+  efectos_secundarios:   "Somnolencia, boca seca",
+  disponible_nicaragua:  true,
+  requiere_receta:       true,
+  precio_aproximado:     "80-150 C$ (caja)",
+  embarazo:              "Categoría A - APROBADO para náuseas en embarazo",
+  trimestres:            "Primer trimestre principalmente"
+},
+{
+  id:                    9,
+  nombre_es:             "Metildopa",
+  nombre_en:             "Methyldopa",
+  nombres_comerciales:   ["Aldomet", "Metildopa MK"],
+  categoria:             "Antihipertensivo para Embarazo",
+  uso_principal:         "Presión arterial alta en embarazadas (preeclampsia)",
+  dosis_adulto:          "250-500mg 2-3 veces al día (bajo supervisión médica)",
+  dosis_nino:            "No aplica",
+  presentaciones:        ["Tabletas 250mg", "Tabletas 500mg"],
+  contraindicaciones:    "Enfermedad hepática activa, depresión",
+  efectos_secundarios:   "Somnolencia, mareos, boca seca",
+  disponible_nicaragua:  true,
+  requiere_receta:       true,
+  precio_aproximado:     "50-100 C$ (caja)",
+  embarazo:              "Categoría B - ANTIHIPERTENSIVO de elección en embarazo",
+  trimestres:            "Segundo y tercer trimestre"
+},
+
+// ─────────────────────────────
+//  ANTIBIÓTICOS
+// ─────────────────────────────
+{
+  id:                    10,
   nombre_es:             "Amoxicilina",
   nombre_en:             "Amoxicillin",
   nombres_comerciales:   ["Amoxal", "Trimox", "Novamox", "Amoxicilina MK"],
@@ -632,7 +866,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría B - Generalmente seguro"
 },
 {
-  id:                    5,
+  id:                    11,
   nombre_es:             "Azitromicina",
   nombre_en:             "Azithromycin",
   nombres_comerciales:   ["Azitro", "Zithromax", "Azitromicina MK"],
@@ -649,7 +883,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría B - Consultar médico"
 },
 {
-  id:                    6,
+  id:                    12,
   nombre_es:             "Ceftriaxona",
   nombre_en:             "Ceftriaxone",
   nombres_comerciales:   ["Rocefin", "Ceftriaxona MK"],
@@ -670,7 +904,7 @@ const MEDICAMENTOS = [
 //  MEDICAMENTOS PARA NIÑOS
 // ─────────────────────────────
 {
-  id:                    7,
+  id:                    13,
   nombre_es:             "Jarabe para la Tos (Niños)",
   nombre_en:             "Cough Syrup (Children)",
   nombres_comerciales:   ["Robitussin Pediatrico", "Tosdril", "Bisolvon Niños"],
@@ -687,7 +921,7 @@ const MEDICAMENTOS = [
   embarazo:              "N/A - Uso pediátrico"
 },
 {
-  id:                    8,
+  id:                    14,
   nombre_es:             "Suero Oral Pediátrico",
   nombre_en:             "Pediatric Oral Rehydration",
   nombres_comerciales:   ["Pedialyte", "Suero Vida", "Electrolit Pediátrico"],
@@ -704,7 +938,7 @@ const MEDICAMENTOS = [
   embarazo:              "N/A - Uso pediátrico"
 },
 {
-  id:                    9,
+  id:                    15,
   nombre_es:             "Multivitamínico Infantil",
   nombre_en:             "Children's Multivitamin",
   nombres_comerciales:   ["Centrum Kids", "Vicki", "Gummy Vitamins"],
@@ -725,7 +959,7 @@ const MEDICAMENTOS = [
 //  MEDICAMENTOS CRÓNICOS
 // ─────────────────────────────
 {
-  id:                    10,
+  id:                    16,
   nombre_es:             "Metformina",
   nombre_en:             "Metformin",
   nombres_comerciales:   ["Glucophage", "Diabex", "Metformina MK"],
@@ -742,7 +976,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría B - Consultar médico"
 },
 {
-  id:                    11,
+  id:                    17,
   nombre_es:             "Losartán",
   nombre_en:             "Losartan",
   nombres_comerciales:   ["Cozaar", "Losartán MK", "Losartán Potásico"],
@@ -759,7 +993,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría D - NO usar en embarazo"
 },
 {
-  id:                    12,
+  id:                    18,
   nombre_es:             "Amlodipino",
   nombre_en:             "Amlodipine",
   nombres_comerciales:   ["Norvasc", "Amlodipino MK"],
@@ -776,7 +1010,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría C - Consultar médico"
 },
 {
-  id:                    13,
+  id:                    19,
   nombre_es:             "Atorvastatina",
   nombre_en:             "Atorvastatin",
   nombres_comerciales:   ["Lipitor", "Atorvastatina MK"],
@@ -793,7 +1027,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría X - NO usar en embarazo"
 },
 {
-  id:                    14,
+  id:                    20,
   nombre_es:             "Insulina NPH",
   nombre_en:             "Insulin NPH",
   nombres_comerciales:   ["Humulina NPH", "Novolin N", "Insulatard"],
@@ -814,7 +1048,7 @@ const MEDICAMENTOS = [
 //  ANTIHISTAMÍNICOS Y ALERGIAS
 // ─────────────────────────────
 {
-  id:                    15,
+  id:                    21,
   nombre_es:             "Loratadina",
   nombre_en:             "Loratadine",
   nombres_comerciales:   ["Claritin", "Loratamed", "Loratadina MK"],
@@ -831,7 +1065,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría B - Consultar médico"
 },
 {
-  id:                    16,
+  id:                    22,
   nombre_es:             "Cetirizina",
   nombre_en:             "Cetirizine",
   nombres_comerciales:   ["Zyrtec", "Cetirizina MK", "Alegrin"],
@@ -852,7 +1086,7 @@ const MEDICAMENTOS = [
 //  ANTIINFLAMATORIOS
 // ─────────────────────────────
 {
-  id:                    17,
+  id:                    23,
   nombre_es:             "Diclofenaco",
   nombre_en:             "Diclofenac",
   nombres_comerciales:   ["Voltaren", "Cataflam", "Diclofenaco MK"],
@@ -869,7 +1103,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría C - Evitar en 3er trimestre"
 },
 {
-  id:                    18,
+  id:                    24,
   nombre_es:             "Naproxeno",
   nombre_en:             "Naproxen",
   nombres_comerciales:   ["Naproxyn", "Flanax", "Naproxeno MK"],
@@ -890,7 +1124,7 @@ const MEDICAMENTOS = [
 //  ESTEROIDES
 // ─────────────────────────────
 {
-  id:                    19,
+  id:                    25,
   nombre_es:             "Prednisona",
   nombre_en:             "Prednisone",
   nombres_comerciales:   ["Deltasone", "Prednisona MK"],
@@ -911,7 +1145,7 @@ const MEDICAMENTOS = [
 //  OTROS MEDICAMENTOS COMUNES
 // ─────────────────────────────
 {
-  id:                    20,
+  id:                    26,
   nombre_es:             "Omeprazol",
   nombre_en:             "Omeprazole",
   nombres_comerciales:   ["Losec", "Prilosec", "Omepral", "Omeprazol MK"],
@@ -928,7 +1162,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría C - Consultar médico"
 },
 {
-  id:                    21,
+  id:                    27,
   nombre_es:             "Aspirina",
   nombre_en:             "Aspirin",
   nombres_comerciales:   ["Aspirina Bayer", "Aspirina MK"],
@@ -945,7 +1179,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría D - Evitar en 3er trimestre"
 },
 {
-  id:                    22,
+  id:                    28,
   nombre_es:             "Loperamida",
   nombre_en:             "Loperamide",
   nombres_comerciales:   ["Imodium", "Loperamida MK"],
@@ -962,7 +1196,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría C - Consultar médico"
 },
 {
-  id:                    23,
+  id:                    29,
   nombre_es:             "Dimenhidrinato",
   nombre_en:             "Dimenhydrinate",
   nombres_comerciales:   ["Dramamine", "Biodramina"],
@@ -979,7 +1213,7 @@ const MEDICAMENTOS = [
   embarazo:              "Categoría B - Consultar médico"
 },
 {
-  id:                    24,
+  id:                    30,
   nombre_es:             "Salbutamol",
   nombre_en:             "Albuterol",
   nombres_comerciales:   ["Ventolin", "Salbutamol MK"],
@@ -994,23 +1228,6 @@ const MEDICAMENTOS = [
   requiere_receta:       true,
   precio_aproximado:     "150-300 C$ (inhalador)",
   embarazo:              "Categoría C - Consultar médico"
-},
-{
-  id:                    25,
-  nombre_es:             "Complejo B",
-  nombre_en:             "Vitamin B Complex",
-  nombres_comerciales:   ["Neurobión", "Bedoyecta", "Complejo B MK"],
-  categoria:             "Suplemento Vitamínico",
-  uso_principal:         "Deficiencia de vitaminas B, fatiga, neuropatía",
-  dosis_adulto:          "1 tableta al día o 1 ampolla semanal",
-  dosis_nino:            "Consultar médico",
-  presentaciones:        ["Tabletas", "Ampollas inyectables"],
-  contraindicaciones:    "Alergia a componentes",
-  efectos_secundarios:   "Raro: malestar estomacal",
-  disponible_nicaragua:  true,
-  requiere_receta:       false,
-  precio_aproximado:     "30-80 C$ (caja)",
-  embarazo:              "Categoría A - Generalmente seguro"
 }
 
 ];
@@ -1072,7 +1289,7 @@ const EMERGENCIAS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
-//  📍 BARRIOS DE GRANADA (para búsqueda)
+//  📍 BARRIOS DE GRANADA (EXPANDIDO)
 // ═══════════════════════════════════════════════════════════════
 const BARRIOS_GRANADA = [
   "Centro",
@@ -1087,7 +1304,33 @@ const BARRIOS_GRANADA = [
   "Lago de Nicaragua",
   "Carretera a Masaya",
   "Calle Atravesada",
-  "Pista de Jardines"
+  "Pista de Jardines",
+  "Barrio San José",
+  "Barrio Mexico",
+  "Barrio Venezuela",
+  "Barrio Cuba",
+  "Reparto San Francisco",
+  "Reparto Las Colinas",
+  "Reparto Xalteva",
+  "Islas del Lago (Zapatera, Ometepe - referencia)",
+  "Gandera",
+  "Pueblo Nuevo",
+  "Santiago"
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  🏥 LISTA DE SEGUROS MÉDICOS EN NICARAGUA
+// ═══════════════════════════════════════════════════════════════
+const SEGUROS_MEDICOS = [
+  { nombre: "INSS", nombre_completo: "Instituto Nicaragüense de Seguridad Social", tipo: "Público" },
+  { nombre: "MINSA", nombre_completo: "Ministerio de Salud", tipo: "Público" },
+  { nombre: "MAPFRE", nombre_completo: "MAPFRE Nicaragua", tipo: "Privado" },
+  { nombre: "Seguros UNO", nombre_completo: "Seguros UNO", tipo: "Privado" },
+  { nombre: "ANC", nombre_completo: "Alianza Nicaragüense de Compañías de Seguros", tipo: "Privado" },
+  { nombre: "Banpro Seguros", nombre_completo: "Banpro Seguros", tipo: "Privado" },
+  { nombre: "Dental Care", nombre_completo: "Dental Care Nicaragua", tipo: "Privado - Dental" },
+  { nombre: "Particular", nombre_completo: "Pago particular (sin seguro)", tipo: "Particular" },
+  { nombre: "Gratuito", nombre_completo: "Servicio gratuito (centros públicos)", tipo: "Público" }
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1117,7 +1360,14 @@ function buscarCentrosPorBarrio(barrio) {
   );
 }
 
-// Buscar centros cercanos por coordenadas (simple)
+// Buscar centros por seguro médico
+function buscarCentrosPorSeguro(seguro) {
+  return obtenerTodosLosCentros().filter(c => 
+    c.seguros && c.seguros.some(s => s.toLowerCase().includes(seguro.toLowerCase()))
+  );
+}
+
+// Buscar centros cercanos por coordenadas
 function buscarCentrosCercanos(lat, lng, radioMetros = 2000) {
   const centros = obtenerTodosLosCentros();
   return centros.map(centro => {
@@ -1130,7 +1380,7 @@ function buscarCentrosCercanos(lat, lng, radioMetros = 2000) {
 
 // Calcular distancia entre dos puntos (fórmula de Haversine)
 function calcularDistancia(lat1, lng1, lat2, lng2) {
-  const R = 6371000; // Radio de la Tierra en metros
+  const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLng = (lng2 - lng1) * Math.PI / 180;
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -1167,6 +1417,16 @@ function obtenerMedicamentosPediatricos() {
   );
 }
 
+// Obtener medicamentos para embarazadas ⭐ NUEVO
+function obtenerMedicamentosEmbarazadas() {
+  return MEDICAMENTOS.filter(m => 
+    m.categoria.includes('Prenatal') || 
+    m.categoria.includes('Embarazo') ||
+    (m.embarazo && m.embarazo.includes('Categoría A')) ||
+    (m.embarazo && m.embarazo.includes('Categoría B'))
+  );
+}
+
 // Obtener medicamentos crónicos
 function obtenerMedicamentosCronicos() {
   return MEDICAMENTOS.filter(m => 
@@ -1177,9 +1437,33 @@ function obtenerMedicamentosCronicos() {
   );
 }
 
+// Obtener medicamentos SEGUROS en embarazo ⭐ NUEVO
+function obtenerMedicamentosSegurosEmbarazo() {
+  return MEDICAMENTOS.filter(m => 
+    m.embarazo && (m.embarazo.includes('Categoría A') || m.embarazo.includes('SEGURO'))
+  );
+}
+
+// Obtener medicamentos NO SEGUROS en embarazo ⭐ NUEVO
+function obtenerMedicamentosNoSegurosEmbarazo() {
+  return MEDICAMENTOS.filter(m => 
+    m.embarazo && (m.embarazo.includes('NO usar') || m.embarazo.includes('Categoría D') || m.embarazo.includes('Categoría X'))
+  );
+}
+
 // Buscar emergencias
 function obtenerEmergencias() {
   return EMERGENCIAS.filter(e => e.disponible === true);
+}
+
+// Obtener seguros médicos
+function obtenerSegurosMedicos() {
+  return SEGUROS_MEDICOS;
+}
+
+// Buscar centros con capilla/misas ⭐ NUEVO
+function obtenerCentrosConCapilla() {
+  return obtenerTodosLosCentros().filter(c => c.capilla);
 }
 
 // Obtener estadísticas de la base de datos
@@ -1194,10 +1478,14 @@ function obtenerEstadisticasBD() {
     farmacias: FARMACIAS.length,
     laboratorios: LABORATORIOS.length,
     centros_publicos: CENTROS_SALUD_PUBLICOS.length,
+    centros_con_capilla: obtenerCentrosConCapilla().length,
     medicamentos_pediatricos: obtenerMedicamentosPediatricos().length,
+    medicamentos_embarazadas: obtenerMedicamentosEmbarazadas().length,
     medicamentos_cronicos: obtenerMedicamentosCronicos().length,
+    medicamentos_seguros_embarazo: obtenerMedicamentosSegurosEmbarazo().length,
     emergencias: EMERGENCIAS.length,
-    barrios_cubiertos: BARRIOS_GRANADA.length
+    barrios_cubiertos: BARRIOS_GRANADA.length,
+    seguros_disponibles: SEGUROS_MEDICOS.length
   };
 }
 
@@ -1235,6 +1523,15 @@ function obtenerEstadisticasBD() {
    - Incluye siempre dosis para adultos y niños
    - Agrega contraindicaciones y efectos secundarios
    - Especifica si requiere receta
+   - Incluye categoría de embarazo (A, B, C, D, X)
+
+7. SEGUROS MÉDICOS:
+   - Verifica con cada centro qué seguros aceptan
+   - Actualiza cuando haya cambios de convenio
+
+8. CAPILLAS/MISAS:
+   - Confirma horarios de misas con la capellanía
+   - Actualiza en Semana Santa y fiestas patronales
 
 ═══════════════════════════════════════════════════════════════
 */
