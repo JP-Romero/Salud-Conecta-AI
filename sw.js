@@ -1,19 +1,21 @@
-const CACHE_NAME = 'salud-conecta-v3';
+const CACHE_NAME = 'salud-conecta-v4';
 
-// ✅ Rutas relativas para GitHub Pages
+// ✅ Rutas relativas + CDN de Leaflet
 const STATIC_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
-  './manifest.json'
+  './manifest.json',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
 // 1. Instalación: Cachear activos estáticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Cacheando activos estáticos v3');
+      console.log('Cacheando activos estáticos v4');
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -39,8 +41,8 @@ self.addEventListener('fetch', (event) => {
     return; 
   }
 
-  // ✅ API Públicas (openFDA): Network First
-  if (url.hostname.includes('api.fda.gov')) {
+  // ✅ API Públicas (openFDA, Overpass): Network First
+  if (url.hostname.includes('api.fda.gov') || url.hostname.includes('overpass-api.de')) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -51,6 +53,16 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // ✅ CDN de Leaflet: Cache First
+  if (url.hostname.includes('unpkg.com') && url.pathname.includes('leaflet')) {
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
     );
     return;
   }
