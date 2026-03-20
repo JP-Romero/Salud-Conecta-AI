@@ -854,4 +854,15 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Salud-Conecta AI v5.0 iniciada');
   }
 });
+// Ahora puedes acceder a:
+CENTROS_SALUD    // Array con todos los centros
+MEDICAMENTOS     // Array con medicamentos
+EMERGENCIAS      // Array con números de emergencia
+BARRIOS_GRANADA  // Array con barrios
+
+// Ejemplo: Filtrar farmacias cercanas
+const farmacias = CENTROS_SALUD.filter(c => c.categoria === 'farmacia');
+
+// Ejemplo: Buscar medicamento por nombre
+const medicamento = MEDICAMENTOS.find(m => m.nombre_es.toLowerCase() === 'paracetamol');
 
