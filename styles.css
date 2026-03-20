@@ -27,11 +27,11 @@ body {
   line-height: 1.6;
 }
 
-/* Modal, Botones, Header, Chat... (se mantienen igual que antes) */
-/* ... [copia el CSS anterior completo hasta antes de "Drug Card"] ... */
+/* Modal, Botones, Header, Chat... (mantener todo el CSS anterior) */
+/* ... [copia todo el CSS anterior hasta antes de "Mapa Leaflet"] ... */
 
 /* =========================================
-   🗺️ MAPA LEAFLET
+   🗺️ MAPA LEAFLET (actualizado)
    ========================================= */
 .map-container {
   background: var(--white);
@@ -53,6 +53,26 @@ body {
 .map-header h3 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.map-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-add-center {
+  background: var(--success);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-add-center:hover {
+  background: #227c70;
 }
 
 .btn-close-map {
@@ -150,7 +170,240 @@ body {
   color: var(--gray-text);
 }
 
-/* Personalizar marcadores de Leaflet */
+/* =========================================
+   📝 FORMULARIO DE REPORTE
+   ========================================= */
+.report-form-container, .reports-list-container {
+  background: var(--white);
+  margin: 1rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--primary-color);
+  color: white;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.btn-close-form {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.9;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-close-form:hover {
+  opacity: 1;
+}
+
+.form-body {
+  padding: 1.5rem;
+}
+
+.form-description {
+  color: var(--gray-text);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--gray-light);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.location-info {
+  background: var(--primary-light);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.location-status {
+  font-size: 0.9rem;
+  color: var(--primary-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.location-status .loading::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--primary-color);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.location-status.success {
+  color: var(--success);
+}
+
+.location-status.error {
+  color: var(--danger);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+.form-actions .btn-secondary,
+.form-actions .btn-primary {
+  flex: 1;
+}
+
+.form-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-light);
+  font-size: 0.85rem;
+  color: var(--gray-text);
+}
+
+/* =========================================
+   📋 LISTA DE REPORTES
+   ========================================= */
+.report-item {
+  background: var(--bg-color);
+  border-left: 4px solid var(--primary-color);
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+.report-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.report-item-name {
+  font-weight: 600;
+  color: var(--primary-dark);
+  font-size: 1rem;
+}
+
+.report-item-type {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.report-item-details {
+  font-size: 0.85rem;
+  color: var(--gray-text);
+  margin: 4px 0;
+}
+
+.report-item-location {
+  font-size: 0.8rem;
+  color: var(--gray-text);
+  font-style: italic;
+}
+
+.report-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.btn-delete-report {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.btn-delete-report:hover {
+  background: #b00020;
+}
+
+.export-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--gray-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #b00020;
+}
+
+/* =========================================
+   LEAFLET CUSTOMIZATIONS
+   ========================================= */
 .leaflet-popup-content-wrapper {
   border-radius: 12px;
 }
@@ -170,17 +423,24 @@ body {
   color: var(--gray-text);
 }
 
-/* Drug Card, Hospital List, Export Modal... (se mantienen) */
-/* ... [resto del CSS anterior] ... */
-
-/* Responsive para mapa */
+/* =========================================
+   RESPONSIVE
+   ========================================= */
 @media (max-width: 600px) {
   :root {
     --map-height: 250px;
   }
   
   .map-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     padding: 0.75rem 1rem;
+  }
+  
+  .map-header-actions {
+    width: 100%;
+    justify-content: space-between;
   }
   
   .map-header h3 {
@@ -197,4 +457,15 @@ body {
     width: 100%;
     text-align: center;
   }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .report-item-header {
+    flex-direction: column;
+    gap: 4px;
+  }
 }
+
+/* ... [resto del CSS anterior se mantiene] ... */
