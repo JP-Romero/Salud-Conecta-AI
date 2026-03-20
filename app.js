@@ -156,7 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const DRUG_KEYWORDS = ['pastilla', 'medicamento', 'droga', 'jarabe', 'tratamiento', 'para qué sirve', 'dosis'];
-  const COMMON_DRUGS = ['ibuprofeno', 'paracetamol', 'aspirina', 'amoxicilina', 'omeprazol', 'loratadina'];
+  // Busca esta línea y actualízala con más medicamentos comunes en Nicaragua
+  const COMMON_DRUGS = [
+  'ibuprofeno', 'paracetamol', 'aspirina', 'amoxicilina', 'omeprazol', 
+  'loratadina', 'metformina', 'losartán', 'amlodipino', 'diclofenaco',
+  'acetaminofén', 'naproxeno', 'cetirizina', 'prednisona', 'azitromicina'
+  ];
 
   // === FUNCIONES DE UTILIDAD ===
   function getLocalTimestamp() {
