@@ -12,6 +12,7 @@
   --border-radius: 16px;
   --gray-light: #e0e0e0;
   --gray-text: #666;
+  --success: #2a9d8f;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,11 +38,11 @@ body {
 }
 .modal-header h2 { color: var(--primary-color); margin-top: 0; font-size: 1.5rem; }
 .modal-body { margin: 1.5rem 0; }
-.privacy-list {
+.privacy-list, .emergency-list {
   background: #e9f5ff; padding: 1rem 1.5rem; border-radius: 8px;
   list-style: none; margin: 1rem 0;
 }
-.privacy-list li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+.privacy-list li, .emergency-list li { margin-bottom: 0.5rem; font-size: 0.95rem; }
 .checkbox-container {
   display: flex; align-items: flex-start; gap: 10px; margin: 1rem 0; font-size: 0.9rem;
 }
@@ -53,7 +54,7 @@ body {
 .btn-primary {
   background: var(--primary-color); color: white; border: none;
   padding: 12px 24px; border-radius: 8px; font-size: 1rem; font-weight: 600;
-  cursor: pointer; width: 100%; transition: background 0.3s;
+  cursor: pointer; width: 100%; transition: background 0.3s; margin-bottom: 10px;
 }
 .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
 .btn-primary:not(:disabled):hover { background: var(--primary-dark); }
@@ -72,12 +73,19 @@ body {
 }
 .header-content h1 { margin: 0; font-size: 1.25rem; color: var(--primary-color); font-weight: 600; }
 .subtitle { margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--gray-text); }
+.header-actions { display: flex; gap: 8px; }
 .btn-emergency {
   background: var(--danger); color: white; border: none;
   padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;
   cursor: pointer; transition: transform 0.2s, background 0.3s;
 }
 .btn-emergency:hover { transform: scale(1.05); background: #b00020; }
+.btn-export {
+  background: var(--success); color: white; border: none;
+  padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: transform 0.2s, background 0.3s;
+}
+.btn-export:hover { transform: scale(1.05); background: #227c70; }
 
 /* Chat */
 .chat-container {
@@ -203,9 +211,7 @@ body {
 }
 
 /* Hospital List */
-.hospital-list {
-  list-style: none; margin-top: 8px;
-}
+.hospital-list { list-style: none; margin-top: 8px; }
 .hospital-item {
   background: var(--white); border-left: 4px solid var(--primary-color);
   padding: 10px; margin-bottom: 8px; border-radius: 4px;
@@ -214,19 +220,13 @@ body {
 .hospital-name { font-weight: 600; color: var(--primary-dark); }
 .hospital-info { font-size: 0.85rem; color: var(--gray-text); }
 
-/* Emergency Modal */
-.emergency-content .emergency-list {
-  background: var(--danger-light); padding: 1rem 1.5rem;
-  border-radius: 8px; list-style: none; margin: 1rem 0;
+/* Export Modal */
+.export-options { margin: 1rem 0; }
+.export-actions { display: flex; flex-direction: column; gap: 10px; margin: 1.5rem 0; }
+.export-feedback {
+  background: var(--success); color: white; padding: 10px;
+  border-radius: 8px; text-align: center; font-weight: 500;
 }
-.emergency-content .emergency-list li { margin-bottom: 0.5rem; font-size: 0.95rem; }
-.btn-emergency-call {
-  display: block; background: var(--danger); color: white;
-  text-align: center; padding: 14px; border-radius: 8px;
-  text-decoration: none; font-weight: 600; margin-bottom: 1rem;
-  transition: background 0.3s;
-}
-.btn-emergency-call:hover { background: #b00020; }
 
 /* Animations */
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -234,14 +234,24 @@ body {
 
 /* Responsive */
 @media (max-width: 600px) {
-  .app-header { padding: 0.75rem 1rem; }
+  .app-header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 8px; }
   .header-content h1 { font-size: 1rem; }
   .subtitle { font-size: 0.75rem; }
-  .chat-container { height: calc(100vh - 200px); padding: 0.5rem; }
+  .header-actions { order: 3; width: 100%; justify-content: center; margin-top: 8px; }
+  .chat-container { height: calc(100vh - 220px); padding: 0.5rem; }
   .message { max-width: 90%; }
   .message-avatar { width: 32px; height: 32px; font-size: 1rem; }
   .quick-actions { gap: 6px; }
   .quick-btn { font-size: 0.8rem; padding: 5px 10px; }
   .modal-content { padding: 1.5rem; width: 95%; }
   .typing-indicator { margin-left: 40px; }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
