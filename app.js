@@ -162,7 +162,35 @@ document.addEventListener('DOMContentLoaded', () => {
   'loratadina', 'metformina', 'losartán', 'amlodipino', 'diclofenaco',
   'acetaminofén', 'naproxeno', 'cetirizina', 'prednisona', 'azitromicina'
   ];
+  // === MAPEO DE NOMRES: Español (Nicaragua) → Inglés (openFDA) ===
+  const DRUG_NAME_MAPPING = {
+  'paracetamol': 'acetaminophen',
+  'acetaminofén': 'acetaminophen',
+  'ibuprofeno': 'ibuprofen',
+  'aspirina': 'aspirin',
+  'amoxicilina': 'amoxicillin',
+  'omeprazol': 'omeprazole',
+  'loratadina': 'loratadine',
+  'metformina': 'metformin',
+  'losartán': 'losartan',
+  'amlodipino': 'amlodipine',
+  'diclofenaco': 'diclofenac',
+  'naproxeno': 'naproxen',
+  'cetirizina': 'cetirizine',
+  'prednisona': 'prednisone',
+  'azitromicina': 'azithromycin',
+  'gabapentina': 'gabapentin',
+  'hidroclorotiazida': 'hydrochlorothiazide',
+  'levotiroxina': 'levothyroxine',
+  'sertralina': 'sertraline',
+  'atorvastatina': 'atorvastatin'
+  };
 
+  // Función para obtener nombre en inglés
+  function getEnglishDrugName(spanishName) {
+  const lower = spanishName.toLowerCase().trim();
+  return DRUG_NAME_MAPPING[lower] || lower;
+  }
   // === FUNCIONES DE UTILIDAD ===
   function getLocalTimestamp() {
     return new Date().toLocaleString('es-NI', { 
@@ -521,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Hacer deleteReport global para onclick
   window.deleteReport = deleteReport;
 
-// === SEND MESSAGE FUNCTION (CORREGIDA) ===
+  // === SEND MESSAGE FUNCTION (VERSIÓN FINAL CORREGIDA) ===
 function sendMessage(text) {
   if (!text.trim()) return;
 
@@ -531,14 +559,21 @@ function sendMessage(text) {
   btnSend.disabled = true;
   showTyping(true);
 
-  // 1. Detectar consulta DIRECTA de medicamento (solo el nombre)
-  const foundDrugDirect = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
-  
-  // 2. Detectar palabras clave de medicamento
-  const isDrugQuery = DRUG_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
-  const foundDrugWithKeyword = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
+  const lowerText = text.toLowerCase();
 
-  // ✅ PRIORIDAD 1: Si hay nombre de medicamento directo (ej: "Paracetamol")
+  // 1. Detectar medicamento DIRECTO (solo nombre)
+  const foundDrugDirect = COMMON_DRUGS.find(drug => 
+    lowerText === drug || 
+    lowerText.includes(` ${drug} `) || 
+    lowerText.includes(` ${drug}`) || 
+    lowerText.startsWith(drug)
+  );
+
+  // 2. Detectar palabras clave + medicamento
+  const isDrugQuery = DRUG_KEYWORDS.some(keyword => lowerText.includes(keyword));
+  const foundDrugWithKeyword = COMMON_DRUGS.find(drug => lowerText.includes(drug));
+
+  // ✅ PRIORIDAD 1: Nombre de medicamento directo
   if (foundDrugDirect) {
     appState.medicationSearches.push({
       drug: foundDrugDirect,
@@ -554,7 +589,7 @@ function sendMessage(text) {
     return;
   }
 
-  // ✅ PRIORIDAD 2: Si hay palabras clave + medicamento (ej: "¿Para qué sirve el ibuprofeno?")
+  // ✅ PRIORIDAD 2: Palabras clave + medicamento
   if (isDrugQuery && foundDrugWithKeyword) {
     appState.medicationSearches.push({
       drug: foundDrugWithKeyword,
@@ -570,10 +605,10 @@ function sendMessage(text) {
     return;
   }
 
-  // 3. Detectar consulta de mapa/centros de salud
-  if (text.toLowerCase().includes('mapa') || text.toLowerCase().includes('centro') || 
-      text.toLowerCase().includes('hospital') || text.toLowerCase().includes('farmacia') ||
-      text.toLowerCase().includes('clínica') || text.toLowerCase().includes('cerca')) {
+  // 3. Mapa/centros de salud
+  if (lowerText.includes('mapa') || lowerText.includes('centro') || 
+      lowerText.includes('hospital') || lowerText.includes('farmacia') ||
+      lowerText.includes('clínica') || lowerText.includes('cerca')) {
     setTimeout(() => {
       showTyping(false);
       showNearbyHealthCenters();
@@ -583,8 +618,8 @@ function sendMessage(text) {
     return;
   }
 
-  // 4. Detectar reporte de centro
-  if (text.toLowerCase().includes('reportar') || text.toLowerCase().includes('agregar centro')) {
+  // 4. Reportar centro
+  if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
     setTimeout(() => {
       showTyping(false);
       initReportForm();
@@ -593,8 +628,8 @@ function sendMessage(text) {
     return;
   }
 
-  // 5. Detectar ver reportes
-  if (text.toLowerCase().includes('mis reportes') || text.toLowerCase().includes('ver reportes')) {
+  // 5. Ver reportes
+  if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
     setTimeout(() => {
       showTyping(false);
       showReportsList();
@@ -603,7 +638,7 @@ function sendMessage(text) {
     return;
   }
 
-  // 6. Triage normal (síntomas)
+  // 6. Triage normal
   const delay = Math.random() * 1500 + 1500;
   setTimeout(() => {
     showTyping(false);
@@ -644,12 +679,26 @@ function sendMessage(text) {
     return MOCK_RESPONSES[urgency];
   }
 
-  async function fetchDrugInfo(drugName) {
-    try {
-      const response = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.generic_name:${drugName}+OR+openfda.brand_name:${drugName}&limit=1`);
-      if (!response.ok) throw new Error('No encontrado');
-      const data = await response.json();
-      const result = data.results[0];
+  // === FETCH DRUG INFO (CORREGIDA CON MAPEO) ===
+async function fetchDrugInfo(drugName) {
+  showTyping(true);
+  
+  // 1. Obtener nombre en inglés para openFDA
+  const englishName = getEnglishDrugName(drugName);
+  const spanishName = drugName;
+  
+  try {
+    // 2. Intentar con nombre genérico en inglés
+…    
+    // Mensaje más útil con sugerencia
+    let suggestion = '';
+    if (DRUG_NAME_MAPPING[drugName.toLowerCase()]) {
+      suggestion = `\n\n💡 En EE.UU. se conoce como "${DRUG_NAME_MAPPING[drugName.toLowerCase()]}"`;
+    }
+    
+    addMessage(`No encontré información específica sobre "${drugName}" en la base internacional. 🌍${suggestion}\n\nEn Granada, puedes consultar en farmacias locales (ej. Farmacia Del Pueblo, San Nicolás, Cruz Verde) para información precisa.`, 'ai', null, getShortTime());
+  }
+}
       
       const drugData = {
         name: result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
