@@ -33,11 +33,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const typingIndicator = document.getElementById('typing-indicator');
   const quickBtns = document.querySelectorAll('.quick-btn');
   
-  // Emergency Modals
+  // Emergency & Export Modals
   const btnEmergency = document.getElementById('btn-emergency');
   const emergencyModal = document.getElementById('emergency-modal');
   const btnCloseEmergency = document.getElementById('btn-close-emergency');
   const btnShowHospitals = document.getElementById('btn-show-hospitals');
+  
+  const btnExport = document.getElementById('btn-export');
+  const exportModal = document.getElementById('export-modal');
+  const btnCloseExport = document.getElementById('btn-close-export');
+  const btnExportTxt = document.getElementById('btn-export-txt');
+  const btnExportCopy = document.getElementById('btn-export-copy');
+  const exportFeedback = document.getElementById('export-feedback');
+  const anonymizeCheckbox = document.getElementById('anonymize-export');
 
   // Keywords
   const URGENCY_KEYWORDS = {
@@ -49,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const DRUG_KEYWORDS = ['pastilla', 'medicamento', 'droga', 'jarabe', 'tratamiento', 'para qué sirve', 'dosis'];
   const COMMON_DRUGS = ['ibuprofeno', 'paracetamol', 'aspirina', 'amoxicilina', 'omeprazol', 'loratadina'];
 
-  // Hospitales en Granada (Datos estáticos para MVP)
+  // Hospitales en Granada
   const GRANADA_HOSPITALS = [
     { name: "Hospital Virgen de la Asistencia", info: "Público • Centro de Granada" },
     { name: "Hospital Alemán Nicaragüense", info: "Privado • Barrio San Antonio" },
@@ -57,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { name: "Clínica Familiar", info: "Privado • Atención general" }
   ];
 
-  // Send Message Function
+  // === SEND MESSAGE FUNCTION ===
   function sendMessage(text) {
     if (!text.trim()) return;
 
@@ -102,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, delay);
   }
 
-  // Detect Urgency
+  // === DETECT URGENCY ===
   function detectUrgency(text) {
     const lowerText = text.toLowerCase();
     if (URGENCY_KEYWORDS.HIGH.some(k => lowerText.includes(k))) return 'HIGH';
@@ -110,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'LOW';
   }
 
-  // Generate Response
+  // === GENERATE RESPONSE ===
   function generateResponse(urgency) {
     const MOCK_RESPONSES = {
       HIGH: {
@@ -132,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return MOCK_RESPONSES[urgency];
   }
 
-  // Fetch Drug Info (openFDA)
+  // === FETCH DRUG INFO (openFDA) ===
   async function fetchDrugInfo(drugName) {
     try {
       const response = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.generic_name:${drugName}+OR+openfda.brand_name:${drugName}&limit=1`);
@@ -154,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Show Local Hospitals
+  // === SHOW LOCAL HOSPITALS ===
   function showHospitals() {
     showTyping(false);
     const messageDiv = document.createElement('div');
@@ -179,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
   }
 
-  // Add Message to Chat
+  // === ADD MESSAGE TO CHAT ===
   function addMessage(text, sender, urgency = null) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
@@ -206,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
   }
 
-  // Add Drug Card
+  // === ADD DRUG CARD ===
   function addDrugCard(data) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ai-message';
@@ -238,7 +246,73 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
   }
 
-  // Utils
+  // === EXPORT CONVERSATION LOGIC ===
+  function getChatHistory() {
+    const messages = [];
+    const now = new Date().toLocaleString('es-NI', { timeZone: 'America/Managua' });
+    
+    messages.push(`=== Salud-Conecta AI - Exportado: ${now} ===`);
+    messages.push(`Ubicación: Granada, Nicaragua`);
+    messages.push('');
+    
+    if (anonymizeCheckbox.checked) {
+      messages.push('[Datos anonimizados para proteger tu privacidad]');
+      messages.push('');
+    }
+    
+    document.querySelectorAll('.chat-messages .message').forEach(msg => {
+      const isUser = msg.classList.contains('user-message');
+      const sender = isUser ? 'Usuario' : 'Asistente IA';
+      const content = msg.querySelector('.message-content p')?.textContent || '';
+      // Remover disclaimer del texto exportado
+      const cleanContent = content.replace(/⚠️.*diagnóstico\./, '').trim();
+      messages.push(`[${sender}] ${cleanContent}`);
+    });
+    
+    messages.push('');
+    messages.push('---');
+    messages.push('⚠️ ADVERTENCIA: Este documento contiene información de salud.');
+    messages.push('No reemplaza la consulta con un profesional médico.');
+    messages.push('Salud-Conecta AI - https://jp-romero.github.io/Salud-Conecta-AI/');
+    
+    return messages.join('\n');
+  }
+
+  function downloadTxt(filename, text) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard) {
+      return navigator.clipboard.writeText(text);
+    } else {
+      // Fallback para navegadores antiguos
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return Promise.resolve();
+    }
+  }
+
+  function showExportFeedback() {
+    exportFeedback.style.display = 'block';
+    setTimeout(() => {
+      exportFeedback.style.display = 'none';
+    }, 3000);
+  }
+
+  // === UTILS ===
   function truncateText(text, limit) {
     if (!text) return 'Sin información disponible.';
     const cleanText = text.replace(/<[^>]*>?/gm, '');
@@ -254,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // Event Listeners
+  // === EVENT LISTENERS ===
   btnSend.addEventListener('click', () => sendMessage(userInput.value));
   userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(userInput.value); });
   
@@ -262,14 +336,41 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => sendMessage(btn.getAttribute('data-symptom')));
   });
 
+  // Emergency Modal
   btnEmergency.addEventListener('click', () => emergencyModal.style.display = 'flex');
   btnCloseEmergency.addEventListener('click', () => emergencyModal.style.display = 'none');
   btnShowHospitals.addEventListener('click', () => {
     emergencyModal.style.display = 'none';
     sendMessage('Hospitales');
   });
-  
   emergencyModal.addEventListener('click', (e) => {
     if (e.target === emergencyModal) emergencyModal.style.display = 'none';
+  });
+
+  // Export Modal
+  btnExport.addEventListener('click', () => {
+    exportModal.style.display = 'flex';
+    exportFeedback.style.display = 'none';
+  });
+  btnCloseExport.addEventListener('click', () => exportModal.style.display = 'none');
+  exportModal.addEventListener('click', (e) => {
+    if (e.target === exportModal) exportModal.style.display = 'none';
+  });
+
+  btnExportTxt.addEventListener('click', () => {
+    const content = getChatHistory();
+    const timestamp = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    downloadTxt(`salud-conecta-${timestamp}.txt`, content);
+    showExportFeedback();
+  });
+
+  btnExportCopy.addEventListener('click', async () => {
+    const content = getChatHistory();
+    try {
+      await copyToClipboard(content);
+      showExportFeedback();
+    } catch (err) {
+      alert('No se pudo copiar. Por favor, selecciona el texto manualmente.');
+    }
   });
 });
