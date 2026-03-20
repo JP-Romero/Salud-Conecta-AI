@@ -1,4 +1,4 @@
-const CACHE_NAME = 'salud-conecta-v1';
+const CACHE_NAME = 'salud-conecta-v2';
 
 // ✅ Rutas relativas para GitHub Pages
 const STATIC_ASSETS = [
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Cacheando activos estáticos');
+      console.log('Cacheando activos estáticos v2');
       return cache.addAll(STATIC_ASSETS);
     })
   );
