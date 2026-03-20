@@ -1,4 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // === BASE DE DATOS LOCAL - PRIORIDAD 1 ===
+// Usar CENTROS_SALUD, MEDICAMENTOS, etc. de base-datos-salud.js
+
+function obtenerCentrosDesdeBD() {
+  if (typeof obtenerTodosLosCentros === 'function') {
+    return obtenerTodosLosCentros();
+  }
+  // Fallback si no está cargada la BD
+  return [];
+}
+
+function buscarMedicamentoBD(nombre) {
+  if (typeof buscarMedicamento === 'function') {
+    return buscarMedicamento(nombre);
+  }
+  return null;
+}
+
+function obtenerFarmaciasBD() {
+  if (typeof buscarCentrosPorCategoria === 'function') {
+    return buscarCentrosPorCategoria('farmacia');
+  }
+  return [];
+}
   // === 1. PRIVACY MODAL LOGIC ===
   const modal = document.getElementById('privacy-modal');
   const appContent = document.getElementById('app-content');
