@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salud-Conecta AI</title>
   
-  <!-- ✅ RUTAS RELATIVAS (sin barra inicial) -->
+  <!-- ✅ RUTAS RELATIVAS para GitHub Pages -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0077b6">
   <link rel="stylesheet" href="styles.css">
@@ -41,15 +41,20 @@
   <!-- 🏠 Contenido Principal -->
   <main id="app-content" style="display:none;">
     
-    <!-- Header -->
+    <!-- Header con botón de Exportar -->
     <header class="app-header">
       <div class="header-content">
         <h1>Salud-Conecta AI</h1>
         <p class="subtitle">Granada, Nicaragua</p>
       </div>
-      <button id="btn-emergency" class="btn-emergency">
-        🚑 Emergencia
-      </button>
+      <div class="header-actions">
+        <button id="btn-export" class="btn-export" title="Exportar conversación">
+          📤 Exportar
+        </button>
+        <button id="btn-emergency" class="btn-emergency">
+          🚑 Emergencia
+        </button>
+      </div>
     </header>
 
     <!-- 💬 Chat -->
@@ -115,6 +120,37 @@
       </div>
       <div class="modal-footer">
         <button id="btn-close-emergency" class="btn-secondary">Entiendo, volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📤 Modal de Exportación -->
+  <div id="export-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📤 Exportar Conversación</h2>
+      </div>
+      <div class="modal-body">
+        <p><strong>Advertencia:</strong> Este archivo contiene información de salud. Compártelo con responsabilidad y solo con profesionales médicos de confianza.</p>
+        
+        <div class="export-options">
+          <label class="checkbox-container">
+            <input type="checkbox" id="anonymize-export" checked>
+            <label for="anonymize-export">Ocultar información personal (recomendado)</label>
+          </label>
+        </div>
+
+        <div class="export-actions">
+          <button id="btn-export-txt" class="btn-primary">💾 Descargar como .txt</button>
+          <button id="btn-export-copy" class="btn-secondary">📋 Copiar al portapapeles</button>
+        </div>
+        
+        <div id="export-feedback" class="export-feedback" style="display:none;">
+          ✅ ¡Exportado exitosamente!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-export" class="btn-secondary">Cerrar</button>
       </div>
     </div>
   </div>
