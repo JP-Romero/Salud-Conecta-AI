@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salud-Conecta AI</title>
   
-  <!-- ✅ FAVICON: Usamos el mismo SVG del manifest para evitar 404 -->
+  <!-- ✅ FAVICON con Data URI -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230077b6' width='512' height='512' rx='64'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='256' fill='white'%3ESC%3C/text%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230077b6' width='512' height='512' rx='64'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='256' fill='white'%3ESC%3C/text%3E%3C/svg%3E">
   
-  <!-- ✅ Manifest para PWA -->
+  <!-- ✅ Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- ✅ Manifest y meta tags -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0077b6">
-  
-  <!-- ✅ Meta tags para iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="SaludConecta">
@@ -33,11 +34,11 @@
       <div class="modal-body">
         <p><strong>Salud-Conecta AI</strong> es una herramienta de orientación preventiva, <u>no un servicio médico profesional</u>.</p>
         <ul class="privacy-list">
-          <li>🔒 <strong>Privacidad:</strong> No almacenamos tus síntomas en servidores externos.</li>
-          <li>🚑 <strong>Emergencias:</strong> Si tienes dolor de pecho o dificultad para respirar, llama al 133 (Emergencias Nicaragua).</li>
+          <li>🔒 <strong>Privacidad:</strong> No almacenamos tus síntomas ni tu ubicación exacta.</li>
+          <li>🚑 <strong>Emergencias:</strong> Si tienes dolor de pecho o dificultad para respirar, llama al 133 (Nicaragua).</li>
           <li>🤖 <strong>IA:</strong> Las respuestas son generadas por inteligencia artificial y pueden tener errores.</li>
           <li>🌍 <strong>Datos:</strong> La información de medicamentos es internacional (FDA), verifica disponibilidad local.</li>
-          <li>📍 <strong>Ubicación:</strong> Solo se usa para mostrar centros cercanos y NUNCA se guarda sin tu permiso.</li>
+          <li>🗺️ <strong>Mapa:</strong> La ubicación solo se usa para mostrar centros cercanos y se descarta al cerrar la app.</li>
         </ul>
         <div class="checkbox-container">
           <input type="checkbox" id="accept-terms">
@@ -66,22 +67,16 @@
   <!-- 🏠 Contenido Principal -->
   <main id="app-content" style="display:none;">
     
-    <!-- Header con botones de acción -->
+    <!-- Header -->
     <header class="app-header">
       <div class="header-content">
         <h1>Salud-Conecta AI</h1>
         <p class="subtitle">Granada, Nicaragua</p>
       </div>
       <div class="header-actions">
-        <button id="btn-install-header" class="btn-install-header" title="Instalar app" style="display:none;">
-          📲 Instalar
-        </button>
-        <button id="btn-export" class="btn-export" title="Exportar conversación">
-          📤 Exportar
-        </button>
-        <button id="btn-emergency" class="btn-emergency">
-          🚑 Emergencia
-        </button>
+        <button id="btn-install-header" class="btn-install-header" title="Instalar app" style="display:none;">📲</button>
+        <button id="btn-export" class="btn-export" title="Exportar conversación">📤</button>
+        <button id="btn-emergency" class="btn-emergency">🚑</button>
       </div>
     </header>
 
@@ -92,7 +87,7 @@
           <div class="message-avatar">🤖</div>
           <div class="message-content">
             <p>¡Bendiciones! Soy tu asistente de salud en Granada. ¿Cómo te sientes hoy?</p>
-            <p class="message-disclaimer">Puedes describir síntomas o preguntar por medicamentos.</p>
+            <p class="message-disclaimer">Puedes describir síntomas, preguntar por medicamentos o buscar centros de salud cercanos.</p>
             <span class="message-time">Ahora</span>
           </div>
         </div>
@@ -106,10 +101,10 @@
 
       <div class="chat-input-area">
         <div class="quick-actions">
-          <button class="quick-btn" data-symptom="Dolor de cabeza">🤕 Dolor de cabeza</button>
+          <button class="quick-btn" data-symptom="Dolor de cabeza">🤕 Dolor</button>
           <button class="quick-btn" data-symptom="Fiebre">🌡️ Fiebre</button>
-          <button class="quick-btn" data-symptom="Paracetamol">💊 Paracetamol</button>
-          <button class="quick-btn" data-symptom="Hospitales">🏥 Hospitales</button>
+          <button class="quick-btn" data-symptom="Paracetamol">💊 Medicamentos</button>
+          <button class="quick-btn" data-symptom="Mapa">🗺️ Centros cercanos</button>
         </div>
         
         <div class="input-wrapper">
@@ -121,6 +116,22 @@
             </svg>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- 🗺️ Contenedor del Mapa (oculto por defecto) -->
+    <div id="map-container" class="map-container" style="display:none;">
+      <div class="map-header">
+        <h3>🏥 Centros de Salud Cercanos</h3>
+        <button id="btn-close-map" class="btn-close-map">✕</button>
+      </div>
+      <div id="map" class="map"></div>
+      <div class="map-loading" id="map-loading" style="display:none;">
+        🔍 Buscando centros de salud en tu zona...
+      </div>
+      <div class="map-results" id="map-results"></div>
+      <div class="map-footer">
+        <small>📍 Datos: OpenStreetMap • Cobertura puede variar en Nicaragua</small>
       </div>
     </div>
 
@@ -145,7 +156,7 @@
           <li>🧠 Confusión repentina</li>
         </ul>
         <a href="tel:133" class="btn-emergency-call">📞 Llamar al 133</a>
-        <button id="btn-show-hospitals" class="btn-secondary" style="background: var(--primary-color); margin-top:10px;">🗺️ Ver Hospitales Cercanos</button>
+        <button id="btn-show-map-emergency" class="btn-secondary" style="background: var(--primary-color); margin-top:10px;">🗺️ Ver centros cercanos en mapa</button>
       </div>
       <div class="modal-footer">
         <button id="btn-close-emergency" class="btn-secondary">Entiendo, volver</button>
@@ -160,7 +171,7 @@
         <h2>📤 Exportar Conversación</h2>
       </div>
       <div class="modal-body">
-        <p><strong>Advertencia:</strong> Este archivo contiene información de salud. Compártelo con responsabilidad y solo con profesionales médicos de confianza.</p>
+        <p><strong>Advertencia:</strong> Este archivo contiene información de salud. Compártelo con responsabilidad.</p>
         
         <div class="export-options">
           <label class="checkbox-container">
@@ -173,7 +184,7 @@
           </label>
           <label class="checkbox-container">
             <input type="checkbox" id="include-med-history" checked>
-            <label for="include-med-history">Incluir historial de medicamentos buscados</label>
+            <label for="include-med-history">Incluir historial de medicamentos</label>
           </label>
           <label class="checkbox-container">
             <input type="checkbox" id="include-summary" checked>
@@ -186,9 +197,7 @@
           <button id="btn-export-copy" class="btn-secondary">📋 Copiar al portapapeles</button>
         </div>
         
-        <div id="export-feedback" class="export-feedback" style="display:none;">
-          ✅ ¡Exportado exitosamente!
-        </div>
+        <div id="export-feedback" class="export-feedback" style="display:none;">✅ ¡Exportado exitosamente!</div>
       </div>
       <div class="modal-footer">
         <button id="btn-close-export" class="btn-secondary">Cerrar</button>
@@ -207,7 +216,7 @@
           <p><strong>En Chrome (Android/PC):</strong></p>
           <ol class="install-steps">
             <li>Toca el menú <strong>⋮</strong> (tres puntos)</li>
-            <li>Selecciona <strong>"Instalar aplicación"</strong> o <strong>"Agregar a pantalla de inicio"</strong></li>
+            <li>Selecciona <strong>"Instalar aplicación"</strong></li>
             <li>Confirma la instalación</li>
           </ol>
         </div>
@@ -215,16 +224,16 @@
           <p><strong>En Safari (iPhone/iPad):</strong></p>
           <ol class="install-steps">
             <li>Toca el botón <strong>Compartir</strong> (cuadrado con flecha)</li>
-            <li>Desliza hacia abajo y toca <strong>"Agregar a inicio"</strong></li>
-            <li>Toca <strong>"Agregar"</strong> en la esquina superior</li>
+            <li>Desliza y toca <strong>"Agregar a inicio"</strong></li>
+            <li>Toca <strong>"Agregar"</strong></li>
           </ol>
         </div>
         <div id="install-steps-generic">
           <p><strong>Si no ves la opción:</strong></p>
           <ul class="install-steps">
-            <li>Asegúrate de usar Chrome o Safari actualizado</li>
-            <li>Verifica que tienes conexión a internet</li>
-            <li>Recarga la página e intenta de nuevo</li>
+            <li>Usa Chrome o Safari actualizado</li>
+            <li>Verifica conexión a internet</li>
+            <li>Recarga la página</li>
           </ul>
         </div>
       </div>
@@ -234,7 +243,8 @@
     </div>
   </div>
 
-  <!-- ✅ RUTA RELATIVA para el JS -->
+  <!-- ✅ Leaflet JS + App JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="app.js"></script>
 </body>
 </html>
