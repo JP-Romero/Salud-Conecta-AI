@@ -1,6 +1,3 @@
-/* =========================================
-   VARIABLES GLOBALES
-   ========================================= */
 :root {
   --primary-color: #0077b6;
   --primary-dark: #023e8a;
@@ -21,9 +18,6 @@
   --map-height: 300px;
 }
 
-/* =========================================
-   RESET & BASE
-   ========================================= */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -1016,6 +1010,7 @@ body {
   margin-top: 4px;
   text-decoration: underline;
 }
+
 /* =========================================
    ⚠️ BANNER DE ADVERTENCIA - MEDICAMENTOS
    ========================================= */
@@ -1044,10 +1039,6 @@ body {
 .drug-warning-banner li {
   margin-bottom: 4px;
   line-height: 1.4;
-}
-
-.drug-warning-icon {
-  margin-right: 6px;
 }
 
 /* =========================================
@@ -1102,39 +1093,6 @@ body {
   border-radius: 8px;
   text-align: center;
   font-weight: 500;
-}
-
-/* =========================================
-   🚨 EMERGENCY MODAL
-   ========================================= */
-.emergency-content .emergency-list {
-  background: var(--danger-light);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  list-style: none;
-  margin: 1rem 0;
-}
-
-.emergency-content .emergency-list li {
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-}
-
-.btn-emergency-call {
-  display: block;
-  background: var(--danger);
-  color: white;
-  text-align: center;
-  padding: 14px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  transition: background 0.3s;
-}
-
-.btn-emergency-call:hover {
-  background: #b00020;
 }
 
 /* =========================================
