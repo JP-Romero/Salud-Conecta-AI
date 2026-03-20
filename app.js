@@ -346,18 +346,34 @@ function obtenerFarmaciasBD() {
   }
 
   async function searchHealthFacilities(lat, lng, radius = 2000) {
-    const query = `[out:json][timeout:25];(node["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng});way["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng}););out center;`;
-    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Error en Overpass API');
-      const data = await response.json();
-      return data.elements;
-    } catch (error) {
-      console.error('Error buscando centros:', error);
-      return getFallbackGranadaCenters(lat, lng);
-    }
+  // PRIORIDAD 1: Usar base de datos local
+  const centrosBD = obtenerCentrosDesdeBD();
+  
+  if (centrosBD.length > 0) {
+    console.log('Usando base de datos local (' + centrosBD.length + ' centros)');
+    // Calcular distancias y filtrar
+    return centrosBD.map(centro => ({
+      ...centro,
+      distance: calcularDistancia(lat, lng, centro.lat, centro.lng)
+    }))
+    .filter(c => c.distance <= radius)
+    .sort((a, b) => a.distance - b.distance);
   }
+  
+  // PRIORIDAD 2: Fallback a Overpass API si BD está vacía
+  console.log('Base de datos vacía, usando Overpass API...');
+  const query = `[out:json][timeout:25];(node["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng});way["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng}););out center;`;
+  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Error en Overpass API');
+    const data = await response.json();
+    return data.elements;
+  } catch (error) {
+    console.error('Error buscando centros:', error);
+    return [];
+  }
+}
 
   function getFallbackGranadaCenters(userLat, userLng) {
     return GRANADA_HOSPITALS.map(center => ({
@@ -539,76 +555,114 @@ function obtenerFarmaciasBD() {
     alert('Exportados ' + reports.length + ' reportes en formato CSV.');
   }
 
-  function showNearbyPharmacies() {
-    const pharmacyList = GRANADA_PHARMACIES.map(pharmacy => 
-      '<li style="margin-bottom:8px;"><strong>' + pharmacy.name + '</strong><br><small>📍 ' + pharmacy.location + ' • 🕐 ' + pharmacy.hours + '</small></li>'
-    ).join('');
-    return '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-top:12px;"><strong style="color:#0369a1;display:block;margin-bottom:8px;">💊 Farmacias en Granada:</strong><ul style="margin:0;padding-left:20px;">' + pharmacyList + '</ul></div>';
+ function showNearbyPharmacies() {
+  const farmacias = obtenerFarmaciasBD();
+  if (farmacias.length === 0) {
+    return '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin-top:12px;">⚠️ No hay farmacias registradas en la base de datos local.</div>';
   }
+  const pharmacyList = farmacias.slice(0, 5).map(pharmacy => 
+    '<li style="margin-bottom:8px;"><strong>' + pharmacy.nombre + '</strong><br><small>📍 ' + pharmacy.direccion + ' • 🕐 ' + pharmacy.horario + ' • 📞 ' + pharmacy.telefono + '</small></li>'
+  ).join('');
+  return '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-top:12px;"><strong style="color:#0369a1;display:block;margin-bottom:8px;">💊 Farmacias en Granada:</strong><ul style="margin:0;padding-left:20px;">' + pharmacyList + '</ul></div>';
+}
 
   // === 9. MEDICAMENTOS ===
   async function fetchDrugInfo(drugName) {
-    showTyping(true);
-    const englishName = getEnglishDrugName(drugName);
-    const spanishName = drugName;
-    try {
-      let response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + englishName + '&limit=1');
-      if (!response.ok) {
-        response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.brand_name:' + englishName + '&limit=1');
+  showTyping(true);
+  
+  // PRIORIDAD 1: Buscar en base de datos local
+  const medicamentoBD = buscarMedicamentoBD(drugName);
+  
+  if (medicamentoBD) {
+    // Usar información de la base de datos local (en español)
+    showTyping(false);
+    
+    const drugData = {
+      name: medicamentoBD.nombre_es + (medicamentoBD.nombres_comerciales.length > 0 ? ' (' + medicamentoBD.nombres_comerciales.slice(0, 3).join(', ') + ')' : ''),
+      usage: medicamentoBD.uso_principal,
+      warnings: medicamentoBD.contraindicaciones + '. Efectos secundarios: ' + medicamentoBD.efectos_secundarios,
+      source: 'Base de datos local - Nicaragua ✓',
+      dosis: medicamentoBD.dosis_adulto,
+      requiere_receta: medicamentoBD.requiere_receta,
+      precio: medicamentoBD.precio_aproximado
+    };
+    
+    addDrugCardLocal(drugData, getShortTime());
+    
+    // Mostrar farmacias donde conseguirlo
+    setTimeout(() => {
+      const farmacias = obtenerFarmaciasBD();
+      if (farmacias.length > 0) {
+        addMessage('💊 Puedes conseguir este medicamento en estas farmacias de Granada:\n\n' + farmacias.slice(0, 5).map(f => '• ' + f.nombre + ' (' + f.horario + ')').join('\n'), 'ai', null, getShortTime());
       }
-      if (!response.ok && englishName !== spanishName.toLowerCase()) {
-        response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + spanishName.toLowerCase() + '&limit=1');
-      }
-      if (!response.ok) throw new Error('No encontrado');
-      const data = await response.json();
-      const result = data.results[0];
-      const drugData = {
-        name: result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
-        usage: translateMedicalText(result.indications_and_usage?.[0] || 'Informacion no disponible.'),
-        warnings: translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su medico.'),
-        source: 'Fuente: openFDA (EE.UU.) - Traducción automatica. Verificar con farmacéutico en Nicaragua'
-      };
-      showTyping(false);
-      addDrugCard(drugData, getShortTime());
-      setTimeout(() => {
-        addMessage('¿Necesitas conseguir este medicamento? Estas farmacias en Granada pueden ayudarte:\n\n' + showNearbyPharmacies(), 'ai', null, getShortTime());
-      }, 500);
-    } catch (error) {
-      showTyping(false);
-      console.error('Error fetchDrugInfo:', error);
-      let suggestion = '';
-      if (DRUG_NAME_MAPPING[drugName.toLowerCase()]) {
-        suggestion = ' En EE.UU. se conoce como: ' + DRUG_NAME_MAPPING[drugName.toLowerCase()];
-      }
-      addMessage('No encontre informacion especifica sobre "' + drugName + '" en la base internacional.' + suggestion + ' En Granada, consulta en farmacias locales (Del Pueblo, San Nicolas, Cruz Verde) para informacion precisa.', 'ai', null, getShortTime());
+    }, 500);
+    
+    return;
+  }
+  
+  // PRIORIDAD 2: Fallback a openFDA si no está en BD local
+  console.log('Medicamento no encontrado en BD local, consultando openFDA...');
+  const englishName = getEnglishDrugName(drugName);
+  const spanishName = drugName;
+  
+  try {
+    let response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + englishName + '&limit=1');
+    if (!response.ok) {
+      response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.brand_name:' + englishName + '&limit=1');
     }
+    if (!response.ok && englishName !== spanishName.toLowerCase()) {
+      response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + spanishName.toLowerCase() + '&limit=1');
+    }
+    if (!response.ok) throw new Error('No encontrado');
+    
+    const data = await response.json();
+    const result = data.results[0];
+    
+    const drugData = {
+      name: result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
+      usage: translateMedicalText(result.indications_and_usage?.[0] || 'Informacion no disponible.'),
+      warnings: translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su medico.'),
+      source: 'Fuente: openFDA (EE.UU.) - Verificar con farmacéutico en Nicaragua'
+    };
+    
+    showTyping(false);
+    addDrugCard(drugData, getShortTime());
+    
+  } catch (error) {
+    showTyping(false);
+    console.error('Error fetchDrugInfo:', error);
+    addMessage('No encontre informacion sobre "' + drugName + '" en la base local ni en openFDA. En Granada, consulta en farmacias como Del Pueblo, San Nicolas o Cruz Verde.', 'ai', null, getShortTime());
   }
-
-  function addDrugCard(data, timestamp) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message ai-message';
-    const cardId = 'drug-card-' + Date.now();
-    const contentId = 'drug-content-' + Date.now();
-    messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
-      '<div class="message-content">' +
-      '<p>Informacion sobre <strong>' + data.name + '</strong>:</p>' +
-      '<div class="drug-warning-banner"><strong>⚠️ Informacion Importante para Nicaragua</strong><ul><li>Esta informacion es de <strong>Estados Unidos (FDA)</strong></li><li>Las <strong>dosis pueden variar</strong> en Nicaragua</li><li>Los <strong>nombres comerciales</strong> pueden ser diferentes</li><li>Consulta siempre con un <strong>farmaceutico local</strong></li></ul></div>' +
-      '<div class="drug-card" id="' + cardId + '">' +
-      '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Uso indicado</div>' +
-      '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
-      '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
-      '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
-      '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
-      '<div class="drug-footer">' + data.source + '</div>' +
-      '</div>' +
-      '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
-      '<span class="message-time">' + timestamp + '</span>' +
-      '</div>';
-    chatMessages.appendChild(messageDiv);
-    scrollToBottom();
-  }
-
+}
+  function addDrugCardLocal(data, timestamp) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message ai-message';
+  
+  const cardId = 'drug-card-' + Date.now();
+  const contentId = 'drug-content-' + Date.now();
+  
+  messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
+    '<div class="message-content">' +
+    '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
+    '<div class="drug-warning-banner"><strong>✅ Información Verificada - Nicaragua</strong><ul><li>Datos de la base de datos local de Granada</li><li>Información en <strong>español</strong></li><li>Precios aproximados en <strong>Córdobas</strong></li><li>Siempre consulta con un <strong>farmacéutico local</strong></li></ul></div>' +
+    '<div class="drug-card" id="' + cardId + '">' +
+    '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
+    '<div class="drug-section"><div class="drug-section-title">Uso principal</div>' +
+    '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
+    '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
+    (data.dosis ? '<div class="drug-section"><div class="drug-section-title">Dosis adulto</div><div class="drug-section-content">' + data.dosis + '</div></div>' : '') +
+    '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
+    '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
+    (data.requiere_receta ? '<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color: var(--danger);">Sí - Consulta médica obligatoria</div></div>' : '') +
+    (data.precio ? '<div class="drug-section"><div class="drug-section-title">Precio aproximado</div><div class="drug-section-content" style="color: var(--success);">' + data.precio + '</div></div>' : '') +
+    '<div class="drug-footer">' + data.source + '</div>' +
+    '</div>' +
+    '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
+    '<span class="message-time">' + timestamp + '</span>' +
+    '</div>';
+  chatMessages.appendChild(messageDiv);
+  scrollToBottom();
+}
   // === 10. CHAT Y TRIAGE ===
   function sendMessage(text) {
     if (!text.trim()) return;
