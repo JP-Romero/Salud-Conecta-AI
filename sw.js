@@ -1,6 +1,5 @@
-const CACHE_NAME = 'salud-conecta-v4';
+const CACHE_NAME = 'salud-conecta-v5';
 
-// ✅ Rutas relativas + CDN de Leaflet
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -11,17 +10,15 @@ const STATIC_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
-// 1. Instalación: Cachear activos estáticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Cacheando activos estáticos v4');
+      console.log('Cacheando activos estáticos v5');
       return cache.addAll(STATIC_ASSETS);
     })
   );
 });
 
-// 2. Activación: Limpiar cachés viejas
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -32,16 +29,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch: Estrategia híbrida
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 🚫 PRIVACIDAD: Nunca cachear rutas con datos personales
   if (url.pathname.includes('/api/perfil') || url.pathname.includes('/api/sintomas')) {
     return; 
   }
 
-  // ✅ API Públicas (openFDA, Overpass): Network First
   if (url.hostname.includes('api.fda.gov') || url.hostname.includes('overpass-api.de')) {
     event.respondWith(
       fetch(event.request)
@@ -57,7 +51,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ✅ CDN de Leaflet: Cache First
   if (url.hostname.includes('unpkg.com') && url.pathname.includes('leaflet')) {
     event.respondWith(
       caches.match(event.request).then((response) => {
@@ -67,7 +60,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ✅ Activos Estáticos: Cache First
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
