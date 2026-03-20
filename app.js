@@ -1,29 +1,30 @@
+/**
+═══════════════════════════════════════════════════════════════
+SALUD-CONECTA AI - App Principal
+═══════════════════════════════════════════════════════════════
+📌 VERSIÓN: 5.0.0
+📌 ÚLTIMA ACTUALIZACIÓN: 2025-01-15
+═══════════════════════════════════════════════════════════════
+*/
+
 document.addEventListener('DOMContentLoaded', () => {
-  // === BASE DE DATOS LOCAL - PRIORIDAD 1 ===
-// Usar CENTROS_SALUD, MEDICAMENTOS, etc. de base-datos-salud.js
-
-function obtenerCentrosDesdeBD() {
-  if (typeof obtenerTodosLosCentros === 'function') {
-    return obtenerTodosLosCentros();
+  
+  // ═══════════════════════════════════════════════════════════════
+  //  VALIDACIÓN DE BASE DE DATOS (Fallback si no carga)
+  // ═══════════════════════════════════════════════════════════════
+  if (typeof obtenerTodosLosCentros !== 'function') {
+    console.warn('⚠️ base-datos-salud.js no cargó. Usando modo básico.');
+    window.obtenerTodosLosCentros = function() { return []; };
+    window.buscarMedicamento = function() { return null; };
+    window.buscarCentrosPorCategoria = function() { return []; };
+    window.buscarSintoma = function() { return null; };
+    window.obtenerTodosLosSintomas = function() { return []; };
+    window.obtenerEmergencias = function() { return []; };
   }
-  // Fallback si no está cargada la BD
-  return [];
-}
 
-function buscarMedicamentoBD(nombre) {
-  if (typeof buscarMedicamento === 'function') {
-    return buscarMedicamento(nombre);
-  }
-  return null;
-}
-
-function obtenerFarmaciasBD() {
-  if (typeof buscarCentrosPorCategoria === 'function') {
-    return buscarCentrosPorCategoria('farmacia');
-  }
-  return [];
-}
-  // === 1. PRIVACY MODAL LOGIC ===
+  // ═══════════════════════════════════════════════════════════════
+  //  1. MODAL DE PRIVACIDAD
+  // ═══════════════════════════════════════════════════════════════
   const modal = document.getElementById('privacy-modal');
   const appContent = document.getElementById('app-content');
   const checkbox = document.getElementById('accept-terms');
@@ -50,7 +51,9 @@ function obtenerFarmaciasBD() {
     appContent.style.display = show ? 'none' : 'block';
   }
 
-  // === 2. ESTADO GLOBAL ===
+  // ═══════════════════════════════════════════════════════════════
+  //  2. ESTADO GLOBAL
+  // ═══════════════════════════════════════════════════════════════
   const appState = {
     medicationSearches: [],
     userLocation: null,
@@ -60,12 +63,13 @@ function obtenerFarmaciasBD() {
     healthMarkers: []
   };
 
-  // === 3. PWA INSTALL LOGIC ===
+  // ═══════════════════════════════════════════════════════════════
+  //  3. PWA INSTALL LOGIC
+  // ═══════════════════════════════════════════════════════════════
   let deferredPrompt = null;
   const installBanner = document.getElementById('install-banner');
   const btnInstall = document.getElementById('btn-install');
   const btnDismissInstall = document.getElementById('btn-dismiss-install');
-  const btnInstallHeader = document.getElementById('btn-install-header');
   const installInstructionsModal = document.getElementById('install-instructions-modal');
   const btnCloseInstallInstructions = document.getElementById('btn-close-install-instructions');
   const installStepsChrome = document.getElementById('install-steps-chrome');
@@ -73,61 +77,63 @@ function obtenerFarmaciasBD() {
 
   const installDismissed = localStorage.getItem('saludConecta_installDismissed');
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installDismissed !== 'true') {
-      installBanner.style.display = 'block';
-      btnInstallHeader.style.display = 'block';
+  if (installBanner) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installDismissed !== 'true') {
+        installBanner.style.display = 'block';
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      if (installBanner) installBanner.style.display = 'none';
+      deferredPrompt = null;
+      localStorage.setItem('saludConecta_installed', 'true');
+    });
+
+    if (btnInstall) {
+      btnInstall.addEventListener('click', async () => {
+        if (!deferredPrompt) { showInstallInstructions(); return; }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          installBanner.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
     }
-  });
 
-  window.addEventListener('appinstalled', () => {
-    installBanner.style.display = 'none';
-    btnInstallHeader.style.display = 'none';
-    deferredPrompt = null;
-    localStorage.setItem('saludConecta_installed', 'true');
-  });
-
-  btnInstall.addEventListener('click', async () => {
-    if (!deferredPrompt) { showInstallInstructions(); return; }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      installBanner.style.display = 'none';
-      btnInstallHeader.style.display = 'none';
+    if (btnDismissInstall) {
+      btnDismissInstall.addEventListener('click', () => {
+        if (installBanner) installBanner.style.display = 'none';
+        localStorage.setItem('saludConecta_installDismissed', 'true');
+      });
     }
-    deferredPrompt = null;
-  });
-
-  btnInstallHeader.addEventListener('click', async () => {
-    if (!deferredPrompt) { showInstallInstructions(); return; }
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') btnInstallHeader.style.display = 'none';
-    deferredPrompt = null;
-  });
-
-  btnDismissInstall.addEventListener('click', () => {
-    installBanner.style.display = 'none';
-    localStorage.setItem('saludConecta_installDismissed', 'true');
-  });
+  }
 
   function showInstallInstructions() {
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    installStepsChrome.style.display = isSafari ? 'none' : 'block';
-    installStepsSafari.style.display = isSafari ? 'block' : 'none';
-    installInstructionsModal.style.display = 'flex';
+    if (installStepsChrome) installStepsChrome.style.display = isSafari ? 'none' : 'block';
+    if (installStepsSafari) installStepsSafari.style.display = isSafari ? 'block' : 'none';
+    if (installInstructionsModal) installInstructionsModal.style.display = 'flex';
   }
 
-  btnCloseInstallInstructions.addEventListener('click', () => {
-    installInstructionsModal.style.display = 'none';
-  });
-  installInstructionsModal.addEventListener('click', (e) => {
-    if (e.target === installInstructionsModal) installInstructionsModal.style.display = 'none';
-  });
+  if (btnCloseInstallInstructions) {
+    btnCloseInstallInstructions.addEventListener('click', () => {
+      if (installInstructionsModal) installInstructionsModal.style.display = 'none';
+    });
+  }
 
-  // === 4. REFERENCIAS DOM ===
+  if (installInstructionsModal) {
+    installInstructionsModal.addEventListener('click', (e) => {
+      if (e.target === installInstructionsModal) installInstructionsModal.style.display = 'none';
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  4. REFERENCIAS DOM
+  // ═══════════════════════════════════════════════════════════════
   const chatMessages = document.getElementById('chat-messages');
   const userInput = document.getElementById('user-input');
   const btnSend = document.getElementById('btn-send');
@@ -172,7 +178,9 @@ function obtenerFarmaciasBD() {
   const btnExportReportsCSV = document.getElementById('btn-export-reports-csv');
   const btnClearReports = document.getElementById('btn-clear-reports');
 
-  // === 5. CONSTANTES Y DICCIONARIOS ===
+  // ═══════════════════════════════════════════════════════════════
+  //  5. CONSTANTES
+  // ═══════════════════════════════════════════════════════════════
   const URGENCY_KEYWORDS = {
     HIGH: ['dolor de pecho', 'dificultad para respirar', 'sangrado', 'inconsciente', 'infarto'],
     MEDIUM: ['fiebre alta', 'vomitos', 'dolor intenso', 'mareos'],
@@ -211,38 +219,22 @@ function obtenerFarmaciasBD() {
     'contraindications': 'Contraindicaciones',
     'warnings and precautions': 'Advertencias y precauciones',
     'adverse reactions': 'Reacciones adversas',
-    'drug interactions': 'Interacciones medicamentosas',
     'pain': 'dolor',
     'fever': 'fiebre',
     'headache': 'dolor de cabeza',
     'inflammation': 'inflamacion',
     'infection': 'infeccion',
     'treatment': 'tratamiento',
-    'prevention': 'prevencion',
     'adult': 'adulto',
     'child': 'nino',
     'tablet': 'tableta',
-    'capsule': 'capsula',
     'oral': 'oral',
-    'daily': 'diario',
-    'hour': 'hora'
+    'daily': 'diario'
   };
 
-  const GRANADA_HOSPITALS = [
-    { name: "Hospital Virgen de la Asistencia", type: "hospital", lat: 11.9350, lng: -85.9570, address: "Centro, Granada" },
-    { name: "Hospital Aleman Nicaraguense", type: "hospital", lat: 11.9320, lng: -85.9540, address: "Barrio San Antonio" },
-    { name: "Farmacia Del Pueblo", type: "pharmacy", lat: 11.9340, lng: -85.9565, address: "Parque Central" },
-    { name: "Centro Medico Sandoval", type: "clinic", lat: 11.9360, lng: -85.9550, address: "Calle La Calzada" }
-  ];
-
-  const GRANADA_PHARMACIES = [
-    { name: "Farmacia Del Pueblo", location: "Parque Central, Granada", hours: "24 horas" },
-    { name: "Farmacia San Nicolas", location: "Calle La Calzada", hours: "8am - 9pm" },
-    { name: "Farmacia Cruz Verde", location: "Centro Comercial", hours: "8am - 10pm" },
-    { name: "Farmacia Guadalajara", location: "Barrio San Antonio", hours: "7am - 9pm" }
-  ];
-
-  // === 6. FUNCIONES DE UTILIDAD ===
+  // ═══════════════════════════════════════════════════════════════
+  //  6. FUNCIONES DE UTILIDAD
+  // ═══════════════════════════════════════════════════════════════
   function getLocalTimestamp() {
     return new Date().toLocaleString('es-NI', { 
       timeZone: 'America/Managua',
@@ -291,20 +283,24 @@ function obtenerFarmaciasBD() {
   }
 
   function showTyping(show) {
-    typingIndicator.style.display = show ? 'flex' : 'none';
+    if (typingIndicator) typingIndicator.style.display = show ? 'flex' : 'none';
     if (show) scrollToBottom();
   }
 
   function scrollToBottom() {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   function showExportFeedback() {
-    exportFeedback.style.display = 'block';
-    setTimeout(() => exportFeedback.style.display = 'none', 3000);
+    if (exportFeedback) {
+      exportFeedback.style.display = 'block';
+      setTimeout(() => exportFeedback.style.display = 'none', 3000);
+    }
   }
 
-  // === 7. GEOLOCALIZACION Y MAPA ===
+  // ═══════════════════════════════════════════════════════════════
+  //  7. GEOLOCALIZACION Y MAPA
+  // ═══════════════════════════════════════════════════════════════
   async function getUserLocation() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -329,6 +325,10 @@ function obtenerFarmaciasBD() {
       appState.map.remove();
       appState.healthMarkers = [];
     }
+    if (typeof L === 'undefined') {
+      console.error('Leaflet no está cargado');
+      return;
+    }
     appState.map = L.map('map').setView([lat, lng], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
@@ -346,57 +346,48 @@ function obtenerFarmaciasBD() {
   }
 
   async function searchHealthFacilities(lat, lng, radius = 2000) {
-  // PRIORIDAD 1: Usar base de datos local
-  const centrosBD = obtenerCentrosDesdeBD();
-  
-  if (centrosBD.length > 0) {
-    console.log('Usando base de datos local (' + centrosBD.length + ' centros)');
-    // Calcular distancias y filtrar
-    return centrosBD.map(centro => ({
-      ...centro,
-      distance: calcularDistancia(lat, lng, centro.lat, centro.lng)
-    }))
-    .filter(c => c.distance <= radius)
-    .sort((a, b) => a.distance - b.distance);
-  }
-  
-  // PRIORIDAD 2: Fallback a Overpass API si BD está vacía
-  console.log('Base de datos vacía, usando Overpass API...');
-  const query = `[out:json][timeout:25];(node["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng});way["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng}););out center;`;
-  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Error en Overpass API');
-    const data = await response.json();
-    return data.elements;
-  } catch (error) {
-    console.error('Error buscando centros:', error);
-    return [];
-  }
-}
-
-  function getFallbackGranadaCenters(userLat, userLng) {
-    return GRANADA_HOSPITALS.map(center => ({
-      ...center,
-      distance: calculateDistance(userLat, userLng, center.lat, center.lng)
-    })).sort((a, b) => a.distance - b.distance);
+    const centrosBD = obtenerTodosLosCentros();
+    if (centrosBD.length > 0) {
+      console.log('Usando base de datos local (' + centrosBD.length + ' centros)');
+      return centrosBD.map(centro => ({
+        ...centro,
+        distance: calcularDistancia(lat, lng, centro.lat, centro.lng)
+      }))
+      .filter(c => c.distance <= radius)
+      .sort((a, b) => a.distancia - b.distancia);
+    }
+    console.log('Base de datos vacía, usando Overpass API...');
+    const query = `[out:json][timeout:25];(node["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng});way["amenity"~"hospital|clinic|pharmacy|doctors"](around:${radius},${lat},${lng}););out center;`;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Error en Overpass API');
+      const data = await response.json();
+      return data.elements;
+    } catch (error) {
+      console.error('Error buscando centros:', error);
+      return [];
+    }
   }
 
-  function calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371;
+  function calcularDistancia(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
               Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return Math.round(R * c * 1000);
+    return Math.round(R * c);
   }
 
   function displayHealthFacilities(facilities, userLat, userLng) {
+    if (!mapResults) return;
     mapResults.innerHTML = '';
-    appState.healthMarkers.forEach(m => appState.map.removeLayer(m));
-    appState.healthMarkers = [];
+    if (appState.healthMarkers) {
+      appState.healthMarkers.forEach(m => appState.map.removeLayer(m));
+      appState.healthMarkers = [];
+    }
     if (!facilities || facilities.length === 0) {
       mapResults.innerHTML = '<p style="text-align:center;color:var(--gray-text);">No se encontraron centros. Intenta ampliar la busqueda o reporta uno nuevo.</p>';
       return;
@@ -405,31 +396,31 @@ function obtenerFarmaciasBD() {
       const lat = facility.lat || facility.center?.lat;
       const lng = facility.lon || facility.center?.lon;
       if (!lat || !lng) return;
-      const name = facility.tags?.name || facility.tags?.addr?.street || 'Sin nombre';
-      const type = facility.tags?.amenity || 'health';
-      const address = facility.tags?.addr?.street || facility.address || '';
-      const distance = calculateDistance(userLat, userLng, lat, lng);
+      const name = facility.tags?.name || facility.nombre || 'Sin nombre';
+      const type = facility.tags?.amenity || facility.categoria || 'health';
+      const address = facility.tags?.addr?.street || facility.direccion || '';
+      const distance = calcularDistancia(userLat, userLng, lat, lng);
       const marker = L.marker([lat, lng]).addTo(appState.map)
         .bindPopup('<strong>' + name + '</strong><br>' + type.toUpperCase() + ' - ' + distance + 'm<br>' + (address ? address : '') + '<br><br><a href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '" target="_blank" style="background:#2a9d8f;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:0.8rem;">Ir</a>');
-      appState.healthMarkers.push(marker);
+      if (appState.healthMarkers) appState.healthMarkers.push(marker);
       const resultItem = document.createElement('div');
       resultItem.className = 'map-result-item';
       resultItem.innerHTML = '<div class="map-result-info"><div class="map-result-name">' + name + '</div><div class="map-result-type">' + type.toUpperCase() + ' - ' + distance + 'm ' + (address ? '- ' + address : '') + '</div></div><a href="https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '&origin=' + userLat + ',' + userLng + '" class="btn-directions" target="_blank" rel="noopener">Ir</a>';
       mapResults.appendChild(resultItem);
     });
-    const group = new L.featureGroup([...appState.healthMarkers, appState.userMarker]);
-    if (group.getLayers().length > 0) {
+    if (appState.map && appState.healthMarkers && appState.healthMarkers.length > 0) {
+      const group = new L.featureGroup([...appState.healthMarkers, appState.userMarker]);
       appState.map.fitBounds(group.getBounds().pad(0.1));
     }
   }
 
   async function showNearbyHealthCenters() {
-    mapContainer.style.display = 'block';
-    reportFormContainer.style.display = 'none';
-    reportsListContainer.style.display = 'none';
-    chatMessages.parentElement.style.display = 'none';
-    mapLoading.style.display = 'block';
-    mapResults.innerHTML = '';
+    if (mapContainer) mapContainer.style.display = 'block';
+    if (reportFormContainer) reportFormContainer.style.display = 'none';
+    if (reportsListContainer) reportsListContainer.style.display = 'none';
+    if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'none';
+    if (mapLoading) mapLoading.style.display = 'block';
+    if (mapResults) mapResults.innerHTML = '';
     try {
       const location = await getUserLocation();
       appState.userLocation = location;
@@ -441,31 +432,39 @@ function obtenerFarmaciasBD() {
       }
     } catch (error) {
       console.error('Error mostrando mapa:', error);
-      mapResults.innerHTML = '<p style="color:var(--danger);text-align:center;">No se pudo cargar el mapa.</p>';
+      if (mapResults) mapResults.innerHTML = '<p style="color:var(--danger);text-align:center;">No se pudo cargar el mapa.</p>';
     } finally {
-      mapLoading.style.display = 'none';
+      if (mapLoading) mapLoading.style.display = 'none';
     }
   }
 
-  // === 8. CROWDSOURCING ===
+  // ═══════════════════════════════════════════════════════════════
+  //  8. CROWDSOURCING
+  // ═══════════════════════════════════════════════════════════════
   async function initReportForm() {
-    reportFormContainer.style.display = 'block';
-    mapContainer.style.display = 'none';
-    reportsListContainer.style.display = 'none';
-    chatMessages.parentElement.style.display = 'none';
-    locationStatus.innerHTML = '<span class="loading">Obteniendo ubicacion...</span>';
-    locationStatus.className = 'location-status';
+    if (reportFormContainer) reportFormContainer.style.display = 'block';
+    if (mapContainer) mapContainer.style.display = 'none';
+    if (reportsListContainer) reportsListContainer.style.display = 'none';
+    if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'none';
+    if (locationStatus) {
+      locationStatus.innerHTML = '<span class="loading">Obteniendo ubicacion...</span>';
+      locationStatus.className = 'location-status';
+    }
     try {
       const location = await getUserLocation();
-      centerLatInput.value = location.lat;
-      centerLngInput.value = location.lng;
-      locationStatus.innerHTML = 'Ubicacion capturada: ' + location.lat.toFixed(6) + ', ' + location.lng.toFixed(6);
-      locationStatus.className = 'location-status success';
+      if (centerLatInput) centerLatInput.value = location.lat;
+      if (centerLngInput) centerLngInput.value = location.lng;
+      if (locationStatus) {
+        locationStatus.innerHTML = 'Ubicacion capturada: ' + location.lat.toFixed(6) + ', ' + location.lng.toFixed(6);
+        locationStatus.className = 'location-status success';
+      }
     } catch (error) {
-      locationStatus.innerHTML = 'No se pudo obtener ubicacion. Ingresa manualmente.';
-      locationStatus.className = 'location-status error';
+      if (locationStatus) {
+        locationStatus.innerHTML = 'No se pudo obtener ubicacion. Ingresa manualmente.';
+        locationStatus.className = 'location-status error';
+      }
     }
-    reportForm.reset();
+    if (reportForm) reportForm.reset();
   }
 
   function saveReport(reportData) {
@@ -495,11 +494,12 @@ function obtenerFarmaciasBD() {
   }
 
   function showReportsList() {
-    reportsListContainer.style.display = 'block';
-    mapContainer.style.display = 'none';
-    reportFormContainer.style.display = 'none';
-    chatMessages.parentElement.style.display = 'none';
+    if (reportsListContainer) reportsListContainer.style.display = 'block';
+    if (mapContainer) mapContainer.style.display = 'none';
+    if (reportFormContainer) reportFormContainer.style.display = 'none';
+    if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'none';
     const reports = getReports();
+    if (!reportsListContent) return;
     if (reports.length === 0) {
       reportsListContent.innerHTML = '<p style="text-align:center;color:var(--gray-text);padding:2rem;">No hay reportes guardados. ¡Se el primero en reportar un centro!</p>';
       return;
@@ -507,6 +507,7 @@ function obtenerFarmaciasBD() {
     const typeLabels = { hospital: 'Hospital', clinic: 'Clinica', pharmacy: 'Farmacia', doctors: 'Consultorio', laboratory: 'Laboratorio', other: 'Otro' };
     reportsListContent.innerHTML = '<p style="margin-bottom:1rem;color:var(--gray-text);">Tienes <strong>' + reports.length + '</strong> reporte(s) guardado(s) localmente.</p><div id="reports-list"></div>';
     const listContainer = document.getElementById('reports-list');
+    if (!listContainer) return;
     reports.sort((a, b) => b.id - a.id).forEach(report => {
       const item = document.createElement('div');
       item.className = 'report-item';
@@ -555,198 +556,194 @@ function obtenerFarmaciasBD() {
     alert('Exportados ' + reports.length + ' reportes en formato CSV.');
   }
 
- function showNearbyPharmacies() {
-  const farmacias = obtenerFarmaciasBD();
-  if (farmacias.length === 0) {
-    return '<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin-top:12px;">⚠️ No hay farmacias registradas en la base de datos local.</div>';
-  }
-  const pharmacyList = farmacias.slice(0, 5).map(pharmacy => 
-    '<li style="margin-bottom:8px;"><strong>' + pharmacy.nombre + '</strong><br><small>📍 ' + pharmacy.direccion + ' • 🕐 ' + pharmacy.horario + ' • 📞 ' + pharmacy.telefono + '</small></li>'
-  ).join('');
-  return '<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px;margin-top:12px;"><strong style="color:#0369a1;display:block;margin-bottom:8px;">💊 Farmacias en Granada:</strong><ul style="margin:0;padding-left:20px;">' + pharmacyList + '</ul></div>';
-}
-
-  // === 9. MEDICAMENTOS ===
+  // ═══════════════════════════════════════════════════════════════
+  //  9. MEDICAMENTOS
+  // ═══════════════════════════════════════════════════════════════
   async function fetchDrugInfo(drugName) {
-  showTyping(true);
-  
-  // PRIORIDAD 1: Buscar en base de datos local
-  const medicamentoBD = buscarMedicamentoBD(drugName);
-  
-  if (medicamentoBD) {
-    // Usar información de la base de datos local (en español)
-    showTyping(false);
-    
-    const drugData = {
-      name: medicamentoBD.nombre_es + (medicamentoBD.nombres_comerciales.length > 0 ? ' (' + medicamentoBD.nombres_comerciales.slice(0, 3).join(', ') + ')' : ''),
-      usage: medicamentoBD.uso_principal,
-      warnings: medicamentoBD.contraindicaciones + '. Efectos secundarios: ' + medicamentoBD.efectos_secundarios,
-      source: 'Base de datos local - Nicaragua ✓',
-      dosis: medicamentoBD.dosis_adulto,
-      requiere_receta: medicamentoBD.requiere_receta,
-      precio: medicamentoBD.precio_aproximado
-    };
-    
-    addDrugCardLocal(drugData, getShortTime());
-    
-    // Mostrar farmacias donde conseguirlo
-    setTimeout(() => {
-      const farmacias = obtenerFarmaciasBD();
-      if (farmacias.length > 0) {
-        addMessage('💊 Puedes conseguir este medicamento en estas farmacias de Granada:\n\n' + farmacias.slice(0, 5).map(f => '• ' + f.nombre + ' (' + f.horario + ')').join('\n'), 'ai', null, getShortTime());
+    showTyping(true);
+    const medicamentoBD = buscarMedicamento(drugName);
+    if (medicamentoBD) {
+      showTyping(false);
+      const drugData = {
+        name: medicamentoBD.nombre_es + (medicamentoBD.nombres_comerciales.length > 0 ? ' (' + medicamentoBD.nombres_comerciales.slice(0, 3).join(', ') + ')' : ''),
+        usage: medicamentoBD.uso_principal,
+        warnings: medicamentoBD.contraindicaciones + '. Efectos secundarios: ' + medicamentoBD.efectos_secundarios,
+        source: 'Base de datos local - Nicaragua ✓',
+        dosis: medicamentoBD.dosis_adulto,
+        requiere_receta: medicamentoBD.requiere_receta,
+        precio: medicamentoBD.precio_aproximado
+      };
+      addDrugCardLocal(drugData, getShortTime());
+      setTimeout(() => {
+        const farmacias = buscarCentrosPorCategoria('farmacia');
+        if (farmacias && farmacias.length > 0) {
+          addMessage('💊 Puedes conseguir este medicamento en estas farmacias de Granada:\n\n' + farmacias.slice(0, 5).map(f => '• ' + f.nombre + ' (' + f.horario + ')').join('\n'), 'ai', null, getShortTime());
+        }
+      }, 500);
+      return;
+    }
+    console.log('Medicamento no encontrado en BD local, consultando openFDA...');
+    const englishName = getEnglishDrugName(drugName);
+    const spanishName = drugName;
+    try {
+      let response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + englishName + '&limit=1');
+      if (!response.ok) {
+        response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.brand_name:' + englishName + '&limit=1');
       }
-    }, 500);
-    
-    return;
-  }
-  
-  // PRIORIDAD 2: Fallback a openFDA si no está en BD local
-  console.log('Medicamento no encontrado en BD local, consultando openFDA...');
-  const englishName = getEnglishDrugName(drugName);
-  const spanishName = drugName;
-  
-  try {
-    let response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + englishName + '&limit=1');
-    if (!response.ok) {
-      response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.brand_name:' + englishName + '&limit=1');
+      if (!response.ok && englishName !== spanishName.toLowerCase()) {
+        response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + spanishName.toLowerCase() + '&limit=1');
+      }
+      if (!response.ok) throw new Error('No encontrado');
+      const data = await response.json();
+      const result = data.results[0];
+      const drugData = {
+        name: result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
+        usage: translateMedicalText(result.indications_and_usage?.[0] || 'Informacion no disponible.'),
+        warnings: translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su medico.'),
+        source: 'Fuente: openFDA (EE.UU.) - Verificar con farmacéutico en Nicaragua'
+      };
+      showTyping(false);
+      addDrugCard(drugData, getShortTime());
+    } catch (error) {
+      showTyping(false);
+      console.error('Error fetchDrugInfo:', error);
+      addMessage('No encontre informacion sobre "' + drugName + '" en la base local ni en openFDA. En Granada, consulta en farmacias como Del Pueblo, San Nicolas o Cruz Verde.', 'ai', null, getShortTime());
     }
-    if (!response.ok && englishName !== spanishName.toLowerCase()) {
-      response = await fetch('https://api.fda.gov/drug/label.json?search=openfda.generic_name:' + spanishName.toLowerCase() + '&limit=1');
-    }
-    if (!response.ok) throw new Error('No encontrado');
-    
-    const data = await response.json();
-    const result = data.results[0];
-    
-    const drugData = {
-      name: result.openfda?.brand_name?.[0] || result.openfda?.generic_name?.[0] || drugName,
-      usage: translateMedicalText(result.indications_and_usage?.[0] || 'Informacion no disponible.'),
-      warnings: translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su medico.'),
-      source: 'Fuente: openFDA (EE.UU.) - Verificar con farmacéutico en Nicaragua'
-    };
-    
-    showTyping(false);
-    addDrugCard(drugData, getShortTime());
-    
-  } catch (error) {
-    showTyping(false);
-    console.error('Error fetchDrugInfo:', error);
-    addMessage('No encontre informacion sobre "' + drugName + '" en la base local ni en openFDA. En Granada, consulta en farmacias como Del Pueblo, San Nicolas o Cruz Verde.', 'ai', null, getShortTime());
   }
-}
+
   function addDrugCardLocal(data, timestamp) {
-  const messageDiv = document.createElement('div');
-  messageDiv.className = 'message ai-message';
-  
-  const cardId = 'drug-card-' + Date.now();
-  const contentId = 'drug-content-' + Date.now();
-  
-  messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
-    '<div class="message-content">' +
-    '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
-    '<div class="drug-warning-banner"><strong>✅ Información Verificada - Nicaragua</strong><ul><li>Datos de la base de datos local de Granada</li><li>Información en <strong>español</strong></li><li>Precios aproximados en <strong>Córdobas</strong></li><li>Siempre consulta con un <strong>farmacéutico local</strong></li></ul></div>' +
-    '<div class="drug-card" id="' + cardId + '">' +
-    '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
-    '<div class="drug-section"><div class="drug-section-title">Uso principal</div>' +
-    '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
-    '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
-    (data.dosis ? '<div class="drug-section"><div class="drug-section-title">Dosis adulto</div><div class="drug-section-content">' + data.dosis + '</div></div>' : '') +
-    '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
-    '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
-    (data.requiere_receta ? '<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color: var(--danger);">Sí - Consulta médica obligatoria</div></div>' : '') +
-    (data.precio ? '<div class="drug-section"><div class="drug-section-title">Precio aproximado</div><div class="drug-section-content" style="color: var(--success);">' + data.precio + '</div></div>' : '') +
-    '<div class="drug-footer">' + data.source + '</div>' +
-    '</div>' +
-    '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
-    '<span class="message-time">' + timestamp + '</span>' +
-    '</div>';
-  chatMessages.appendChild(messageDiv);
-  scrollToBottom();
-}
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    const cardId = 'drug-card-' + Date.now();
+    const contentId = 'drug-content-' + Date.now();
+    messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
+      '<div class="message-content">' +
+      '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
+      '<div class="drug-warning-banner"><strong>✅ Información Verificada - Nicaragua</strong><ul><li>Datos de la base de datos local de Granada</li><li>Información en <strong>español</strong></li><li>Precios aproximados en <strong>Córdobas</strong></li><li>Siempre consulta con un <strong>farmacéutico local</strong></li></ul></div>' +
+      '<div class="drug-card" id="' + cardId + '">' +
+      '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
+      '<div class="drug-section"><div class="drug-section-title">Uso principal</div>' +
+      '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
+      '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
+      (data.dosis ? '<div class="drug-section"><div class="drug-section-title">Dosis adulto</div><div class="drug-section-content">' + data.dosis + '</div></div>' : '') +
+      '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
+      '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
+      (data.requiere_receta ? '<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color: var(--danger);">Sí - Consulta médica obligatoria</div></div>' : '') +
+      (data.precio ? '<div class="drug-section"><div class="drug-section-title">Precio aproximado</div><div class="drug-section-content" style="color: var(--success);">' + data.precio + '</div></div>' : '') +
+      '<div class="drug-footer">' + data.source + '</div>' +
+      '</div>' +
+      '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
+      '<span class="message-time">' + timestamp + '</span>' +
+      '</div>';
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+
+  function addDrugCard(data, timestamp) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    const cardId = 'drug-card-' + Date.now();
+    const contentId = 'drug-content-' + Date.now();
+    messageDiv.innerHTML = '<div class="message-avatar">Rx</div>' +
+      '<div class="message-content">' +
+      '<p>Información sobre <strong>' + data.name + '</strong>:</p>' +
+      '<div class="drug-warning-banner"><strong>⚠️ Informacion Importante para Nicaragua</strong><ul><li>Esta informacion es de <strong>Estados Unidos (FDA)</strong></li><li>Las <strong>dosis pueden variar</strong> en Nicaragua</li><li>Los <strong>nombres comerciales</strong> pueden ser diferentes</li><li>Consulta siempre con un <strong>farmaceutico local</strong></li></ul></div>' +
+      '<div class="drug-card" id="' + cardId + '">' +
+      '<div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">' + data.name + '</h4></div>' +
+      '<div class="drug-section"><div class="drug-section-title">Uso indicado</div>' +
+      '<div class="drug-section-content drug-content" id="' + contentId + '">' + truncateText(data.usage, 150) + '</div>' +
+      '<button class="btn-expand-drug" onclick="expandDrugContent(\'' + contentId + '\', this)">Leer mas</button></div>' +
+      '<div class="drug-section"><div class="drug-section-title">Advertencias</div>' +
+      '<div class="drug-section-content drug-content">' + truncateText(data.warnings, 150) + '</div></div>' +
+      '<div class="drug-footer">' + data.source + '</div>' +
+      '</div>' +
+      '<p class="message-disclaimer">No te automediques. En Nicaragua, consulta en farmacias como: Del Pueblo, San Nicolas, Cruz Verde, o con tu medico.</p>' +
+      '<span class="message-time">' + timestamp + '</span>' +
+      '</div>';
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  10. SÍNTOMAS
+  // ═══════════════════════════════════════════════════════════════
   function addSintomaCard(sintoma, timestamp) {
-  const messageDiv = document.createElement('div');
-  messageDiv.className = 'message ai-message';
-  
-  const cardId = 'sintoma-card-' + Date.now();
-  const cuidadosId = 'cuidados-content-' + Date.now();
-  const consultarId = 'consultar-content-' + Date.now();
-  
-  // Construir lista de cuidados
-  const cuidadosList = sintoma.cuidados_casa.map(c => '<li>' + c + '</li>').join('');
-  
-  // Construir lista de cuándo consultar
-  const consultarList = sintoma.cuando_consultar.map(c => '<li>' + c + '</li>').join('');
-  
-  // Construir lista de causas
-  const causasList = sintoma.causas_comunes.map(c => c).join(', ');
-  
-  const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : 
-                        sintoma.urgencia_default === 'MEDIA' ? '#f77f00' : '#0077b6';
-  
-  messageDiv.innerHTML = '<div class="message-avatar">🩺</div>' +
-    '<div class="message-content">' +
-    '<p>Información sobre <strong>' + sintoma.nombre + '</strong>:</p>' +
-    '<div class="sintoma-warning-banner" style="background:#e9f5ff;border-left:4px solid ' + urgenciaColor + ';padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">' +
-    '<strong>📊 Nivel de atención: ' + (sintoma.urgencia_default === 'ALTA' ? '🚨 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '⚠️ Moderado' : '✅ Leve') + '</strong>' +
-    '<p style="margin:6px 0 0 0;font-size:0.8rem;">' + sintoma.descripcion + '</p>' +
-    '</div>' +
-    '<div class="drug-card" id="' + cardId + '">' +
-    '<div class="drug-card-header"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en Casa</h4></div>' +
-    '<div class="drug-section">' +
-    '<ul style="margin:0;padding-left:20px;">' + cuidadosList + '</ul>' +
-    '</div>' +
-    '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🩺</span><h4 class="drug-title">¿Cuándo Consultar Médico?</h4></div>' +
-    '<div class="drug-section">' +
-    '<ul style="margin:0;padding-left:20px;">' + consultarList + '</ul>' +
-    '</div>' +
-    '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">📋</span><h4 class="drug-title">Causas Comunes</h4></div>' +
-    '<div class="drug-section"><div class="drug-section-content">' + causasList + '</div></div>' +
-    '<div class="drug-footer">Fuente: Base de datos local - Nicaragua ✓</div>' +
-    '</div>' +
-    '<p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. En Granada, consulta en centros de salud locales.</p>' +
-    '<span class="message-time">' + timestamp + '</span>' +
-    '</div>';
-  
-  chatMessages.appendChild(messageDiv);
-  scrollToBottom();
-}
-  // === 10. CHAT Y TRIAGE ===
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message ai-message';
+    const cardId = 'sintoma-card-' + Date.now();
+    const cuidadosList = sintoma.cuidados_casa.map(c => '<li>' + c + '</li>').join('');
+    const consultarList = sintoma.cuando_consultar.map(c => '<li>' + c + '</li>').join('');
+    const causasList = sintoma.causas_comunes.map(c => c).join(', ');
+    const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : sintoma.urgencia_default === 'MEDIA' ? '#f77f00' : '#0077b6';
+    messageDiv.innerHTML = '<div class="message-avatar">🩺</div>' +
+      '<div class="message-content">' +
+      '<p>Información sobre <strong>' + sintoma.nombre + '</strong>:</p>' +
+      '<div class="sintoma-warning-banner" style="background:#e9f5ff;border-left:4px solid ' + urgenciaColor + ';padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">' +
+      '<strong>📊 Nivel de atención: ' + (sintoma.urgencia_default === 'ALTA' ? '🚨 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '⚠️ Moderado' : '✅ Leve') + '</strong>' +
+      '<p style="margin:6px 0 0 0;font-size:0.8rem;">' + sintoma.descripcion + '</p>' +
+      '</div>' +
+      '<div class="drug-card" id="' + cardId + '">' +
+      '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en Casa</h4></div>' +
+      '<div class="drug-section">' +
+      '<ul style="margin:0;padding-left:20px;">' + cuidadosList + '</ul>' +
+      '</div>' +
+      '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🩺</span><h4 class="drug-title">¿Cuándo Consultar Médico?</h4></div>' +
+      '<div class="drug-section">' +
+      '<ul style="margin:0;padding-left:20px;">' + consultarList + '</ul>' +
+      '</div>' +
+      '<div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">📋</span><h4 class="drug-title">Causas Comunes</h4></div>' +
+      '<div class="drug-section"><div class="drug-section-content">' + causasList + '</div></div>' +
+      '<div class="drug-footer">Fuente: Base de datos local - Nicaragua ✓</div>' +
+      '</div>' +
+      '<p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. En Granada, consulta en centros de salud locales.</p>' +
+      '<span class="message-time">' + timestamp + '</span>' +
+      '</div>';
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  11. CHAT Y TRIAGE
+  // ═══════════════════════════════════════════════════════════════
   function sendMessage(text) {
     if (!text.trim()) return;
     const timestamp = getShortTime();
     addMessage(text, 'user', null, timestamp);
-    userInput.value = '';
-    btnSend.disabled = true;
+    if (userInput) userInput.value = '';
+    if (btnSend) btnSend.disabled = true;
     showTyping(true);
     const lowerText = text.toLowerCase();
 
-    // === DETECTAR SÍNTOMAS ESPECÍFICOS DE LA BASE DE DATOS ===
-const sintomaEncontrado = buscarSintoma(lowerText);
+    // DETECTAR SÍNTOMAS ESPECÍFICOS DE LA BASE DE DATOS
+    const sintomaEncontrado = buscarSintoma(lowerText);
+    if (sintomaEncontrado) {
+      appState.medicationSearches.push({
+        drug: sintomaEncontrado.nombre,
+        timestamp: getLocalTimestamp(),
+        query: text
+      });
+      setTimeout(() => {
+        showTyping(false);
+        addSintomaCard(sintomaEncontrado, getShortTime());
+        if (btnSend) btnSend.disabled = false;
+        if (userInput) {
+          userInput.placeholder = 'Describe tus síntomas...';
+          userInput.focus();
+        }
+      }, 1000);
+      return;
+    }
 
-if (sintomaEncontrado) {
-  appState.medicationSearches.push({
-    drug: sintomaEncontrado.nombre,
-    timestamp: getLocalTimestamp(),
-    query: text
-  });
-  
-  setTimeout(() => {
-    showTyping(false);
-    addSintomaCard(sintomaEncontrado, getShortTime());
-    btnSend.disabled = false;
-    userInput.placeholder = 'Describe tus síntomas...';
-    userInput.focus();
-  }, 1000);
-  return;
-}
-
+    // DETECTAR MEDICAMENTOS
     if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
       setTimeout(() => {
         showTyping(false);
         addMessage('Claro, puedo ayudarte a buscar informacion sobre un medicamento. 💊\n\nPor favor, escribe el **nombre del medicamento** que buscas (ej: Paracetamol, Ibuprofeno, Omeprazol).\n\n⚠️ *La informacion proviene de bases de datos de EE.UU. y puede diferir de la disponible en Nicaragua.*', 'ai', null, getShortTime());
-        btnSend.disabled = false;
-        userInput.focus();
-        userInput.placeholder = 'Escribe el nombre del medicamento...';
+        if (btnSend) btnSend.disabled = false;
+        if (userInput) {
+          userInput.focus();
+          userInput.placeholder = 'Escribe el nombre del medicamento...';
+        }
       }, 500);
       return;
     }
@@ -766,9 +763,11 @@ if (sintomaEncontrado) {
       appState.medicationSearches.push({ drug: foundDrugDirect, timestamp: getLocalTimestamp(), query: text });
       setTimeout(() => {
         fetchDrugInfo(foundDrugDirect);
-        btnSend.disabled = false;
-        userInput.placeholder = 'Describe tus sintomas...';
-        userInput.focus();
+        if (btnSend) btnSend.disabled = false;
+        if (userInput) {
+          userInput.placeholder = 'Describe tus síntomas...';
+          userInput.focus();
+        }
       }, 1000);
       return;
     }
@@ -777,33 +776,39 @@ if (sintomaEncontrado) {
       appState.medicationSearches.push({ drug: foundDrugWithKeyword, timestamp: getLocalTimestamp(), query: text });
       setTimeout(() => {
         fetchDrugInfo(foundDrugWithKeyword);
-        btnSend.disabled = false;
-        userInput.placeholder = 'Describe tus sintomas...';
-        userInput.focus();
+        if (btnSend) btnSend.disabled = false;
+        if (userInput) {
+          userInput.placeholder = 'Describe tus síntomas...';
+          userInput.focus();
+        }
       }, 1000);
       return;
     }
 
+    // MAPA/CENTROS
     if (lowerText.includes('mapa') || lowerText.includes('centro') || lowerText.includes('hospital') || lowerText.includes('farmacia') || lowerText.includes('clinica') || lowerText.includes('cerca')) {
       setTimeout(() => {
         showTyping(false);
         showNearbyHealthCenters();
-        btnSend.disabled = false;
-        userInput.focus();
+        if (btnSend) btnSend.disabled = false;
+        if (userInput) userInput.focus();
       }, 1000);
       return;
     }
 
+    // REPORTAR
     if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
-      setTimeout(() => { showTyping(false); initReportForm(); btnSend.disabled = false; }, 1000);
+      setTimeout(() => { showTyping(false); initReportForm(); if (btnSend) btnSend.disabled = false; }, 1000);
       return;
     }
 
+    // VER REPORTES
     if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
-      setTimeout(() => { showTyping(false); showReportsList(); btnSend.disabled = false; }, 1000);
+      setTimeout(() => { showTyping(false); showReportsList(); if (btnSend) btnSend.disabled = false; }, 1000);
       return;
     }
 
+    // TRIAGE NORMAL
     const delay = Math.random() * 1500 + 1500;
     setTimeout(() => {
       showTyping(false);
@@ -811,9 +816,11 @@ if (sintomaEncontrado) {
       const response = generateResponse(urgency);
       addMessage(response.text + '\n\n' + response.action, 'ai', response.urgency, getShortTime());
       scrollToBottom();
-      btnSend.disabled = false;
-      userInput.placeholder = 'Describe tus sintomas...';
-      userInput.focus();
+      if (btnSend) btnSend.disabled = false;
+      if (userInput) {
+        userInput.placeholder = 'Describe tus síntomas...';
+        userInput.focus();
+      }
     }, delay);
   }
 
@@ -826,14 +833,27 @@ if (sintomaEncontrado) {
 
   function generateResponse(urgency) {
     const MOCK_RESPONSES = {
-      HIGH: { text: 'Atencion: Los sintomas que describes pueden indicar una condicion grave.', action: 'Te recomiendo buscar atencion medica inmediata. Usa el mapa para ver centros cercanos o llama al 133.', urgency: 'ALTA' },
-      MEDIUM: { text: 'Recomendacion: Deberias consultar con un profesional pronto.', action: 'Programa una cita en Granada. ¿Quieres ver centros en el mapa o reportar uno nuevo?', urgency: 'MEDIA' },
-      LOW: { text: 'Cuidados en Casa: Tus sintomas parecen leves.', action: '- Descansa adecuadamente\n- Mantente hidratado\n- Si empeoran, consulta un medico', urgency: 'BAJA' }
+      HIGH: {
+        text: 'Atencion: Los sintomas que describes pueden indicar una condicion grave.',
+        action: 'Te recomiendo buscar atencion medica inmediata. Usa el mapa para ver centros cercanos o llama al 133.',
+        urgency: 'ALTA'
+      },
+      MEDIUM: {
+        text: 'Recomendacion: Deberias consultar con un profesional pronto.',
+        action: 'Programa una cita en Granada. ¿Quieres ver centros en el mapa o reportar uno nuevo?',
+        urgency: 'MEDIA'
+      },
+      LOW: {
+        text: 'Gracias por tu consulta. Los síntomas que mencionas requieren una evaluación más detallada para poder orientarte adecuadamente.',
+        action: 'Te recomiendo consultar con un profesional de salud quien podrá evaluar tu caso específico. En Granada, puedes visitar:\n\n• Centros de salud del MINSA (atención gratuita)\n• Clínicas privadas (con o sin seguro médico)\n• Farmacias con consultorio farmacéutico\n\n¿Te gustaría que te muestre los centros de salud más cercanos a tu ubicación?',
+        urgency: 'BAJA'
+      }
     };
     return MOCK_RESPONSES[urgency];
   }
 
   function addMessage(text, sender, urgency = null, timestamp) {
+    if (!chatMessages) return;
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ' + sender + '-message';
     const avatar = sender === 'ai' ? 'AI' : 'TU';
@@ -854,7 +874,9 @@ if (sintomaEncontrado) {
     scrollToBottom();
   }
 
-  // === 11. EXPORTAR CONVERSACION ===
+  // ═══════════════════════════════════════════════════════════════
+  //  12. EXPORTAR CONVERSACION
+  // ═══════════════════════════════════════════════════════════════
   function generateClinicalSummary() {
     const messages = Array.from(document.querySelectorAll('.chat-messages .message'));
     const userMessages = messages.filter(m => m.classList.contains('user-message'));
@@ -884,10 +906,10 @@ if (sintomaEncontrado) {
     lines.push('=====================================');
     lines.push('');
     lines.push('Fecha: ' + now);
-    lines.push('Ubicacion: ' + (includeLocationCheckbox.checked ? 'Granada, Nicaragua' : '[Ocultada]'));
+    lines.push('Ubicacion: ' + (includeLocationCheckbox && includeLocationCheckbox.checked ? 'Granada, Nicaragua' : '[Ocultada]'));
     lines.push('Version: 5.0.0');
     lines.push('');
-    if (includeSummaryCheckbox.checked) {
+    if (includeSummaryCheckbox && includeSummaryCheckbox.checked) {
       lines.push('RESUMEN CLINICO');
       lines.push('---------------');
       lines.push('- Sintomas: ' + summary.symptoms);
@@ -896,13 +918,13 @@ if (sintomaEncontrado) {
       lines.push('- Duracion: ' + summary.duration);
       lines.push('');
     }
-    if (includeMedHistoryCheckbox.checked && appState.medicationSearches.length > 0) {
+    if (includeMedHistoryCheckbox && includeMedHistoryCheckbox.checked && appState.medicationSearches.length > 0) {
       lines.push('HISTORIAL DE MEDICAMENTOS');
       lines.push('-------------------------');
       appState.medicationSearches.forEach((s, i) => { lines.push((i+1) + '. [' + s.timestamp + '] ' + s.drug); });
       lines.push('');
     }
-    if (anonymizeCheckbox.checked) { lines.push('[DATOS ANONIMIZADOS]'); lines.push(''); }
+    if (anonymizeCheckbox && anonymizeCheckbox.checked) { lines.push('[DATOS ANONIMIZADOS]'); lines.push(''); }
     lines.push('CONVERSACION');
     lines.push('------------');
     lines.push('');
@@ -940,9 +962,11 @@ if (sintomaEncontrado) {
     document.body.removeChild(textarea);
   }
 
-  // === 12. EVENT LISTENERS ===
-  btnSend.addEventListener('click', () => sendMessage(userInput.value));
-  userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(userInput.value); });
+  // ═══════════════════════════════════════════════════════════════
+  //  13. EVENT LISTENERS
+  // ═══════════════════════════════════════════════════════════════
+  if (btnSend) btnSend.addEventListener('click', () => sendMessage(userInput.value));
+  if (userInput) userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(userInput.value); });
   
   quickBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -956,23 +980,23 @@ if (sintomaEncontrado) {
     });
   });
 
-  btnEmergency.addEventListener('click', () => emergencyModal.style.display = 'flex');
-  btnCloseEmergency.addEventListener('click', () => emergencyModal.style.display = 'none');
-  btnShowMapEmergency.addEventListener('click', () => { emergencyModal.style.display = 'none'; showNearbyHealthCenters(); });
-  emergencyModal.addEventListener('click', (e) => { if (e.target === emergencyModal) emergencyModal.style.display = 'none'; });
+  if (btnEmergency) btnEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'flex'; });
+  if (btnCloseEmergency) btnCloseEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'none'; });
+  if (btnShowMapEmergency) btnShowMapEmergency.addEventListener('click', () => { if (emergencyModal) emergencyModal.style.display = 'none'; showNearbyHealthCenters(); });
+  if (emergencyModal) emergencyModal.addEventListener('click', (e) => { if (e.target === emergencyModal) emergencyModal.style.display = 'none'; });
 
-  btnExport.addEventListener('click', () => { exportModal.style.display = 'flex'; exportFeedback.style.display = 'none'; });
-  btnCloseExport.addEventListener('click', () => exportModal.style.display = 'none');
-  exportModal.addEventListener('click', (e) => { if (e.target === exportModal) exportModal.style.display = 'none'; });
-  btnExportTxt.addEventListener('click', () => { downloadTxt('salud-conecta-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.txt', getChatHistory()); showExportFeedback(); });
-  btnExportCopy.addEventListener('click', async () => { try { await copyToClipboard(getChatHistory()); showExportFeedback(); } catch { alert('Copia manual requerida'); } });
+  if (btnExport) btnExport.addEventListener('click', () => { if (exportModal) { exportModal.style.display = 'flex'; if (exportFeedback) exportFeedback.style.display = 'none'; } });
+  if (btnCloseExport) btnCloseExport.addEventListener('click', () => { if (exportModal) exportModal.style.display = 'none'; });
+  if (exportModal) exportModal.addEventListener('click', (e) => { if (e.target === exportModal) exportModal.style.display = 'none'; });
+  if (btnExportTxt) btnExportTxt.addEventListener('click', () => { downloadTxt('salud-conecta-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.txt', getChatHistory()); showExportFeedback(); });
+  if (btnExportCopy) btnExportCopy.addEventListener('click', async () => { try { await copyToClipboard(getChatHistory()); showExportFeedback(); } catch { alert('Copia manual requerida'); } });
 
-  btnCloseMap.addEventListener('click', () => { mapContainer.style.display = 'none'; chatMessages.parentElement.style.display = 'flex'; if (appState.map) appState.map.remove(); });
-  btnAddCenter.addEventListener('click', () => { initReportForm(); });
+  if (btnCloseMap) btnCloseMap.addEventListener('click', () => { if (mapContainer) mapContainer.style.display = 'none'; if (chatMessages && chatMessages.parentElement) chatMessages.parentElement.style.display = 'flex'; if (appState.map) appState.map.remove(); });
+  if (btnAddCenter) btnAddCenter.addEventListener('click', () => { initReportForm(); });
 
-  btnCloseForm.addEventListener('click', () => { reportFormContainer.style.display = 'none'; mapContainer.style.display = 'flex'; });
-  btnCancelReport.addEventListener('click', () => { reportFormContainer.style.display = 'none'; mapContainer.style.display = 'flex'; });
-  reportForm.addEventListener('submit', (e) => {
+  if (btnCloseForm) btnCloseForm.addEventListener('click', () => { if (reportFormContainer) reportFormContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
+  if (btnCancelReport) btnCancelReport.addEventListener('click', () => { if (reportFormContainer) reportFormContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
+  if (reportForm) reportForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const reportData = {
       name: document.getElementById('center-name').value,
@@ -986,28 +1010,14 @@ if (sintomaEncontrado) {
     };
     saveReport(reportData);
     alert('Reporte guardado localmente. Puedes exportarlo despues desde "Mis Reportes".');
-    reportFormContainer.style.display = 'none';
+    if (reportFormContainer) reportFormContainer.style.display = 'none';
     showReportsList();
   });
 
-  btnCloseReports.addEventListener('click', () => { reportsListContainer.style.display = 'none'; mapContainer.style.display = 'flex'; });
-  btnExportReportsJSON.addEventListener('click', exportReportsJSON);
-  btnExportReportsCSV.addEventListener('click', exportReportsCSV);
-  btnClearReports.addEventListener('click', clearAllReports);
+  if (btnCloseReports) btnCloseReports.addEventListener('click', () => { if (reportsListContainer) reportsListContainer.style.display = 'none'; if (mapContainer) mapContainer.style.display = 'flex'; });
+  if (btnExportReportsJSON) btnExportReportsJSON.addEventListener('click', exportReportsJSON);
+  if (btnExportReportsCSV) btnExportReportsCSV.addEventListener('click', exportReportsCSV);
+  if (btnClearReports) btnClearReports.addEventListener('click', clearAllReports);
 
-  if (hasAccepted === 'true') {
-    console.log('Salud-Conecta AI v5.0 iniciada');
-  }
+  console.log('Salud-Conecta AI v5.0 iniciada');
 });
-// Ahora puedes acceder a:
-CENTROS_SALUD    // Array con todos los centros
-MEDICAMENTOS     // Array con medicamentos
-EMERGENCIAS      // Array con números de emergencia
-BARRIOS_GRANADA  // Array con barrios
-
-// Ejemplo: Filtrar farmacias cercanas
-const farmacias = CENTROS_SALUD.filter(c => c.categoria === 'farmacia');
-
-// Ejemplo: Buscar medicamento por nombre
-const medicamento = MEDICAMENTOS.find(m => m.nombre_es.toLowerCase() === 'paracetamol');
-
