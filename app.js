@@ -516,75 +516,100 @@ document.addEventListener('DOMContentLoaded', () => {
   // Hacer deleteReport global para onclick
   window.deleteReport = deleteReport;
 
-  // === SEND MESSAGE FUNCTION ===
-  function sendMessage(text) {
-    if (!text.trim()) return;
+// === SEND MESSAGE FUNCTION (CORREGIDA) ===
+function sendMessage(text) {
+  if (!text.trim()) return;
 
-    const timestamp = getShortTime();
-    addMessage(text, 'user', null, timestamp);
-    userInput.value = '';
-    btnSend.disabled = true;
-    showTyping(true);
+  const timestamp = getShortTime();
+  addMessage(text, 'user', null, timestamp);
+  userInput.value = '';
+  btnSend.disabled = true;
+  showTyping(true);
 
-    if (text.toLowerCase().includes('mapa') || text.toLowerCase().includes('centro') || 
-        text.toLowerCase().includes('hospital') || text.toLowerCase().includes('farmacia') ||
-        text.toLowerCase().includes('clínica') || text.toLowerCase().includes('cerca')) {
-      setTimeout(() => {
-        showTyping(false);
-        showNearbyHealthCenters();
-        btnSend.disabled = false;
-        userInput.focus();
-      }, 1000);
-      return;
-    }
+  // 1. Detectar consulta DIRECTA de medicamento (solo el nombre)
+  const foundDrugDirect = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
+  
+  // 2. Detectar palabras clave de medicamento
+  const isDrugQuery = DRUG_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
+  const foundDrugWithKeyword = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
 
-    if (text.toLowerCase().includes('reportar') || text.toLowerCase().includes('agregar centro')) {
-      setTimeout(() => {
-        showTyping(false);
-        initReportForm();
-        btnSend.disabled = false;
-      }, 1000);
-      return;
-    }
-
-    if (text.toLowerCase().includes('mis reportes') || text.toLowerCase().includes('ver reportes')) {
-      setTimeout(() => {
-        showTyping(false);
-        showReportsList();
-        btnSend.disabled = false;
-      }, 1000);
-      return;
-    }
-
-    const isDrugQuery = DRUG_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
-    const foundDrug = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
-
-    if (isDrugQuery && foundDrug) {
-      appState.medicationSearches.push({
-        drug: foundDrug,
-        timestamp: getLocalTimestamp(),
-        query: text
-      });
-      
-      setTimeout(() => {
-        fetchDrugInfo(foundDrug);
-        btnSend.disabled = false;
-        userInput.focus();
-      }, 1000);
-      return;
-    }
-
-    const delay = Math.random() * 1500 + 1500;
+  // ✅ PRIORIDAD 1: Si hay nombre de medicamento directo (ej: "Paracetamol")
+  if (foundDrugDirect) {
+    appState.medicationSearches.push({
+      drug: foundDrugDirect,
+      timestamp: getLocalTimestamp(),
+      query: text
+    });
+    
     setTimeout(() => {
-      showTyping(false);
-      const urgency = detectUrgency(text);
-      const response = generateResponse(urgency);
-      addMessage(response.text + '\n\n' + response.action, 'ai', response.urgency, getShortTime());
-      scrollToBottom();
+      fetchDrugInfo(foundDrugDirect);
       btnSend.disabled = false;
       userInput.focus();
-    }, delay);
+    }, 1000);
+    return;
   }
+
+  // ✅ PRIORIDAD 2: Si hay palabras clave + medicamento (ej: "¿Para qué sirve el ibuprofeno?")
+  if (isDrugQuery && foundDrugWithKeyword) {
+    appState.medicationSearches.push({
+      drug: foundDrugWithKeyword,
+      timestamp: getLocalTimestamp(),
+      query: text
+    });
+    
+    setTimeout(() => {
+      fetchDrugInfo(foundDrugWithKeyword);
+      btnSend.disabled = false;
+      userInput.focus();
+    }, 1000);
+    return;
+  }
+
+  // 3. Detectar consulta de mapa/centros de salud
+  if (text.toLowerCase().includes('mapa') || text.toLowerCase().includes('centro') || 
+      text.toLowerCase().includes('hospital') || text.toLowerCase().includes('farmacia') ||
+      text.toLowerCase().includes('clínica') || text.toLowerCase().includes('cerca')) {
+    setTimeout(() => {
+      showTyping(false);
+      showNearbyHealthCenters();
+      btnSend.disabled = false;
+      userInput.focus();
+    }, 1000);
+    return;
+  }
+
+  // 4. Detectar reporte de centro
+  if (text.toLowerCase().includes('reportar') || text.toLowerCase().includes('agregar centro')) {
+    setTimeout(() => {
+      showTyping(false);
+      initReportForm();
+      btnSend.disabled = false;
+    }, 1000);
+    return;
+  }
+
+  // 5. Detectar ver reportes
+  if (text.toLowerCase().includes('mis reportes') || text.toLowerCase().includes('ver reportes')) {
+    setTimeout(() => {
+      showTyping(false);
+      showReportsList();
+      btnSend.disabled = false;
+    }, 1000);
+    return;
+  }
+
+  // 6. Triage normal (síntomas)
+  const delay = Math.random() * 1500 + 1500;
+  setTimeout(() => {
+    showTyping(false);
+    const urgency = detectUrgency(text);
+    const response = generateResponse(urgency);
+    addMessage(response.text + '\n\n' + response.action, 'ai', response.urgency, getShortTime());
+    scrollToBottom();
+    btnSend.disabled = false;
+    userInput.focus();
+  }, delay);
+}
 
   function detectUrgency(text) {
     const lowerText = text.toLowerCase();
