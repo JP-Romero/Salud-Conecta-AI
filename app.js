@@ -26,14 +26,117 @@ document.addEventListener('DOMContentLoaded', () => {
     appContent.style.display = show ? 'none' : 'block';
   }
 
-  // === 2. ESTADO GLOBAL PARA MEJORAS ===
+  // === 2. ESTADO GLOBAL ===
   const appState = {
-    medicationSearches: [], // Historial de medicamentos buscados
-    userLocation: null, // Ubicación aproximada (solo ciudad)
+    medicationSearches: [],
+    userLocation: null,
     conversationStartTime: new Date()
   };
 
-  // === 3. CHAT & TRIAGE LOGIC ===
+  // === 3. PWA INSTALL LOGIC ===
+  let deferredPrompt = null;
+  const installBanner = document.getElementById('install-banner');
+  const btnInstall = document.getElementById('btn-install');
+  const btnDismissInstall = document.getElementById('btn-dismiss-install');
+  const btnInstallHeader = document.getElementById('btn-install-header');
+  const installInstructionsModal = document.getElementById('install-instructions-modal');
+  const btnCloseInstallInstructions = document.getElementById('btn-close-install-instructions');
+  const installStepsChrome = document.getElementById('install-steps-chrome');
+  const installStepsSafari = document.getElementById('install-steps-safari');
+
+  // Detectar si ya se instaló o se descartó
+  const installDismissed = localStorage.getItem('saludConecta_installDismissed');
+
+  // Escuchar evento beforeinstallprompt (Chrome/Edge/Android)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Mostrar banner solo si no lo ha descartado antes
+    if (installDismissed !== 'true') {
+      installBanner.style.display = 'block';
+      btnInstallHeader.style.display = 'block';
+    }
+    
+    console.log('✅ Evento beforeinstallprompt disparado');
+  });
+
+  // Detectar cuando la app se instala
+  window.addEventListener('appinstalled', () => {
+    installBanner.style.display = 'none';
+    btnInstallHeader.style.display = 'none';
+    deferredPrompt = null;
+    localStorage.setItem('saludConecta_installed', 'true');
+    console.log('✅ App instalada exitosamente');
+  });
+
+  // Botón de instalar (banner)
+  btnInstall.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      showInstallInstructions();
+      return;
+    }
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Respuesta del usuario: ${outcome}`);
+    
+    if (outcome === 'accepted') {
+      installBanner.style.display = 'none';
+      btnInstallHeader.style.display = 'none';
+    }
+    deferredPrompt = null;
+  });
+
+  // Botón de instalar (header)
+  btnInstallHeader.addEventListener('click', async () => {
+    if (!deferredPrompt) {
+      showInstallInstructions();
+      return;
+    }
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+      btnInstallHeader.style.display = 'none';
+    }
+    deferredPrompt = null;
+  });
+
+  // Descartar banner de instalación
+  btnDismissInstall.addEventListener('click', () => {
+    installBanner.style.display = 'none';
+    localStorage.setItem('saludConecta_installDismissed', 'true');
+  });
+
+  // Mostrar instrucciones de instalación
+  function showInstallInstructions() {
+    // Detectar navegador
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    if (isSafari) {
+      installStepsChrome.style.display = 'none';
+      installStepsSafari.style.display = 'block';
+    } else {
+      installStepsChrome.style.display = 'block';
+      installStepsSafari.style.display = 'none';
+    }
+    
+    installInstructionsModal.style.display = 'flex';
+  }
+
+  btnCloseInstallInstructions.addEventListener('click', () => {
+    installInstructionsModal.style.display = 'none';
+  });
+
+  installInstructionsModal.addEventListener('click', (e) => {
+    if (e.target === installInstructionsModal) {
+      installInstructionsModal.style.display = 'none';
+    }
+  });
+
+  // === 4. CHAT & TRIAGE LOGIC ===
   const chatMessages = document.getElementById('chat-messages');
   const userInput = document.getElementById('user-input');
   const btnSend = document.getElementById('btn-send');
@@ -76,8 +179,6 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   // === FUNCIONES DE UTILIDAD ===
-  
-  // Obtener timestamp formateado para Nicaragua
   function getLocalTimestamp() {
     return new Date().toLocaleString('es-NI', { 
       timeZone: 'America/Managua',
@@ -86,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Obtener hora corta para burbujas de chat
   function getShortTime() {
     return new Date().toLocaleTimeString('es-NI', { 
       timeZone: 'America/Managua',
@@ -94,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Obtener ubicación aproximada (solo ciudad) con consentimiento
   async function requestApproximateLocation() {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -104,12 +203,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // ✅ Solo guardamos la ciudad, NO coordenadas exactas
           resolve('Granada, Nicaragua');
         },
         (error) => {
           console.log('Ubicación no disponible:', error);
-          resolve('Granada, Nicaragua'); // Fallback
+          resolve('Granada, Nicaragua');
         },
         { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
       );
@@ -126,12 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSend.disabled = true;
     showTyping(true);
 
-    // 1. Detect Drug Query
     const isDrugQuery = DRUG_KEYWORDS.some(keyword => text.toLowerCase().includes(keyword));
     const foundDrug = COMMON_DRUGS.find(drug => text.toLowerCase().includes(drug));
 
     if (isDrugQuery && foundDrug) {
-      // ✅ Registrar búsqueda de medicamento
       appState.medicationSearches.push({
         drug: foundDrug,
         timestamp: getLocalTimestamp(),
@@ -146,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 2. Detect Hospital Query
     if (text.toLowerCase().includes('hospital') || text.toLowerCase().includes('clinica') || text.toLowerCase().includes('centro')) {
       setTimeout(() => {
         showHospitals();
@@ -156,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 3. Normal Triage Mockup
     const delay = Math.random() * 1500 + 1500;
     setTimeout(() => {
       showTyping(false);
@@ -169,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, delay);
   }
 
-  // === DETECT URGENCY ===
   function detectUrgency(text) {
     const lowerText = text.toLowerCase();
     if (URGENCY_KEYWORDS.HIGH.some(k => lowerText.includes(k))) return 'HIGH';
@@ -177,7 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'LOW';
   }
 
-  // === GENERATE RESPONSE ===
   function generateResponse(urgency) {
     const MOCK_RESPONSES = {
       HIGH: {
@@ -199,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return MOCK_RESPONSES[urgency];
   }
 
-  // === FETCH DRUG INFO (openFDA) ===
   async function fetchDrugInfo(drugName) {
     try {
       const response = await fetch(`https://api.fda.gov/drug/label.json?search=openfda.generic_name:${drugName}+OR+openfda.brand_name:${drugName}&limit=1`);
@@ -221,7 +312,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // === SHOW LOCAL HOSPITALS ===
   function showHospitals() {
     showTyping(false);
     const messageDiv = document.createElement('div');
@@ -247,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
   }
 
-  // === ADD MESSAGE TO CHAT (con timestamp) ===
   function addMessage(text, sender, urgency = null, timestamp = getShortTime()) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${sender}-message`;
@@ -275,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
   }
 
-  // === ADD DRUG CARD (con timestamp) ===
   function addDrugCard(data, timestamp = getShortTime()) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ai-message';
@@ -308,15 +396,11 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
   }
 
-  // === EXPORT CONVERSATION LOGIC (CON TODAS LAS MEJORAS) ===
-  
-  // Generar resumen clínico automático
+  // === EXPORT LOGIC ===
   function generateClinicalSummary() {
     const messages = Array.from(document.querySelectorAll('.chat-messages .message'));
     const userMessages = messages.filter(m => m.classList.contains('user-message'));
-    const aiMessages = messages.filter(m => m.classList.contains('ai-message'));
     
-    // Detectar síntomas mencionados
     const symptoms = [];
     userMessages.forEach(msg => {
       const text = msg.textContent.toLowerCase();
@@ -327,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Detectar nivel de urgencia más alto mencionado
     let maxUrgency = 'BAJA';
     if (symptoms.some(s => URGENCY_KEYWORDS.HIGH.includes(s))) maxUrgency = 'ALTA';
     else if (symptoms.some(s => URGENCY_KEYWORDS.MEDIUM.includes(s))) maxUrgency = 'MEDIA';
@@ -340,13 +423,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Generar contenido completo para exportar
   function getChatHistory() {
     const lines = [];
     const now = getLocalTimestamp();
     const summary = generateClinicalSummary();
     
-    // === HEADER ===
     lines.push('╔════════════════════════════════════════════════════════╗');
     lines.push('║     SALUD-CONECTA AI - REPORTE DE CONSULTA            ║');
     lines.push('╚════════════════════════════════════════════════════════╝');
@@ -357,10 +438,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (includeLocationCheckbox.checked) {
       lines.push(`📍 Ubicación: Granada, Nicaragua`);
     }
-    lines.push(`🔖 Versión de la app: 2.0.0`);
+    lines.push(`🔖 Versión de la app: 3.0.0`);
     lines.push('');
     
-    // === RESUMEN CLÍNICO (opcional) ===
     if (includeSummaryCheckbox.checked) {
       lines.push('┌────────────────────────────────────────────────────┐');
       lines.push('│ 📋 RESUMEN CLÍNICO PARA PROFESIONAL DE SALUD      │');
@@ -372,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
       lines.push('');
     }
     
-    // === HISTORIAL DE MEDICAMENTOS (opcional) ===
     if (includeMedHistoryCheckbox.checked && appState.medicationSearches.length > 0) {
       lines.push('┌────────────────────────────────────────────────────┐');
       lines.push('│ 💊 HISTORIAL DE BÚSQUEDAS DE MEDICAMENTOS         │');
@@ -384,13 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
       lines.push('');
     }
     
-    // === ANONIMIZACIÓN ===
     if (anonymizeCheckbox.checked) {
       lines.push('[DATOS ANONIMIZADOS - Información personal ocultada]');
       lines.push('');
     }
     
-    // === CONVERSACIÓN COMPLETA ===
     lines.push('┌────────────────────────────────────────────────────┐');
     lines.push('│ 💬 CONVERSACIÓN COMPLETA                          │');
     lines.push('└────────────────────────────────────────────────────┘');
@@ -403,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const content = msg.querySelector('.message-content')?.cloneNode(true);
       
       if (content) {
-        // Remover elementos que no queremos en el texto plano
         content.querySelectorAll('.message-disclaimer, .urgency-badge, .drug-card, .btn-expand-drug').forEach(el => el.remove());
       }
       
@@ -413,7 +489,6 @@ document.addEventListener('DOMContentLoaded', () => {
       lines.push('');
     });
     
-    // === FOOTER ===
     lines.push('─────────────────────────────────────────────────────');
     lines.push('⚠️ ADVERTENCIA LEGAL:');
     lines.push('• Este documento NO constituye un diagnóstico médico.');
@@ -427,7 +502,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return lines.join('\n');
   }
 
-  // Descargar archivo .txt
   function downloadTxt(filename, text) {
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -440,12 +514,10 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
   }
 
-  // Copiar al portapapeles
   function copyToClipboard(text) {
     if (navigator.clipboard) {
       return navigator.clipboard.writeText(text);
     } else {
-      // Fallback para navegadores antiguos
       const textarea = document.createElement('textarea');
       textarea.value = text;
       document.body.appendChild(textarea);
@@ -456,7 +528,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Mostrar feedback de exportación
   function showExportFeedback() {
     exportFeedback.style.display = 'block';
     setTimeout(() => {
@@ -464,7 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   }
 
-  // === UTILS ===
   function truncateText(text, limit) {
     if (!text) return 'Sin información disponible.';
     const cleanText = text.replace(/<[^>]*>?/gm, '');
@@ -488,7 +558,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => sendMessage(btn.getAttribute('data-symptom')));
   });
 
-  // Emergency Modal
   btnEmergency.addEventListener('click', () => emergencyModal.style.display = 'flex');
   btnCloseEmergency.addEventListener('click', () => emergencyModal.style.display = 'none');
   btnShowHospitals.addEventListener('click', () => {
@@ -499,12 +568,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === emergencyModal) emergencyModal.style.display = 'none';
   });
 
-  // Export Modal
   btnExport.addEventListener('click', () => {
     exportModal.style.display = 'flex';
     exportFeedback.style.display = 'none';
   });
-  btnCloseExport.addEventListener('click', () => exportModal.style.display = 'none');
+  btnCloseExport.addEventListener('click', () => exportModal.style.display = 'none';
   exportModal.addEventListener('click', (e) => {
     if (e.target === exportModal) exportModal.style.display = 'none';
   });
@@ -527,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // === INICIALIZACIÓN ===
-  // Solicitar ubicación aproximada al iniciar (solo si el usuario acepta)
   if (hasAccepted === 'true') {
     requestApproximateLocation().then(location => {
       appState.userLocation = location;
