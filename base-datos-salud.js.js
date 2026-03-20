@@ -1534,4 +1534,218 @@ function obtenerEstadisticasBD() {
    - Actualiza en Semana Santa y fiestas patronales
 
 ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//  🤒 SÍNTOMAS COMUNES - INFORMACIÓN ESPECÍFICA
+// ═══════════════════════════════════════════════════════════════
+const SINTOMAS = [
+
+{
+  id:                    1,
+  nombre:                "Dolor de cabeza",
+  categoria:             "Dolor",
+  descripcion:           "El dolor de cabeza es una de las molestias más comunes. Puede ser tensional, migraña o por otras causas.",
+  causas_comunes:        ["Estrés", "Deshidratación", "Falta de sueño", "Tensión muscular", "Cambios hormonales"],
+  cuidados_casa:         [
+    "Descansa en un lugar oscuro y silencioso",
+    "Aplica compresas frías en la frente",
+    "Mantente hidratado (agua, suero oral)",
+    "Masajea suavemente sienes y cuello",
+    "Evita pantallas y luces brillantes"
+  ],
+  cuando_consultar:      [
+    "Dolor súbito y severo (el peor de tu vida)",
+    "Dolor después de un golpe en la cabeza",
+    "Con fiebre alta, rigidez de cuello o confusión",
+    "Si dura más de 3 días seguidos",
+    "Si interfiere con actividades diarias"
+  ],
+  urgencia_default:      "BAJA",
+  requiere_atencion:     false
+},
+{
+  id:                    2,
+  nombre:                "Fiebre",
+  categoria:             "Temperatura",
+  descripcion:           "La fiebre es una respuesta natural del cuerpo a infecciones. Se considera fiebre a partir de 38°C (100.4°F).",
+  causas_comunes:        ["Infecciones virales", "Infecciones bacterianas", "Gripe", "COVID-19", "Infecciones urinarias"],
+  cuidados_casa:         [
+    "Mantente hidratado (agua, suero, caldos)",
+    "Descansa adecuadamente",
+    "Usa ropa ligera",
+    "Aplica compresas tibias (no frías)",
+    "Puedes tomar paracetamol si es necesario"
+  ],
+  cuando_consultar:      [
+    "Fiebre mayor a 39.5°C (103°F)",
+    "Fiebre que dura más de 3 días",
+    "Con dificultad para respirar",
+    "Con erupciones en la piel",
+    "En bebés menores de 3 meses (cualquier fiebre)"
+  ],
+  urgencia_default:      "MEDIA",
+  requiere_atencion:     false
+},
+{
+  id:                    3,
+  nombre:                "Náuseas",
+  categoria:             "Digestivo",
+  descripcion:           "Las náuseas son la sensación de querer vomitar. Pueden tener múltiples causas.",
+  causas_comunes:        ["Gastroenteritis", "Mareo por movimiento", "Embarazo", "Ansiedad", "Alimentos en mal estado"],
+  cuidados_casa:         [
+    "Toma líquidos en pequeños sorbos",
+    "Evita alimentos grasos o picantes",
+    "Come galletas saladas o pan tostado",
+    "Descansa sentado o recostado",
+    "Prueba té de jengibre o menta"
+  ],
+  cuando_consultar:      [
+    "Vómitos que duran más de 24 horas",
+    "No puedes retener líquidos",
+    "Vómito con sangre",
+    "Dolor abdominal severo",
+    "Signos de deshidratación"
+  ],
+  urgencia_default:      "BAJA",
+  requiere_atencion:     false
+},
+{
+  id:                    4,
+  nombre:                "Cansancio",
+  categoria:             "General",
+  descripcion:           "El cansancio o fatiga puede ser normal después de esfuerzo, pero si persiste requiere atención.",
+  causas_comunes:        ["Falta de sueño", "Estrés", "Anemia", "Mala alimentación", "Depresión"],
+  cuidados_casa:         [
+    "Duerme 7-8 horas diarias",
+    "Mantén una alimentación balanceada",
+    "Haz ejercicio moderado",
+    "Reduce el estrés",
+    "Mantente hidratado"
+  ],
+  cuando_consultar:      [
+    "Cansancio que no mejora con descanso",
+    "Dura más de 2 semanas",
+    "Con pérdida de peso inexplicable",
+    "Con dificultad para respirar",
+    "Si interfiere con tu vida diaria"
+  ],
+  urgencia_default:      "BAJA",
+  requiere_atencion:     false
+},
+{
+  id:                    5,
+  nombre:                "Dolor de garganta",
+  categoria:             "Respiratorio",
+  descripcion:           "El dolor de garganta es común en infecciones respiratorias. Puede ser viral o bacteriano.",
+  causas_comunes:        ["Resfriado común", "Gripe", "Faringitis estreptocócica", "Alergias", "Aire seco"],
+  cuidados_casa:         [
+    "Haz gárgaras con agua tibia y sal",
+    "Toma líquidos tibios (té con miel)",
+    "Usa humidificador",
+    "Descansa la voz",
+    "Chupa pastillas para la garganta"
+  ],
+  cuando_consultar:      [
+    "Dolor severo que dura más de 5 días",
+    "Dificultad para tragar o respirar",
+    "Fiebre alta (más de 38.5°C)",
+    "Manchas blancas en la garganta",
+    "Ganglios inflamados en el cuello"
+  ],
+  urgencia_default:      "BAJA",
+  requiere_atencion:     false
+},
+{
+  id:                    6,
+  nombre:                "Tos",
+  categoria:             "Respiratorio",
+  descripcion:           "La tos es un reflejo para limpiar las vías respiratorias. Puede ser seca o con flema.",
+  causas_comunes:        ["Resfriado", "Gripe", "Alergias", "Asma", "Reflujo"],
+  cuidados_casa:         [
+    "Mantente hidratado",
+    "Usa miel (adultos y niños mayores de 1 año)",
+    "Evita irritantes (humo, polvo)",
+    "Usa humidificador",
+    "Eleva la cabeza al dormir"
+  ],
+  cuando_consultar:      [
+    "Tos que dura más de 3 semanas",
+    "Con sangre",
+    "Con dificultad para respirar",
+    "Con fiebre alta",
+    "Silbidos al respirar"
+  ],
+  urgencia_default:      "BAJA",
+  requiere_atencion:     false
+},
+{
+  id:                    7,
+  nombre:                "Dolor abdominal",
+  categoria:             "Digestivo",
+  descripcion:           "El dolor abdominal puede tener muchas causas, desde leves hasta graves.",
+  causas_comunes:        ["Gases", "Indigestión", "Gastroenteritis", "Estreñimiento", "Menstruación"],
+  cuidados_casa:         [
+    "Aplica calor suave en el abdomen",
+    "Toma líquidos claros",
+    "Evita alimentos grasos",
+    "Descansa",
+    "Come alimentos suaves (arroz, plátano)"
+  ],
+  cuando_consultar:      [
+    "Dolor severo y súbito",
+    "Dolor en lado inferior derecho",
+    "Con vómitos o sangre en heces",
+    "Abdomen duro o inflamado",
+    "No puedes evacuar ni expulsar gases"
+  ],
+  urgencia_default:      "MEDIA",
+  requiere_atencion:     false
+},
+{
+  id:                    8,
+  nombre:                "Diarrea",
+  categoria:             "Digestivo",
+  descripcion:           "La diarrea son evacuaciones líquidas frecuentes. El principal riesgo es la deshidratación.",
+  causas_comunes:        ["Infecciones virales", "Alimentos en mal estado", "Intolerancias", "Medicamentos", "Estrés"],
+  cuidados_casa:         [
+    "Toma suero oral o líquidos con electrolitos",
+    "Come alimentos suaves (arroz, plátano, pan tostado)",
+    "Evita lácteos, cafeína y grasas",
+    "Lávate las manos frecuentemente",
+    "Descansa"
+  ],
+  cuando_consultar:      [
+    "Diarrea que dura más de 2 días",
+    "Signos de deshidratación",
+    "Sangre en las heces",
+    "Fiebre alta",
+    "Dolor abdominal severo"
+  ],
+  urgencia_default:      "BAJA",
+  requiere_atencion:     false
+}
+
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  FUNCIONES PARA SÍNTOMAS
+// ═══════════════════════════════════════════════════════════════
+
+// Buscar síntoma por nombre
+function buscarSintoma(nombre) {
+  const lower = nombre.toLowerCase();
+  return SINTOMAS.find(s => 
+    s.nombre.toLowerCase().includes(lower) ||
+    s.categoria.toLowerCase().includes(lower)
+  );
+}
+
+// Obtener todos los síntomas
+function obtenerTodosLosSintomas() {
+  return SINTOMAS;
+}
+
+// Obtener síntomas por categoría
+function obtenerSintomasPorCategoria(categoria) {
+  return SINTOMAS.filter(s => s.categoria.includes(categoria));
+}
 */
