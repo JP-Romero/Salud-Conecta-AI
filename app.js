@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // URL del Cloudflare Worker que guarda la API key de forma segura.
   // El usuario final NUNCA ve ni toca la API key.
   // Cambia esta URL después de desplegar worker.js en Cloudflare Workers.
-  const WORKER_URL = 'https://salud-conecta.TU-USUARIO.workers.dev/chat';
+  const WORKER_URL = 'https://salud-conecta-api.salud-conecta.workers.dev/chat';
 
   const MAX_HISTORY = 20;
 

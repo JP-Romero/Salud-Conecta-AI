@@ -17,7 +17,7 @@ DESPUÉS: copiar la URL del worker en app.js → WORKER_URL
 ═══════════════════════════════════════════════════════════════
 */
 
-const CLAUDE_MODEL   = 'claude-sonnet-4-20250514';
+const GEMINI_MODEL   = 'gemini-2.0-flash';
 const MAX_TOKENS     = 800;
 const RATE_LIMIT_RPM = 20;
 const RATE_LIMIT_RPH = 200;
@@ -95,39 +95,46 @@ export default {
       return jsonError('El último mensaje debe ser del usuario', 400);
     }
 
-    if (!env.ANTHROPIC_API_KEY) {
-      console.error('ANTHROPIC_API_KEY no configurada');
+    if (!env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY no configurada');
       return jsonError('Servicio no disponible. Contacta al administrador.', 503);
     }
 
-    // Llamar a Anthropic
+    // Convertir historial al formato de Gemini
+    // Gemini usa 'user' y 'model' (no 'assistant')
+    const geminiContents = sanitized.map(m => ({
+      role:  m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    // Llamar a Gemini
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+
+      const resp = await fetch(geminiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type':      'application/json',
-          'x-api-key':         env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model:      CLAUDE_MODEL,
-          max_tokens: MAX_TOKENS,
-          system:     SYSTEM_PROMPT,
-          messages:   sanitized
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents:          geminiContents,
+          generationConfig: {
+            maxOutputTokens: MAX_TOKENS,
+            temperature:     0.4
+          }
         })
       });
 
       if (!resp.ok) {
         const txt = await resp.text();
-        console.error('Anthropic error:', resp.status, txt);
-        const msg = resp.status === 529
+        console.error('Gemini error:', resp.status, txt);
+        const msg = resp.status === 429
           ? 'El servicio de IA está temporalmente ocupado. Intenta en unos segundos.'
           : 'Error al consultar el servicio de IA. Intenta de nuevo.';
         return jsonError(msg, 502);
       }
 
       const data = await resp.json();
-      const text = data.content?.[0]?.text || '';
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       return new Response(
         JSON.stringify({ response: text }),
