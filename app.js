@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 6.0.0
-📌 CAMBIOS: Claude API real · corrección bugs · voz · rendimiento
+📌 VERSIÓN: 7.0.0
+📌 CAMBIOS: Login PIN · Perfil de salud · Rediseño marca
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -26,11 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ═══════════════════════════════════════════════════════════════
   //  CONFIGURACIÓN DEL PROXY BACKEND
   // ═══════════════════════════════════════════════════════════════
-  // URL del Cloudflare Worker que guarda la API key de forma segura.
-  // El usuario final NUNCA ve ni toca la API key.
-  // Cambia esta URL después de desplegar worker.js en Cloudflare Workers.
   const WORKER_URL = 'https://salud-conecta-api.salud-conecta.workers.dev/chat';
-
   const MAX_HISTORY = 20;
 
   // ═══════════════════════════════════════════════════════════════
@@ -47,8 +43,242 @@ document.addEventListener('DOMContentLoaded', () => {
     isRecording:           false,
     recognition:           null,
     symptomCache:          {},
-    drugCache:             {}
+    drugCache:             {},
+    currentUser:           null  // perfil del usuario autenticado
   };
+
+  // ═══════════════════════════════════════════════════════════════
+  //  SISTEMA DE AUTENTICACIÓN — PIN LOCAL
+  // ═══════════════════════════════════════════════════════════════
+
+  // Helpers de storage para usuarios
+  function hashPin(pin) {
+    // Hash simple para no guardar el PIN en texto plano
+    let h = 0;
+    for (let i = 0; i < pin.length; i++) {
+      h = (Math.imul(31, h) + pin.charCodeAt(i)) | 0;
+    }
+    return h.toString(36);
+  }
+
+  function getUsers() {
+    return JSON.parse(localStorage.getItem('sc_users') || '{}');
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem('sc_users', JSON.stringify(users));
+  }
+
+  function getUserProfile(userId) {
+    const profiles = JSON.parse(localStorage.getItem('sc_profiles') || '{}');
+    return profiles[userId] || {};
+  }
+
+  function saveUserProfile(userId, profile) {
+    const profiles = JSON.parse(localStorage.getItem('sc_profiles') || '{}');
+    profiles[userId] = { ...profiles[userId], ...profile, updatedAt: new Date().toISOString() };
+    localStorage.setItem('sc_profiles', JSON.stringify(profiles));
+  }
+
+  function getSession() {
+    try {
+      const s = sessionStorage.getItem('sc_session');
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  }
+
+  function setSession(userId) {
+    sessionStorage.setItem('sc_session', JSON.stringify({ userId, loginAt: Date.now() }));
+  }
+
+  function clearSession() {
+    sessionStorage.removeItem('sc_session');
+  }
+
+  // ── Auth UI helpers ──
+  const authScreen  = document.getElementById('auth-screen');
+  const appContent  = document.getElementById('app-content');
+
+  function showApp(userId) {
+    appState.currentUser = userId;
+    setSession(userId);
+    if (authScreen) authScreen.style.display = 'none';
+    if (appContent) appContent.style.display = 'block';
+    updateHeaderUser();
+    personalizeWelcome();
+  }
+
+  function updateHeaderUser() {
+    const profile = getUserProfile(appState.currentUser);
+    const name = profile.name || 'Usuario';
+    const initial = name.charAt(0).toUpperCase();
+    const shortName = name.split(' ')[0];
+    const el = document.getElementById('user-initial');
+    const nameEl = document.getElementById('user-short-name');
+    if (el) el.textContent = initial;
+    if (nameEl) nameEl.textContent = shortName;
+  }
+
+  function personalizeWelcome() {
+    const profile = getUserProfile(appState.currentUser);
+    const el = document.getElementById('welcome-msg');
+    if (!el) return;
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? '¡Buenos días' : hour < 19 ? '¡Buenas tardes' : '¡Buenas noches';
+    const name = profile.name ? `, ${profile.name.split(' ')[0]}` : '';
+    el.textContent = `${greeting}${name}! Soy tu asistente de salud en Granada. ¿Cómo te sentís hoy?`;
+  }
+
+  // ── Inicialización: verificar sesión activa ──
+  const existingSession = getSession();
+  const users = getUsers();
+
+  if (existingSession && users[existingSession.userId]) {
+    // Sesión activa — ir directo a la app
+    if (authScreen) authScreen.style.display = 'none';
+    checkPrivacyConsent();
+    showApp(existingSession.userId);
+  } else {
+    // Mostrar pantalla de auth
+    if (authScreen) authScreen.style.display = 'flex';
+    if (appContent) appContent.style.display = 'none';
+    initAuthUI();
+  }
+
+  function checkPrivacyConsent() {
+    const modal   = document.getElementById('privacy-modal');
+    const content = document.getElementById('app-content');
+    if (localStorage.getItem('sc_consent') === 'true') {
+      if (modal) modal.style.display = 'none';
+      if (content) content.style.display = 'block';
+    } else {
+      if (modal) modal.style.display = 'flex';
+      if (content) content.style.display = 'none';
+    }
+  }
+
+  // ── Lógica de tabs auth ──
+  window.showAuthTab = function(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('form-login').style.display    = tab === 'login'    ? 'flex' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'flex' : 'none';
+    clearPins();
+  };
+
+  function clearPins() {
+    ['login-p1','login-p2','login-p3','login-p4',
+     'reg-p1','reg-p2','reg-p3','reg-p4'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('filled'); }
+    });
+  }
+
+  // ── Login ──
+  window.doLogin = function() {
+    const pin = getPinValue('login-p');
+    if (pin.length !== 4) {
+      showAuthError('login-error', 'Ingresá los 4 dígitos de tu PIN.');
+      return;
+    }
+    const users = getUsers();
+    const userId = Object.keys(users).find(id => users[id].pinHash === hashPin(pin));
+    if (!userId) {
+      showAuthError('login-error', 'PIN incorrecto. Intentá de nuevo.');
+      shakePins('login-p');
+      return;
+    }
+    document.getElementById('login-error').style.display = 'none';
+    showApp(userId);
+    checkPrivacyConsent();
+  };
+
+  // ── Registro ──
+  window.doRegister = function() {
+    const name = document.getElementById('reg-name')?.value.trim();
+    const pin  = getPinValue('reg-p');
+
+    if (!name) {
+      showAuthError('register-error', 'Escribí tu nombre para continuar.');
+      return;
+    }
+    if (pin.length !== 4) {
+      showAuthError('register-error', 'Elegí un PIN de 4 dígitos.');
+      return;
+    }
+
+    const userId  = 'user_' + Date.now();
+    const users   = getUsers();
+    users[userId] = { pinHash: hashPin(pin), createdAt: new Date().toISOString() };
+    saveUsers(users);
+    saveUserProfile(userId, { name });
+
+    document.getElementById('register-error').style.display = 'none';
+    showApp(userId);
+    checkPrivacyConsent();
+  };
+
+  function getPinValue(prefix) {
+    return ['1','2','3','4']
+      .map(n => document.getElementById(prefix + n)?.value || '')
+      .join('');
+  }
+
+  function showAuthError(id, msg) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+  }
+
+  function shakePins(prefix) {
+    ['1','2','3','4'].forEach(n => {
+      const el = document.getElementById(prefix + n);
+      if (el) {
+        el.style.borderColor = 'var(--danger)';
+        setTimeout(() => { el.style.borderColor = ''; }, 1200);
+      }
+    });
+  }
+
+  // ── Navegación automática entre dígitos PIN ──
+  function initAuthUI() {
+    ['login-p','reg-p','pf-pin'].forEach(prefix => {
+      ['1','2','3','4'].forEach((n, i, arr) => {
+        const el = document.getElementById(prefix + n);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          if (el.value.length === 1) {
+            el.classList.add('filled');
+            const next = document.getElementById(prefix + arr[i + 1]);
+            if (next) next.focus();
+            else {
+              // último dígito — intentar login automático si es el form de login
+              if (prefix === 'login-p') {
+                const pin = getPinValue('login-p');
+                if (pin.length === 4) doLogin();
+              }
+            }
+          } else {
+            el.classList.remove('filled');
+          }
+        });
+        el.addEventListener('keydown', e => {
+          if (e.key === 'Backspace' && !el.value) {
+            const prev = document.getElementById(prefix + arr[i - 1]);
+            if (prev) { prev.value = ''; prev.classList.remove('filled'); prev.focus(); }
+          }
+        });
+        // solo permitir números
+        el.addEventListener('keypress', e => {
+          if (!/[0-9]/.test(e.key)) e.preventDefault();
+        });
+      });
+    });
+  }
+
+  // Inicializar navegación PIN si estamos mostrando auth
+  if (!existingSession || !users[existingSession?.userId]) {
+    initAuthUI();
+  }
 
   // ═══════════════════════════════════════════════════════════════
   //  UTILIDADES
@@ -96,31 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
       exportFeedback.style.display = 'block';
       setTimeout(() => { exportFeedback.style.display = 'none'; }, 3000);
     }
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  //  MODAL DE PRIVACIDAD
-  // ═══════════════════════════════════════════════════════════════
-  const modal      = document.getElementById('privacy-modal');
-  const appContent = document.getElementById('app-content');
-  const checkbox   = document.getElementById('accept-terms');
-  const btnEnter   = document.getElementById('btn-enter');
-
-  if (localStorage.getItem('saludConecta_consent') === 'true') {
-    showModal(false);
-  } else {
-    showModal(true);
-  }
-
-  if (checkbox) checkbox.addEventListener('change', e => { btnEnter.disabled = !e.target.checked; });
-  if (btnEnter) btnEnter.addEventListener('click', () => {
-    localStorage.setItem('saludConecta_consent', 'true');
-    showModal(false);
-  });
-
-  function showModal(show) {
-    if (modal)      modal.style.display      = show ? 'flex' : 'none';
-    if (appContent) appContent.style.display = show ? 'none' : 'block';
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -1140,6 +1345,158 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnClearReports)      btnClearReports.addEventListener('click', clearAllReports);
 
   // ═══════════════════════════════════════════════════════════════
+  //  PERFIL DE USUARIO
+  // ═══════════════════════════════════════════════════════════════
+  const profileContainer  = document.getElementById('profile-container');
+  const btnProfile        = document.getElementById('btn-profile');
+  const btnCloseProfile   = document.getElementById('btn-close-profile');
+  const btnCancelProfile  = document.getElementById('btn-cancel-profile');
+  const btnSaveProfile    = document.getElementById('btn-save-profile');
+  const btnLogout         = document.getElementById('btn-logout');
+
+  function openProfile() {
+    if (!appState.currentUser) return;
+    const p = getUserProfile(appState.currentUser);
+
+    // Llenar campos con datos guardados
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('pf-name',     p.name);
+    set('pf-birthdate',p.birthdate);
+    set('pf-sex',      p.sex);
+    set('pf-address',  p.address);
+    set('pf-phone',    p.phone);
+    set('pf-blood',    p.blood);
+    set('pf-weight',   p.weight);
+    set('pf-height',   p.height);
+    set('pf-pregnant', p.pregnant || 'no');
+    set('pf-allergies',p.allergies);
+    set('pf-meds',     p.meds);
+    set('pf-other',    p.otherConditions);
+    set('pf-ec-name',  p.ecName);
+    set('pf-ec-phone', p.ecPhone);
+
+    // Toggles de enfermedades
+    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+    setChk('pf-diabetes',    p.diabetes);
+    setChk('pf-hypertension',p.hypertension);
+    setChk('pf-asthma',      p.asthma);
+    setChk('pf-heart',       p.heart);
+    setChk('pf-kidney',      p.kidney);
+    setChk('pf-liver',       p.liver);
+
+    // PIN vacío
+    ['pf-pin1','pf-pin2','pf-pin3','pf-pin4'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('filled'); }
+    });
+
+    // Header del perfil
+    const nameEl = document.getElementById('profile-header-name');
+    const subEl  = document.getElementById('profile-header-sub');
+    if (nameEl) nameEl.textContent = p.name || 'Mi perfil';
+    if (subEl)  subEl.textContent  = p.birthdate ? `Nacido/a: ${p.birthdate}` : 'Información de salud personal';
+
+    // Inicializar nav PIN del perfil
+    initAuthUI();
+
+    // Mostrar perfil, ocultar chat
+    if (profileContainer) profileContainer.style.display = 'block';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'none';
+  }
+
+  function saveProfile() {
+    if (!appState.currentUser) return;
+
+    const get    = id => document.getElementById(id)?.value?.trim() || '';
+    const getChk = id => document.getElementById(id)?.checked || false;
+
+    const profile = {
+      name:            get('pf-name'),
+      birthdate:       get('pf-birthdate'),
+      sex:             get('pf-sex'),
+      address:         get('pf-address'),
+      phone:           get('pf-phone'),
+      blood:           get('pf-blood'),
+      weight:          get('pf-weight'),
+      height:          get('pf-height'),
+      pregnant:        get('pf-pregnant'),
+      allergies:       get('pf-allergies'),
+      meds:            get('pf-meds'),
+      otherConditions: get('pf-other'),
+      ecName:          get('pf-ec-name'),
+      ecPhone:         get('pf-ec-phone'),
+      diabetes:        getChk('pf-diabetes'),
+      hypertension:    getChk('pf-hypertension'),
+      asthma:          getChk('pf-asthma'),
+      heart:           getChk('pf-heart'),
+      kidney:          getChk('pf-kidney'),
+      liver:           getChk('pf-liver')
+    };
+
+    // Cambiar PIN si llenó los 4 dígitos
+    const newPin = ['pf-pin1','pf-pin2','pf-pin3','pf-pin4']
+      .map(id => document.getElementById(id)?.value || '').join('');
+    if (newPin.length === 4) {
+      const users = getUsers();
+      if (users[appState.currentUser]) {
+        users[appState.currentUser].pinHash = hashPin(newPin);
+        saveUsers(users);
+      }
+    }
+
+    saveUserProfile(appState.currentUser, profile);
+    updateHeaderUser();
+
+    // Cerrar perfil
+    if (profileContainer) profileContainer.style.display = 'none';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'flex';
+
+    addMessage('✅ Tu perfil fue guardado. Esta información me ayuda a darte orientación más precisa.', 'ai', null, getShortTime());
+  }
+
+  function closeProfile() {
+    if (profileContainer) profileContainer.style.display = 'none';
+    if (chatMessages?.parentElement) chatMessages.parentElement.style.display = 'flex';
+  }
+
+  if (btnProfile)       btnProfile.addEventListener('click', openProfile);
+  if (btnCloseProfile)  btnCloseProfile.addEventListener('click', closeProfile);
+  if (btnCancelProfile) btnCancelProfile.addEventListener('click', closeProfile);
+  if (btnSaveProfile)   btnSaveProfile.addEventListener('click', saveProfile);
+
+  if (btnLogout) btnLogout.addEventListener('click', () => {
+    if (confirm('¿Cerrar sesión? Tendrás que ingresar tu PIN la próxima vez.')) {
+      clearSession();
+      appState.currentUser = null;
+      appState.conversationHistory = [];
+      if (appContent) appContent.style.display = 'none';
+      if (authScreen) authScreen.style.display = 'flex';
+      clearPins();
+      showAuthTab('login');
+    }
+  });
+
+  // Incluir perfil en exportación si está marcado
+  const includeProfileCheckbox = document.getElementById('include-profile');
+
+  // ═══════════════════════════════════════════════════════════════
+  //  MODAL DE PRIVACIDAD (post-login)
+  // ═══════════════════════════════════════════════════════════════
+  const privacyModal  = document.getElementById('privacy-modal');
+  const acceptTerms   = document.getElementById('accept-terms');
+  const btnEnter      = document.getElementById('btn-enter');
+
+  if (acceptTerms) acceptTerms.addEventListener('change', e => {
+    if (btnEnter) btnEnter.disabled = !e.target.checked;
+  });
+
+  if (btnEnter) btnEnter.addEventListener('click', () => {
+    localStorage.setItem('sc_consent', 'true');
+    if (privacyModal) privacyModal.style.display = 'none';
+    if (appContent)   appContent.style.display   = 'block';
+  });
+
+  // ═══════════════════════════════════════════════════════════════
   //  INICIALIZACIÓN
   // ═══════════════════════════════════════════════════════════════
   initVoiceInput();
@@ -1147,5 +1504,5 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW error:', err));
   }
 
-  console.log('🏥 Salud-Conecta AI v6.0.0 iniciada · Worker:', WORKER_URL);
+  console.log('🏥 Salud-Conecta AI v7.0.0 iniciada · Worker:', WORKER_URL);
 });

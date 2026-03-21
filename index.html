@@ -4,23 +4,82 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salud-Conecta AI</title>
-
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230077b6' width='512' height='512' rx='64'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='256' fill='white'%3ESC%3C/text%3E%3C/svg%3E">
-
+  <link rel="icon" type="image/jpeg" href="imagotipo.jpeg">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0077b6">
+  <meta name="theme-color" content="#2F5D7C">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="SaludConecta">
-
   <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- 🔒 Modal de Privacidad -->
-  <div id="privacy-modal" class="modal-overlay">
+  <!-- ══════════════════════════════════════
+       🔐 PANTALLA DE AUTENTICACIÓN (PIN)
+       ══════════════════════════════════════ -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <img src="imagotipo.jpeg" alt="Salud-Conecta AI" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'">
+        <div id="logo-fallback" class="auth-logo-fallback" style="display:none;">🏥</div>
+        <div class="auth-app-name">Salud-Conecta <span>AI</span></div>
+        <div class="auth-tagline">Granada, Nicaragua</div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="showAuthTab('login')">Entrar</button>
+        <button class="auth-tab" id="tab-register" onclick="showAuthTab('register')">Registrarme</button>
+      </div>
+
+      <!-- Login -->
+      <div id="form-login" class="auth-form">
+        <div>
+          <div class="pin-label">Ingresa tu PIN de 4 dígitos</div>
+          <div class="pin-input-row">
+            <input class="pin-digit" id="login-p1" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="login-p2" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="login-p3" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="login-p4" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+          </div>
+          <div class="pin-hint">Tu PIN es privado y solo se guarda en este dispositivo</div>
+        </div>
+        <div id="login-error" class="auth-error">PIN incorrecto. Intenta de nuevo.</div>
+        <button class="btn-auth" id="btn-login" onclick="doLogin()">Entrar</button>
+      </div>
+
+      <!-- Registro -->
+      <div id="form-register" class="auth-form" style="display:none;">
+        <div class="form-field">
+          <label>Tu nombre</label>
+          <input type="text" id="reg-name" placeholder="Ej: María González" autocomplete="off">
+        </div>
+        <div>
+          <div class="pin-label">Elige un PIN de 4 dígitos</div>
+          <div class="pin-input-row">
+            <input class="pin-digit" id="reg-p1" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="reg-p2" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="reg-p3" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="reg-p4" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+          </div>
+          <div class="pin-hint">No olvides tu PIN — es la única forma de entrar</div>
+        </div>
+        <div id="register-error" class="auth-error"></div>
+        <button class="btn-auth" id="btn-register" onclick="doRegister()">Crear mi cuenta</button>
+      </div>
+
+      <div class="auth-footer-note">
+        Tu información nunca sale de este dispositivo.<br>
+        Emergencias: llama al <strong>133</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       🔒 MODAL DE PRIVACIDAD
+       ══════════════════════════════════════ -->
+  <div id="privacy-modal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
       <div class="modal-header">
         <h2>⚠️ Aviso importante de salud</h2>
@@ -28,17 +87,15 @@
       <div class="modal-body">
         <p><strong>Salud-Conecta AI</strong> es una herramienta de orientación preventiva, <u>no un servicio médico profesional</u>.</p>
         <ul class="privacy-list">
-          <li>🔒 <strong>Privacidad:</strong> No almacenamos tus síntomas ni tu ubicación en servidores externos.</li>
-          <li>🚑 <strong>Emergencias:</strong> Si tienes dolor de pecho o dificultad para respirar, llama al 133.</li>
-          <li>🤖 <strong>IA:</strong> Las respuestas son generadas por IA y pueden tener errores. Siempre consulta a un médico.</li>
+          <li>🔒 <strong>Privacidad:</strong> Tus datos se guardan solo en este dispositivo. Nadie más los ve.</li>
+          <li>🚑 <strong>Emergencias:</strong> Si tenés dolor de pecho o no podés respirar, llamá al 133 ahora.</li>
+          <li>🤖 <strong>IA:</strong> Las respuestas son orientativas y pueden tener errores. Siempre consultá al médico.</li>
           <li>🗺️ <strong>Mapa:</strong> La ubicación se usa solo para mostrar centros cercanos y no se guarda.</li>
-          <li>💊 <strong>Medicamentos:</strong> Información orientativa. Verifica siempre con un farmacéutico local.</li>
-          <li>📝 <strong>Reportes:</strong> Se guardan solo en tu dispositivo. Tú decides si exportarlos.</li>
+          <li>💊 <strong>Medicamentos:</strong> Información orientativa. Verificá siempre con tu farmacéutico.</li>
         </ul>
-        <!-- CORRECCIÓN BUG: checkbox-container como div, no label anidado -->
         <div class="checkbox-container">
           <input type="checkbox" id="accept-terms">
-          <label for="accept-terms">He leído y acepto los términos de uso y privacidad.</label>
+          <label for="accept-terms">Leí y acepto los términos de uso y privacidad.</label>
         </div>
       </div>
       <div class="modal-footer">
@@ -47,28 +104,40 @@
     </div>
   </div>
 
-  <!-- 🏠 Contenido Principal -->
+  <!-- ══════════════════════════════════════
+       🏠 APP PRINCIPAL
+       ══════════════════════════════════════ -->
   <main id="app-content" style="display:none;">
 
     <!-- Header -->
     <header class="app-header">
-      <div class="header-content">
-        <h1>Salud-Conecta AI</h1>
-        <p class="subtitle">Granada, Nicaragua</p>
+      <div class="header-logo">
+        <img src="imagotipo.jpeg" alt="Logo" onerror="this.style.display='none';document.getElementById('header-logo-fallback').style.display='flex'">
+        <div id="header-logo-fallback" class="header-logo-fallback" style="display:none;">🏥</div>
+        <div class="header-title">
+          <div class="header-app-name">Salud-Conecta <span>AI</span></div>
+          <div class="header-subtitle">Granada, Nicaragua</div>
+        </div>
       </div>
       <div class="header-actions">
+        <button id="btn-profile" class="btn-profile" title="Mi perfil">
+          <span class="user-initial" id="user-initial">?</span>
+          <span id="user-short-name">Perfil</span>
+        </button>
         <button id="btn-export" class="btn-export" title="Exportar conversación">📤</button>
-        <button id="btn-emergency" class="btn-emergency">🚑 Emergencia</button>
+        <button id="btn-emergency" class="btn-emergency">🚑 133</button>
       </div>
     </header>
 
-    <!-- 💬 Chat -->
+    <!-- Chat -->
     <div class="chat-container">
       <div id="chat-messages" class="chat-messages">
         <div class="message ai-message">
-          <div class="message-avatar">AI</div>
+          <div class="message-avatar">
+            <img src="imagotipo.jpeg" alt="AI" onerror="this.textContent='AI';this.style.fontSize='0.6rem'">
+          </div>
           <div class="message-content">
-            <p>¡Bendiciones! Soy tu asistente de salud en Granada, Nicaragua. ¿Cómo te sentís hoy?</p>
+            <p id="welcome-msg">¡Bendiciones! Soy tu asistente de salud en Granada. ¿Cómo te sentís hoy?</p>
             <p class="message-disclaimer">Podés describir tus síntomas, preguntar por medicamentos o buscar centros de salud cercanos.</p>
             <span class="message-time">Ahora</span>
           </div>
@@ -91,18 +160,17 @@
           <button class="quick-btn" data-symptom="Reportar">📝 Reportar</button>
         </div>
         <div class="input-wrapper">
-          <input type="text" id="user-input" placeholder="Describe tus síntomas..." autocomplete="off">
-          <!-- Botón de voz (Web Speech API) -->
-          <button id="btn-voice" class="btn-voice" title="Hablar (voz)" aria-label="Activar entrada por voz">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <input type="text" id="user-input" placeholder="Describí tus síntomas..." autocomplete="off">
+          <button id="btn-voice" class="btn-voice" title="Hablar (voz)" aria-label="Activar voz">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
               <line x1="12" y1="19" x2="12" y2="23"/>
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
           </button>
-          <button id="btn-send" class="btn-send" aria-label="Enviar mensaje">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button id="btn-send" class="btn-send" aria-label="Enviar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
@@ -111,7 +179,194 @@
       </div>
     </div>
 
-    <!-- 🗺️ Mapa -->
+    <!-- Perfil de usuario -->
+    <div id="profile-container" class="profile-container" style="display:none;">
+      <div class="profile-header">
+        <div class="profile-avatar-large" id="profile-avatar-icon">👤</div>
+        <div class="profile-header-info">
+          <h2 id="profile-header-name">Mi Perfil</h2>
+          <p id="profile-header-sub">Información de salud personal</p>
+        </div>
+        <button class="btn-close-profile" id="btn-close-profile">✕</button>
+      </div>
+      <div class="profile-body">
+
+        <!-- Datos personales -->
+        <div class="profile-section">
+          <div class="profile-section-title">Datos personales</div>
+          <div class="profile-grid">
+            <div class="profile-field full">
+              <label>Nombre completo</label>
+              <input type="text" id="pf-name" placeholder="Tu nombre">
+            </div>
+            <div class="profile-field">
+              <label>Fecha de nacimiento</label>
+              <input type="date" id="pf-birthdate">
+            </div>
+            <div class="profile-field">
+              <label>Sexo</label>
+              <select id="pf-sex">
+                <option value="">Seleccionar</option>
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label>Barrio / dirección</label>
+              <input type="text" id="pf-address" placeholder="Ej: Barrio San Antonio">
+            </div>
+            <div class="profile-field">
+              <label>Teléfono</label>
+              <input type="tel" id="pf-phone" placeholder="Ej: 8888-0000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos físicos -->
+        <div class="profile-section">
+          <div class="profile-section-title">Datos físicos</div>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <label>Tipo de sangre</label>
+              <select id="pf-blood">
+                <option value="">No sé</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label>Peso (kg)</label>
+              <input type="number" id="pf-weight" placeholder="Ej: 65" min="10" max="300">
+            </div>
+            <div class="profile-field">
+              <label>Talla / altura (cm)</label>
+              <input type="number" id="pf-height" placeholder="Ej: 165" min="50" max="250">
+            </div>
+            <div class="profile-field">
+              <label>Embarazada</label>
+              <select id="pf-pregnant">
+                <option value="no">No</option>
+                <option value="si">Sí</option>
+                <option value="na">No aplica</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enfermedades crónicas -->
+        <div class="profile-section">
+          <div class="profile-section-title">Enfermedades crónicas</div>
+          <div class="toggle-group">
+            <div class="toggle-item">
+              <span class="toggle-item-label">Diabetes</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-diabetes">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Hipertensión (presión alta)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-hypertension">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Asma</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-asthma">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Enfermedad del corazón</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-heart">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Enfermedad renal</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-kidney">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Enfermedad del hígado</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-liver">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Otras condiciones -->
+        <div class="profile-section">
+          <div class="profile-section-title">Otras condiciones</div>
+          <div class="profile-grid">
+            <div class="profile-field full">
+              <label>Alergias conocidas</label>
+              <input type="text" id="pf-allergies" placeholder="Ej: Penicilina, mariscos, ninguna">
+            </div>
+            <div class="profile-field full">
+              <label>Medicamentos que toma regularmente</label>
+              <input type="text" id="pf-meds" placeholder="Ej: Metformina, Losartan, ninguno">
+            </div>
+            <div class="profile-field full">
+              <label>Otras enfermedades o condiciones</label>
+              <input type="text" id="pf-other" placeholder="Ej: Artritis, tiroides...">
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacto de emergencia -->
+        <div class="profile-section">
+          <div class="profile-section-title">Contacto de emergencia</div>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <label>Nombre</label>
+              <input type="text" id="pf-ec-name" placeholder="Nombre del familiar">
+            </div>
+            <div class="profile-field">
+              <label>Teléfono</label>
+              <input type="tel" id="pf-ec-phone" placeholder="Ej: 8888-0000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Cambiar PIN -->
+        <div class="profile-section">
+          <div class="profile-section-title">Seguridad</div>
+          <div style="margin-bottom:8px;">
+            <div class="pin-label" style="text-align:left;margin-bottom:8px;">Nuevo PIN (dejar vacío para no cambiar)</div>
+            <div class="pin-input-row" style="justify-content:flex-start;">
+              <input class="pin-digit" id="pf-pin1" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+              <input class="pin-digit" id="pf-pin2" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+              <input class="pin-digit" id="pf-pin3" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+              <input class="pin-digit" id="pf-pin4" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <button class="btn-secondary" id="btn-cancel-profile">Cancelar</button>
+          <button class="btn-primary" id="btn-save-profile">💾 Guardar</button>
+        </div>
+
+        <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- Mapa -->
     <div id="map-container" class="map-container" style="display:none;">
       <div class="map-header">
         <h3>🏥 Centros de salud cercanos</h3>
@@ -124,45 +379,45 @@
       <div class="map-loading" id="map-loading" style="display:none;">Buscando centros de salud en tu zona…</div>
       <div class="map-results" id="map-results"></div>
       <div class="map-footer">
-        <small>📍 Datos: OpenStreetMap — ¿Falta un centro? Toca + Agregar para reportarlo</small>
+        <small>📍 OpenStreetMap — ¿Falta un centro? Tocá + Agregar</small>
       </div>
     </div>
 
-    <!-- 📝 Formulario reporte -->
+    <!-- Formulario reporte -->
     <div id="report-form-container" class="report-form-container" style="display:none;">
       <div class="form-header">
         <h3>📝 Reportar centro de salud</h3>
         <button id="btn-close-form" class="btn-close-form">✕</button>
       </div>
       <div class="form-body">
-        <p class="form-description">Ayuda a mejorar el mapa reportando centros de salud, clínicas o farmacias que no aparecen.</p>
+        <p class="form-description">Ayudá a mejorar el mapa reportando centros que no aparecen.</p>
         <form id="report-form">
           <div class="form-group">
-            <label for="center-name">Nombre del centro *</label>
+            <label>Nombre del centro *</label>
             <input type="text" id="center-name" required placeholder="Ej: Farmacia San Juan">
           </div>
           <div class="form-group">
-            <label for="center-type">Tipo de centro *</label>
+            <label>Tipo de centro *</label>
             <select id="center-type" required>
-              <option value="">Selecciona…</option>
+              <option value="">Seleccioná…</option>
               <option value="hospital">🏥 Hospital</option>
               <option value="clinic">🏥 Clínica</option>
               <option value="pharmacy">💊 Farmacia</option>
-              <option value="doctors">👨‍⚕️ Consultorio médico</option>
+              <option value="doctors">👨‍⚕️ Consultorio</option>
               <option value="laboratory">🔬 Laboratorio</option>
               <option value="other">📍 Otro</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="center-address">Dirección / Barrio</label>
-            <input type="text" id="center-address" placeholder="Ej: Barrio San Antonio, cerca del parque">
+            <label>Dirección / Barrio</label>
+            <input type="text" id="center-address" placeholder="Ej: Barrio San Antonio">
           </div>
           <div class="form-group">
-            <label for="center-phone">Teléfono (opcional)</label>
+            <label>Teléfono (opcional)</label>
             <input type="tel" id="center-phone" placeholder="Ej: 2552-0000">
           </div>
           <div class="form-group">
-            <label for="center-hours">Horario de atención (opcional)</label>
+            <label>Horario (opcional)</label>
             <input type="text" id="center-hours" placeholder="Ej: 24 horas / Lun-Vie 8am-6pm">
           </div>
           <div class="form-group location-info">
@@ -174,21 +429,21 @@
             <input type="hidden" id="center-lng" required>
           </div>
           <div class="form-group">
-            <label for="center-notes">Notas adicionales (opcional)</label>
+            <label>Notas adicionales (opcional)</label>
             <textarea id="center-notes" rows="3" placeholder="Ej: Tiene estacionamiento, acepta INSS…"></textarea>
           </div>
           <div class="form-actions">
             <button type="button" id="btn-cancel-report" class="btn-secondary">Cancelar</button>
-            <button type="submit" class="btn-primary">💾 Guardar reporte</button>
+            <button type="submit" class="btn-primary">💾 Guardar</button>
           </div>
         </form>
         <div class="form-footer">
-          <small>📌 Los reportes se guardan localmente. Puedes exportarlos para contribuir a OpenStreetMap.</small>
+          <small>📌 Los reportes se guardan en tu dispositivo. Podés exportarlos para contribuir a OpenStreetMap.</small>
         </div>
       </div>
     </div>
 
-    <!-- 📋 Lista de reportes -->
+    <!-- Lista reportes -->
     <div id="reports-list-container" class="reports-list-container" style="display:none;">
       <div class="form-header">
         <h3>📋 Mis reportes guardados</h3>
@@ -204,9 +459,9 @@
       </div>
     </div>
 
-    <!-- ⚠️ Disclaimer -->
+    <!-- Disclaimer -->
     <div class="disclaimer-banner">
-      <p>⚠️ No reemplaza consulta médica. Emergencias: <strong>133</strong></p>
+      <p>⚠️ No reemplaza la consulta médica. Emergencias: <strong>133</strong></p>
     </div>
   </main>
 
@@ -217,17 +472,16 @@
         <h2 style="color:var(--danger);">🚨 Emergencia médica</h2>
       </div>
       <div class="modal-body">
-        <p>Si estás en Granada y experimentas alguno de estos síntomas, actúa ahora:</p>
+        <p>Si estás en Granada con alguno de estos síntomas, actúá ahora:</p>
         <ul class="emergency-list">
           <li>💔 Dolor o presión en el pecho</li>
           <li>😮‍💨 Dificultad severa para respirar</li>
           <li>🩸 Sangrado abundante</li>
-          <li>🧠 Confusión o pérdida de conocimiento repentina</li>
+          <li>🧠 Confusión o pérdida del conocimiento</li>
           <li>⚡ Convulsiones o parálisis súbita</li>
         </ul>
-        <!-- CORRECCIÓN BUG: btn-emergency-call ahora tiene CSS en styles.css -->
         <a href="tel:133" class="btn-emergency-call">📞 Llamar al 133 — Emergencias nacionales</a>
-        <button id="btn-show-map-emergency" class="btn-secondary" style="background:var(--primary-color);margin-top:10px;">🗺️ Ver centros de urgencias cercanos</button>
+        <button id="btn-show-map-emergency" class="btn-secondary" style="background:var(--primary);color:white;border-color:var(--primary);">🗺️ Ver centros de urgencias cercanos</button>
       </div>
       <div class="modal-footer">
         <button id="btn-close-emergency" class="btn-secondary">Entendido, volver</button>
@@ -242,9 +496,8 @@
         <h2>📤 Exportar conversación</h2>
       </div>
       <div class="modal-body">
-        <p><strong>Advertencia:</strong> Este archivo contiene información de salud. Compártelo con responsabilidad.</p>
+        <p><strong>Advertencia:</strong> Este archivo contiene información de salud. Compartilo con responsabilidad.</p>
         <div class="export-options">
-          <!-- CORRECCIÓN BUG: label anidado dentro de label — ahora son div con label separado -->
           <div class="checkbox-container">
             <input type="checkbox" id="anonymize-export" checked>
             <label for="anonymize-export">Ocultar información personal (recomendado)</label>
@@ -261,6 +514,10 @@
             <input type="checkbox" id="include-summary" checked>
             <label for="include-summary">Incluir resumen clínico para médico</label>
           </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="include-profile">
+            <label for="include-profile">Incluir datos del perfil de salud</label>
+          </div>
         </div>
         <div class="export-actions">
           <button id="btn-export-txt" class="btn-primary">💾 Descargar como .txt</button>
@@ -274,7 +531,7 @@
     </div>
   </div>
 
-  <!-- Scripts en orden correcto -->
+  <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="base-datos-salud.js"></script>
   <script src="app.js"></script>
