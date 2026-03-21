@@ -2,7 +2,7 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 6.0.0
+📌 VERSIÓN: 7.0.0
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Cache-First
    - Leaflet / CDN:             Cache-First (larga duración)
