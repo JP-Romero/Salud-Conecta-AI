@@ -2,22 +2,17 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — Cloudflare Worker (Backend Proxy)
 ═══════════════════════════════════════════════════════════════
-PROPÓSITO: Recibir mensajes del frontend y reenviarlos a la
-API de Anthropic añadiendo la clave de forma segura.
-El usuario NUNCA ve la API key.
+IA: Groq (Llama 3.3 70B) — Gratis, sin restricciones por país
+14,400 peticiones/día gratis · Funciona en Nicaragua
 
-DESPLIEGUE (una sola vez):
-  1. npm install -g wrangler
-  2. wrangler login
-  3. wrangler secret put ANTHROPIC_API_KEY   ← pegar la clave aquí
-  4. wrangler secret put ALLOWED_ORIGIN      ← ej: https://jp-romero.github.io
-  5. wrangler deploy
-
-DESPUÉS: copiar la URL del worker en app.js → WORKER_URL
+DESPLIEGUE:
+  1. wrangler secret put GROQ_API_KEY      ← pegar gsk_...
+  2. wrangler secret put ALLOWED_ORIGIN    ← URL de GitHub Pages
+  3. wrangler deploy
 ═══════════════════════════════════════════════════════════════
 */
 
-const GEMINI_MODEL   = 'gemini-2.0-flash';
+const GROQ_MODEL     = 'llama-3.3-70b-versatile';
 const MAX_TOKENS     = 800;
 const RATE_LIMIT_RPM = 20;
 const RATE_LIMIT_RPH = 200;
@@ -57,14 +52,14 @@ export default {
     const url = new URL(request.url);
     if (url.pathname !== '/chat')     return jsonError('Ruta no encontrada', 404);
 
-    // Verificar origen CORS
+    // CORS
     const origin        = request.headers.get('Origin') || '';
     const allowedOrigin = env.ALLOWED_ORIGIN || '*';
     if (allowedOrigin !== '*' && !origin.startsWith(allowedOrigin)) {
       return jsonError('Origen no permitido', 403);
     }
 
-    // Rate limiting por IP
+    // Rate limiting
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     const rl  = checkRateLimit(ip);
     if (!rl.allowed) {
@@ -85,7 +80,7 @@ export default {
       return jsonError('El campo "messages" es requerido', 400);
     }
 
-    // Sanitizar mensajes
+    // Sanitizar — Groq usa el mismo formato que OpenAI (role: user/assistant)
     const sanitized = messages
       .filter(m => ['user', 'assistant'].includes(m.role) && typeof m.content === 'string')
       .map(m => ({ role: m.role, content: m.content.slice(0, 2000) }))
@@ -95,38 +90,33 @@ export default {
       return jsonError('El último mensaje debe ser del usuario', 400);
     }
 
-    if (!env.GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY no configurada');
+    if (!env.GROQ_API_KEY) {
+      console.error('GROQ_API_KEY no configurada');
       return jsonError('Servicio no disponible. Contacta al administrador.', 503);
     }
 
-    // Convertir historial al formato de Gemini
-    // Gemini usa 'user' y 'model' (no 'assistant')
-    const geminiContents = sanitized.map(m => ({
-      role:  m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
-
-    // Llamar a Gemini
+    // Llamar a Groq (API compatible con OpenAI)
     try {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
-
-      const resp = await fetch(geminiUrl, {
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${env.GROQ_API_KEY}`
+        },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents:          geminiContents,
-          generationConfig: {
-            maxOutputTokens: MAX_TOKENS,
-            temperature:     0.4
-          }
+          model:       GROQ_MODEL,
+          max_tokens:  MAX_TOKENS,
+          temperature: 0.4,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...sanitized
+          ]
         })
       });
 
       if (!resp.ok) {
         const txt = await resp.text();
-        console.error('Gemini error:', resp.status, txt);
+        console.error('Groq error:', resp.status, txt);
         const msg = resp.status === 429
           ? 'El servicio de IA está temporalmente ocupado. Intenta en unos segundos.'
           : 'Error al consultar el servicio de IA. Intenta de nuevo.';
@@ -134,7 +124,7 @@ export default {
       }
 
       const data = await resp.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const text = data.choices?.[0]?.message?.content || '';
 
       return new Response(
         JSON.stringify({ response: text }),
