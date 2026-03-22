@@ -23,11 +23,11 @@ const HOSPITALES = [
   {
     id: 1,
     categoria: 'hospital',
-    nombre: 'Hospital Virgen de la Asistencia',
-    direccion: 'Centro de Granada, Frente al Parque Central',
-    telefono: '2552-2600',
+    nombre: 'Hospital Amistad Japón - Nicaragua',
+    direccion: 'km. 45 Carretera Masaya Granada, Carretera Masaya Granada, Granada, Nicaragua',
+    telefono: '2552-7050',
     emergencia: true,
-    lat: 11.9350, lng: -85.9570,
+    lat: 11.937574127750384, lng: -85.97684253263621, 
     horario: '24 horas',
     servicios: ['urgencias','consulta','hospitalizacion','laboratorio','rayos_x','cirugia','pediatria','ginecologia','maternidad'],
     disponible: true, verificado: true,
@@ -39,7 +39,7 @@ const HOSPITALES = [
       ubicacion: 'Segundo piso, ala este',
       misas: [{ dia: 'Domingo', hora: '7:00 AM' },{ dia: 'Miércoles', hora: '3:00 PM' },{ dia: 'Viernes', hora: '3:00 PM' }],
       capellania: 'Disponible 24h para pacientes y familiares',
-      telefono_capilla: '2552-2650'
+      telefono_capilla: '2552-7050'
     }
   },
   {
