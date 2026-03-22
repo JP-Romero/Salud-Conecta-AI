@@ -2,7 +2,7 @@
 ═══════════════════════════════════════════════════════════════
 BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 6.0.0
+📌 VERSIÓN: 7.0.0
 📌 ÚLTIMA ACTUALIZACIÓN: 2025-01-15
 📌 CAMBIOS v6:
    - calcularDistancia es CANÓNICA aquí (eliminada de app.js)
