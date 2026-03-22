@@ -1028,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="drug-section"><div class="drug-section-content">${sintoma.causas_comunes.join(', ')}</div></div>
           <div class="drug-footer">Fuente: Base de datos local — Nicaragua ✓</div>
         </div>
-        <p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. Emergencias: 133</p>
+        <p class="message-disclaimer">Esta información es orientativa. No sustituye la consulta médica. Emergencias: 128</p>
         <span class="message-time">${timestamp}</span>
       </div>`;
     chatMessages.appendChild(messageDiv);
@@ -1049,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const RESPONSES = {
       HIGH: {
         text:    '🔴 URGENCIA ALTA — Los síntomas que describes pueden indicar una condición grave.',
-        action:  'Llama al 133 ahora o dirígete inmediatamente al Hospital Virgen de la Asistencia (Tel: 2552-2600, 24h) o al Hospital Alemán Nicaragüense (Tel: 2552-3000).',
+        action:  'Llama al 128 ahora o dirígete inmediatamente al Hospital Virgen de la Asistencia (Tel: 2552-2600, 24h) o al Hospital Alemán Nicaragüense (Tel: 2552-3000).',
         urgency: 'ALTA'
       },
       MEDIUM: {
@@ -1258,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     lines.push('-------------------------------------------');
-    lines.push('⚠️ No es diagnóstico médico. Emergencias: 133');
+    lines.push('⚠️ No es diagnóstico médico. Emergencias: 128');
     lines.push('Salud-Conecta AI v6.0.0');
     return lines.join('\n');
   }

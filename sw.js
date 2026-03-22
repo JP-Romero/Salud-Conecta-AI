@@ -2,7 +2,7 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.0.0
+📌 VERSIÓN: 6.0.0
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Cache-First
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -30,7 +30,17 @@ const SHELL_ASSETS = [
   './styles.css',
   './app.js',
   './base-datos-salud.js',
-  './manifest.json'
+  './manifest.json',
+  './imagotipo.jpeg',
+  './icon-48.png',
+  './icon-72.png',
+  './icon-96.png',
+  './icon-144.png',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-192-maskable.png',
+  './icon-512-maskable.png'
 ];
 
 // CDN assets — Leaflet

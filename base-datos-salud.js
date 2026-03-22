@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.0.0
-📌 ÚLTIMA ACTUALIZACIÓN: 2025-01-15
+📌 VERSIÓN: 6.0.0
+📌 ÚLTIMA ÚLTIMA ACTUALIZACIÓN: 2026-03-22
 📌 CAMBIOS v6:
    - calcularDistancia es CANÓNICA aquí (eliminada de app.js)
    - buscarSintoma mejorada con fuzzy matching + sinónimos
@@ -23,126 +23,118 @@ const HOSPITALES = [
   {
     id: 1,
     categoria: 'hospital',
-    nombre: 'Hospital Amistad Japón - Nicaragua',
-    direccion: 'km. 45 Carretera Masaya Granada, Carretera Masaya Granada, Granada, Nicaragua',
+    nombre: 'Hospital Amistad Japón Nicaragua',
+    direccion: 'Km 44.5 Carretera Granada-Masaya, Barrio El Capullo',
     telefono: '2552-7050',
     emergencia: true,
-    lat: 11.937574127750384, lng: -85.97684253263621, 
+    lat: 11.93749, lng: -85.97651,
     horario: '24 horas',
-    servicios: ['urgencias','consulta','hospitalizacion','laboratorio','rayos_x','cirugia','pediatria','ginecologia','maternidad'],
+    servicios: ['urgencias','consulta','hospitalizacion','laboratorio','rayos_x','cirugia','pediatria','ginecologia','maternidad','oncologia','medicina_natural'],
     disponible: true, verificado: true,
-    barrio: 'Centro',
-    notas: 'Hospital público principal de Granada. Urgencias 24h gratuitas.',
-    seguros: ['INSS','MINSA','Todos los seguros públicos'],
-    capilla: {
-      nombre: 'Capilla Nuestra Señora de la Asunción',
-      ubicacion: 'Segundo piso, ala este',
-      misas: [{ dia: 'Domingo', hora: '7:00 AM' },{ dia: 'Miércoles', hora: '3:00 PM' },{ dia: 'Viernes', hora: '3:00 PM' }],
-      capellania: 'Disponible 24h para pacientes y familiares',
-      telefono_capilla: '2552-7050'
-    }
+    barrio: 'Barrio El Capullo',
+    notas: 'Hospital Departamental público principal de Granada (MINSA/SILAIS). Urgencias 24h gratuitas. Referencia departamental.',
+    seguros: ['INSS','MINSA','Atención gratuita']
   },
   {
     id: 2,
     categoria: 'hospital',
-    nombre: 'Hospital Alemán Nicaragüense',
-    direccion: 'Barrio San Antonio, Granada',
-    telefono: '2552-3000',
+    nombre: 'Hospital SERMESA Granada',
+    direccion: 'Granada, Nicaragua',
+    telefono: '2552-4444',
     emergencia: true,
-    lat: 11.9320, lng: -85.9540,
+    lat: 11.9301, lng: -85.9563,
     horario: '24 horas',
-    servicios: ['urgencias','consulta','cirugia','laboratorio','farmacia','rayos_x','ultrasonido','tomografia'],
+    servicios: ['urgencias','consulta','cirugia','laboratorio','farmacia','rayos_x','ultrasonido'],
     disponible: true, verificado: true,
-    barrio: 'San Antonio',
-    notas: 'Hospital privado con seguros médicos. Urgencias 24h.',
-    seguros: ['INSS','MAPFRE','Seguros UNO','ANC','Banpro Seguros','Particular'],
-    capilla: {
-      nombre: 'Capilla San Juan de Dios',
-      ubicacion: 'Primer piso, cerca de recepción',
-      misas: [{ dia: 'Domingo', hora: '8:00 AM' },{ dia: 'Jueves', hora: '4:00 PM' }],
-      capellania: 'Disponible Lun-Vie 8am-5pm',
-      telefono_capilla: '2552-3050'
-    }
+    barrio: 'Centro',
+    notas: 'Hospital privado — SERMESA. INSS y pago particular.',
+    seguros: ['INSS','Particular']
   },
   {
     id: 3,
     categoria: 'hospital',
-    nombre: 'Hospital Carlos Roberto Huembes',
-    direccion: 'Carretera a Masaya, Granada',
-    telefono: '2552-5100',
-    emergencia: true,
-    lat: 11.9280, lng: -85.9480,
-    horario: '24 horas',
-    servicios: ['urgencias','consulta','hospitalizacion','laboratorio','maternidad','pediatria'],
+    nombre: 'Centro de Salud Jorge Sinforoso Bravo',
+    direccion: 'Costado norte del Parque Sandino, Barrio Estación',
+    telefono: '2552-0600',
+    emergencia: false,
+    lat: 11.9302, lng: -85.9581,
+    horario: 'Lun-Vie 7am-8pm, Sab-Dom 7am-12pm',
+    servicios: ['urgencias','consulta','vacunacion','maternidad','pediatria','laboratorio','medicina_natural','curaciones'],
     disponible: true, verificado: true,
-    barrio: 'Carretera a Masaya',
-    notas: 'Hospital regional con especialidades.',
-    seguros: ['INSS','MINSA','Todos los seguros públicos'],
-    capilla: {
-      nombre: 'Capilla Divino Niño Jesús',
-      ubicacion: 'Área de hospitalización, primer piso',
-      misas: [{ dia: 'Domingo', hora: '9:00 AM' },{ dia: 'Martes', hora: '2:00 PM' },{ dia: 'Sábado', hora: '3:00 PM' }],
-      capellania: 'Disponible 24h para emergencias',
-      telefono_capilla: '2552-5150'
-    }
+    barrio: 'Barrio Estación',
+    notas: 'Centro de Salud principal MINSA Granada. Frente al Parque Sandino. Atención gratuita.',
+    seguros: ['MINSA','Atención gratuita']
   }
 ];
 
 // ═══════════════════════════════════════════════════════════════
-//  🏥 CLÍNICAS
+//  🏥 CLÍNICAS / CENTROS DE SALUD
 // ═══════════════════════════════════════════════════════════════
 const CLINICAS = [
   {
     id: 4, categoria: 'clinica',
-    nombre: 'Centro Médico Sandoval',
-    direccion: 'Calle La Calzada, Granada',
-    telefono: '2552-4500', emergencia: false,
-    lat: 11.9360, lng: -85.9550,
-    horario: 'Lun-Vie 8am-6pm, Sab 8am-12pm',
-    servicios: ['consulta','laboratorio','ultrasonido','rayos_x'],
+    nombre: 'Centro de Salud Naciones Unidas',
+    direccion: 'Barrio Naciones Unidas, Granada',
+    telefono: '2552-0700', emergencia: false,
+    lat: 11.9252, lng: -85.9501,
+    horario: 'Lun-Vie 7am-5pm',
+    servicios: ['consulta','vacunacion','curaciones','control_nino_sano','planificacion_familiar'],
     disponible: true, verificado: true,
-    barrio: 'La Calzada',
-    notas: 'Clínica privada con especialistas.',
-    seguros: ['MAPFRE','Seguros UNO','ANC','Particular']
+    barrio: 'Naciones Unidas',
+    notas: 'Centro de Salud MINSA. Atención gratuita.',
+    seguros: ['MINSA','Atención gratuita']
   },
   {
     id: 5, categoria: 'clinica',
-    nombre: 'Clínica Familiar',
-    direccion: 'Barrio El Calvario, Granada',
-    telefono: '2552-1200', emergencia: false,
-    lat: 11.9340, lng: -85.9580,
-    horario: 'Lun-Vie 7am-7pm',
+    nombre: 'Centro de Salud Villa Sandino',
+    direccion: 'Barrio Villa Sandino, Granada',
+    telefono: '2552-0800', emergencia: false,
+    lat: 11.9421, lng: -85.9612,
+    horario: 'Lun-Vie 7am-5pm',
     servicios: ['consulta','vacunacion','curaciones','control_nino_sano'],
     disponible: true, verificado: true,
-    barrio: 'El Calvario',
-    notas: 'Atención familiar y vacunación. MINSA.',
-    seguros: ['INSS','MINSA','Particular']
+    barrio: 'Villa Sandino',
+    notas: 'Centro de Salud MINSA. Atención gratuita.',
+    seguros: ['MINSA','Atención gratuita']
   },
   {
     id: 6, categoria: 'clinica',
-    nombre: 'Clínica de la Mujer',
-    direccion: 'Barrio Guadalupe, Granada',
-    telefono: '2552-7800', emergencia: false,
-    lat: 11.9370, lng: -85.9540,
-    horario: 'Lun-Vie 8am-6pm, Sab 8am-12pm',
-    servicios: ['ginecologia','ultrasonido','planificacion_familiar','control_prenatal'],
+    nombre: 'Centro de Salud Los Tanques',
+    direccion: 'Barrio Los Tanques, Granada',
+    telefono: '2552-0900', emergencia: false,
+    lat: 11.9198, lng: -85.9488,
+    horario: 'Lun-Vie 7am-5pm',
+    servicios: ['consulta','vacunacion','curaciones','planificacion_familiar'],
     disponible: true, verificado: true,
-    barrio: 'Guadalupe',
-    notas: 'Especializada en salud femenina.',
-    seguros: ['INSS','MAPFRE','Seguros UNO','Particular']
+    barrio: 'Los Tanques',
+    notas: 'Centro de Salud MINSA. Atención gratuita.',
+    seguros: ['MINSA','Atención gratuita']
   },
   {
     id: 7, categoria: 'clinica',
-    nombre: 'Clínica Pediátrica Dr. Martínez',
-    direccion: 'Barrio Simeón Rivas, Granada',
-    telefono: '2552-9600', emergencia: false,
-    lat: 11.9385, lng: -85.9595,
-    horario: 'Lun-Vie 8am-5pm, Sab 8am-12pm',
-    servicios: ['pediatria','vacunacion','control_nino_sano','emergencias_pediatricas'],
+    nombre: 'Centro de Salud Palmira',
+    direccion: 'Barrio Palmira, Granada',
+    telefono: '2552-1000', emergencia: false,
+    lat: 11.9455, lng: -85.9445,
+    horario: 'Lun-Vie 7am-5pm',
+    servicios: ['consulta','vacunacion','curaciones','medicina_natural'],
     disponible: true, verificado: true,
-    barrio: 'Simeón Rivas',
-    notas: 'Especializada en niños. Vacunación completa.',
-    seguros: ['INSS','MAPFRE','Seguros UNO','Particular']
+    barrio: 'Palmira',
+    notas: 'Centro de Salud MINSA. Atención gratuita.',
+    seguros: ['MINSA','Atención gratuita']
+  },
+  {
+    id: 8, categoria: 'clinica',
+    nombre: 'CMP MINSA — Amistad Japón Nicaragua',
+    direccion: 'Km 44.5 Carretera Granada-Masaya, junto al Hospital',
+    telefono: '2552-7060', emergencia: false,
+    lat: 11.9378, lng: -85.9768,
+    horario: 'Lun-Vie 7am-4pm',
+    servicios: ['consulta','especialidades','laboratorio','ultrasonido','fisioterapia'],
+    disponible: true, verificado: true,
+    barrio: 'Barrio El Capullo',
+    notas: 'Clínica Médica Previsional MINSA. Atención INSS.',
+    seguros: ['INSS']
   }
 ];
 
@@ -151,7 +143,7 @@ const CLINICAS = [
 // ═══════════════════════════════════════════════════════════════
 const FARMACIAS = [
   {
-    id: 8, categoria: 'farmacia',
+    id: 12, categoria: 'farmacia',
     nombre: 'Farmacia Del Pueblo',
     direccion: 'Parque Central, Granada',
     telefono: '2552-5000', emergencia: true,
@@ -163,7 +155,7 @@ const FARMACIAS = [
     notas: 'Farmacia 24 horas. Precios económicos.'
   },
   {
-    id: 9, categoria: 'farmacia',
+    id: 12, categoria: 'farmacia',
     nombre: 'Farmacia San Nicolás',
     direccion: 'Calle La Calzada, Granada',
     telefono: '2552-6000', emergencia: false,
@@ -175,7 +167,7 @@ const FARMACIAS = [
     notas: 'Amplia variedad de productos naturales.'
   },
   {
-    id: 10, categoria: 'farmacia',
+    id: 12, categoria: 'farmacia',
     nombre: 'Farmacia Cruz Verde',
     direccion: 'Centro Comercial, Granada',
     telefono: '2552-7000', emergencia: false,
@@ -187,7 +179,7 @@ const FARMACIAS = [
     notas: 'Especializada en productos para bebés.'
   },
   {
-    id: 11, categoria: 'farmacia',
+    id: 12, categoria: 'farmacia',
     nombre: 'Farmacia Guadalajara',
     direccion: 'Barrio San Antonio, Granada',
     telefono: '2552-8000', emergencia: false,
@@ -623,13 +615,12 @@ const SINTOMAS = [
 //  🚑 EMERGENCIAS
 // ═══════════════════════════════════════════════════════════════
 const EMERGENCIAS = [
-  { nombre: 'Emergencias Nacionales',              numero: '133',       descripcion: 'Ambulancias, bomberos, policía (gratuito 24h)',               disponible: true },
-  { nombre: 'Bomberos',                            numero: '115',       descripcion: 'Cuerpo de Bomberos de Nicaragua',                             disponible: true },
+  { nombre: 'Emergencias Nacionales (Bomberos)',   numero: '128',       descripcion: 'Línea de emergencias gratuita 24h — Nicaragua',              disponible: true },
   { nombre: 'Policía Nacional',                    numero: '118',       descripcion: 'Emergencias policiales',                                      disponible: true },
   { nombre: 'Cruz Roja Nicaragüense — Granada',    numero: '2552-5555', descripcion: 'Ambulancias y primeros auxilios en Granada',                  disponible: true },
-  { nombre: 'Hospital Virgen de la Asistencia',    numero: '2552-2600', descripcion: 'Hospital público principal de Granada — urgencias 24h',       disponible: true },
-  { nombre: 'Hospital Alemán Nicaragüense',        numero: '2552-3000', descripcion: 'Hospital privado — urgencias 24h',                            disponible: true },
-  { nombre: 'Hospital Carlos Roberto Huembes',     numero: '2552-5100', descripcion: 'Hospital con urgencias 24h — Carretera a Masaya',             disponible: true }
+  { nombre: 'Hospital Amistad Japón Nicaragua',    numero: '2552-7050', descripcion: 'Hospital Departamental — urgencias 24h gratuitas',            disponible: true },
+  { nombre: 'Hospital SERMESA Granada',            numero: '2552-4444', descripcion: 'Hospital privado — urgencias INSS y particular',              disponible: true },
+  { nombre: 'SILAIS Granada',                      numero: '2552-0450', descripcion: 'Sistema Local de Atención Integral en Salud Granada',         disponible: true }
 ];
 
 // ═══════════════════════════════════════════════════════════════
