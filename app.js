@@ -607,12 +607,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── Íconos de Leaflet por categoría (divIcon evita rutas rotas en GitHub Pages)
+  function crearIconoCategoria(categoria, emergencia) {
+    const colores = {
+      hospital:   { bg: '#d90429', emoji: '🏥' },
+      clinica:    { bg: '#2F5D7C', emoji: '🏥' },
+      farmacia:   { bg: '#5FAF4E', emoji: '💊' },
+      doctors:    { bg: '#3FA7A3', emoji: '👨‍⚕️' },
+      laboratory: { bg: '#7CCB5A', emoji: '🔬' },
+      health:     { bg: '#2F5D7C', emoji: '🏥' }
+    };
+    const c = colores[categoria] || colores.health;
+    const border = emergencia ? '3px solid #fff' : '2px solid #fff';
+    return L.divIcon({
+      className: '',
+      html: `<div style="background:${c.bg};width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:${border};box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;"><span style="transform:rotate(45deg);font-size:15px;line-height:1;">${c.emoji}</span></div>`,
+      iconSize:    [34, 34],
+      iconAnchor:  [17, 34],
+      popupAnchor: [0, -36]
+    });
+  }
+
   // CORRECCIÓN BUG: Reutilizar mapa en lugar de destruirlo y recrearlo
   function initMap(lat, lng) {
     if (typeof L === 'undefined') { console.error('Leaflet no cargado'); return; }
 
     if (appState.map) {
-      // Reutilizar mapa existente: solo centrar y actualizar marcador de usuario
       appState.map.setView([lat, lng], 14);
       if (appState.userMarker) appState.userMarker.setLatLng([lat, lng]);
       appState.map.invalidateSize();
@@ -627,11 +647,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     appState.userMarker = L.marker([lat, lng], {
       icon: L.divIcon({
-        className: 'user-marker',
-        html: '<div style="background:#0077b6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
-        iconSize: [20, 20], iconAnchor: [10, 10]
+        className: '',
+        html: '<div style="background:#0077b6;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(0,119,182,0.3),0 2px 6px rgba(0,0,0,0.3);"></div>',
+        iconSize: [18, 18], iconAnchor: [9, 9]
       })
-    }).addTo(appState.map).bindPopup('Tu ubicación').openPopup();
+    }).addTo(appState.map).bindPopup('<strong>📍 Tu ubicación</strong>').openPopup();
 
     setTimeout(() => appState.map.invalidateSize(), 100);
   }
@@ -688,19 +708,60 @@ document.addEventListener('DOMContentLoaded', () => {
         ? facility.distance
         : calcularDistancia(userLat, userLng, lat, lng);
 
-      const marker = L.marker([lat, lng]).addTo(appState.map)
-        .bindPopup(`<strong>${name}</strong><br>${type.toUpperCase()} — ${distance}m<br>${address}<br><br><a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank" style="background:#2a9d8f;color:white;padding:4px 8px;border-radius:4px;text-decoration:none;font-size:0.8rem;">Ir ↗</a>`);
+      // Usar ícono personalizado por categoría
+      const iconoMarcador = crearIconoCategoria(type, facility.emergencia || false);
+      const marker = L.marker([lat, lng], { icon: iconoMarcador }).addTo(appState.map);
+
+      // Etiqueta del tipo en español
+      const tipoLabel = {
+        hospital: 'Hospital', clinica: 'Clínica', farmacia: 'Farmacia',
+        doctors: 'Consultorio', laboratory: 'Laboratorio', health: 'Salud'
+      }[type] || type;
+
+      const horario = facility.horario || '';
+      const telefono = facility.telefono || '';
+      const seguros = facility.seguros ? facility.seguros.slice(0,2).join(', ') : '';
+
+      marker.bindPopup(`
+        <strong>${name}</strong><br>
+        <span style="color:#666;font-size:0.85em;">${tipoLabel} · ${distance}m</span><br>
+        ${address ? `📍 ${address}<br>` : ''}
+        ${horario  ? `🕐 ${horario}<br>` : ''}
+        ${telefono ? `📞 ${telefono}<br>` : ''}
+        ${seguros  ? `🏥 ${seguros}<br>` : ''}
+        <br><a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}"
+          target="_blank"
+          style="background:#2F5D7C;color:white;padding:5px 10px;border-radius:6px;text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:4px;">
+          Cómo llegar ↗
+        </a>`);
       appState.healthMarkers.push(marker);
+
+      // Ícono emoji por tipo para la lista
+      const iconoEmoji = {
+        hospital: '🏥', clinica: '🏥', farmacia: '💊',
+        doctors: '👨‍⚕️', laboratory: '🔬', health: '📍'
+      }[type] || '📍';
 
       const resultItem = document.createElement('div');
       resultItem.className = 'map-result-item';
+      resultItem.style.cursor = 'pointer';
       resultItem.innerHTML = `
+        <div class="map-result-icon">${iconoEmoji}</div>
         <div class="map-result-info">
           <div class="map-result-name">${name}</div>
-          <div class="map-result-type">${type.toUpperCase()} — ${distance}m ${address ? '· ' + address : ''}</div>
+          <div class="map-result-type">${tipoLabel} · ${distance}m${address ? ' · ' + address : ''}</div>
+          ${horario ? `<div class="map-result-horario">🕐 ${horario}</div>` : ''}
         </div>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&origin=${userLat},${userLng}"
            class="btn-directions" target="_blank" rel="noopener">Ir ↗</a>`;
+
+      // Al tocar el ítem en la lista, abrir el popup del marcador en el mapa
+      resultItem.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-directions')) return;
+        marker.openPopup();
+        appState.map.setView([lat, lng], 16);
+      });
+
       mapResults.appendChild(resultItem);
     });
 
