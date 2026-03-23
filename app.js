@@ -1767,8 +1767,72 @@ document.addEventListener('DOMContentLoaded', () => {
   //  INICIALIZACIÓN
   // ═══════════════════════════════════════════════════════════════
   initVoiceInput();
+
+  // ── Service Worker con detección de actualización ──
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW error:', err));
+
+    navigator.serviceWorker.register('./sw.js')
+      .then(registration => {
+
+        // ── Función que activa el SW en espera ──
+        function activarSWNuevo(worker) {
+          worker.postMessage({ type: 'SKIP_WAITING' });
+        }
+
+        // ── Muestra el banner de "nueva versión" ──
+        function mostrarBannerActualizacion(worker) {
+          const banner = document.getElementById('update-banner');
+          const btnUpdate = document.getElementById('btn-update-app');
+          if (!banner) return;
+
+          banner.style.display = 'flex';
+
+          // Al hacer clic en Actualizar → activar SW nuevo → recargar
+          if (btnUpdate) {
+            btnUpdate.addEventListener('click', () => {
+              activarSWNuevo(worker);
+            }, { once: true });
+          }
+        }
+
+        // ── Caso 1: Ya hay un SW en espera al cargar (refresh rápido) ──
+        if (registration.waiting) {
+          mostrarBannerActualizacion(registration.waiting);
+        }
+
+        // ── Caso 2: Un SW nuevo empieza a instalarse ──
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', () => {
+            // SW nuevo instalado y esperando → mostrar aviso
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              mostrarBannerActualizacion(newWorker);
+            }
+          });
+        });
+
+        // ── Caso 3: SW activó → recargar la página automáticamente ──
+        let recargando = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!recargando) {
+            recargando = true;
+            window.location.reload();
+          }
+        });
+
+      })
+      .catch(err => console.warn('SW error:', err));
+
+    // ── Buscar actualizaciones cada vez que la app recupera el foco ──
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        navigator.serviceWorker.getRegistration('./sw.js').then(reg => {
+          if (reg) reg.update().catch(() => {});
+        });
+      }
+    });
   }
 
   console.log('🏥 Salud-Conecta AI v7.0.0 iniciada · Worker:', WORKER_URL);

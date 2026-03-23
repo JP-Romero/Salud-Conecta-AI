@@ -2,7 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 6.0.0
+📌 VERSIÓN: 7.1.0
+📌 CAMBIOS v8: Banner actualizacion + selector dolor
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Cache-First
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -13,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v7';
+const CACHE_VERSION   = 'v8';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;

@@ -531,6 +531,19 @@
     </div>
   </div>
 
+  <!-- 🔄 Banner de nueva versión disponible -->
+  <div id="update-banner" style="display:none;">
+    <div class="update-banner-content">
+      <span class="update-banner-icon">🆕</span>
+      <div class="update-banner-text">
+        <strong>Nueva versión disponible</strong>
+        <p>Hay mejoras listas para instalar.</p>
+      </div>
+      <button id="btn-update-app" class="btn-update">Actualizar</button>
+      <button id="btn-dismiss-update" class="btn-dismiss-update" onclick="document.getElementById('update-banner').style.display='none'" title="Cerrar">✕</button>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="base-datos-salud.js"></script>

@@ -1010,3 +1010,87 @@ body {
   width: 100%;
   max-width: 420px;
 }
+
+/* ───────────────────────────────
+   BANNER DE ACTUALIZACIÓN DISPONIBLE
+   ─────────────────────────────── */
+#update-banner {
+  position: fixed;
+  bottom: 0; left: 0; width: 100%;
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--teal-dark) 100%);
+  color: white;
+  padding: 0.85rem 1rem;
+  z-index: 1100;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+  animation: slideUp 0.35s ease-out;
+  border-top: 3px solid var(--green);
+}
+.update-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.update-banner-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+.update-banner-text {
+  flex: 1;
+}
+.update-banner-text strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.update-banner-text p {
+  font-size: 0.76rem;
+  opacity: 0.85;
+  margin: 1px 0 0;
+}
+.btn-update {
+  background: var(--green);
+  color: white;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform 0.2s, background 0.2s;
+  box-shadow: 0 2px 10px rgba(95,175,78,0.4);
+}
+.btn-update:hover {
+  background: var(--green-dark);
+  transform: scale(1.05);
+}
+.btn-update:active {
+  transform: scale(0.97);
+}
+.btn-dismiss-update {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.btn-dismiss-update:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+@media (max-width: 600px) {
+  .update-banner-text p { display: none; }
+  .btn-update { padding: 8px 14px; font-size: 0.82rem; }
+}
