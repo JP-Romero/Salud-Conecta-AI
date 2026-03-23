@@ -1388,12 +1388,170 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnSend)  btnSend.addEventListener('click', () => sendMessage(userInput.value));
   if (userInput) userInput.addEventListener('keypress', e => { if (e.key === 'Enter' && !e.shiftKey) sendMessage(userInput.value); });
 
+
+  // ═══════════════════════════════════════════════════════════════
+  //  SELECTOR DE TIPO DE DOLOR
+  // ═══════════════════════════════════════════════════════════════
+  const TIPOS_DOLOR = [
+    {
+      emoji: '🧠', label: 'Dolor de cabeza',
+      subtypes: [
+        { label: 'Tensional (banda apretada, estrés)',      msg: 'Tengo dolor de cabeza tensional, siento como una banda apretada alrededor de la frente' },
+        { label: 'Migraña / Jaqueca (pulsátil, un lado)',   msg: 'Tengo migraña, un dolor pulsátil en un lado de la cabeza con náuseas y sensibilidad a la luz' },
+        { label: 'Sinusitis (frente y pómulos)',            msg: 'Tengo dolor de cabeza por sinusitis, me duele la frente y los pómulos' },
+        { label: 'Dolor de cabeza general',                 msg: 'Tengo dolor de cabeza general' }
+      ]
+    },
+    {
+      emoji: '💪', label: 'Dolor muscular y huesos',
+      subtypes: [
+        { label: 'Espalda baja (lumbalgia)',                msg: 'Tengo dolor en la espalda baja, lumbalgia' },
+        { label: 'Cuello (cervicalgia)',                    msg: 'Tengo dolor de cuello, cervicalgia' },
+        { label: 'Articulaciones (rodillas, caderas, manos)', msg: 'Tengo dolor en las articulaciones, rodillas, caderas o manos' },
+        { label: 'Contractura o golpe muscular',            msg: 'Tengo una contractura muscular o golpe, dolor muscular por esfuerzo' }
+      ]
+    },
+    {
+      emoji: '🫃', label: 'Dolor abdominal',
+      subtypes: [
+        { label: 'Gastritis / Acidez (boca del estómago)', msg: 'Tengo dolor en la boca del estómago, gastritis o acidez' },
+        { label: 'Cólicos menstruales',                    msg: 'Tengo cólicos menstruales, dolor pélvico durante el período' },
+        { label: 'Cólicos y gases',                        msg: 'Tengo cólicos abdominales con gases y distensión' },
+        { label: 'Dolor abdominal general',                msg: 'Tengo dolor abdominal general' }
+      ]
+    },
+    {
+      emoji: '🦷', label: 'Dolor dental',
+      subtypes: [
+        { label: 'Dolor de muela agudo',                   msg: 'Tengo dolor de muela agudo, puede ser caries o infección dental' },
+        { label: 'Dolor que se va al oído o cabeza',       msg: 'Tengo dolor dental que se irradia al oído y la cabeza' }
+      ]
+    },
+    {
+      emoji: '⚡', label: 'Dolor de nervios (neuropático)',
+      subtypes: [
+        { label: 'Hormigueo / ardor en pies y manos',      msg: 'Tengo hormigueo, ardor y dolor en pies y manos, posible neuropatía diabética' },
+        { label: 'Ciática (espalda hacia la pierna)',       msg: 'Tengo ciática, dolor que baja desde la espalda baja hacia la pierna' },
+        { label: 'Dolor quemante o eléctrico en nervios',  msg: 'Tengo dolor quemante o eléctrico tipo descarga en los nervios' }
+      ]
+    },
+    {
+      emoji: '🌡️', label: 'Dolor crónico / Post-COVID',
+      subtypes: [
+        { label: 'Dolores musculares persistentes (mialgias)', msg: 'Tengo dolores musculares persistentes generalizados, mialgias que no mejoran' },
+        { label: 'Fibromialgia (dolor en todo el cuerpo)',     msg: 'Tengo dolor generalizado en todo el cuerpo con fatiga y mal sueño, posible fibromialgia' },
+        { label: 'Secuelas de COVID (dolor continuo)',        msg: 'Tengo dolores persistentes como secuela después de haber tenido COVID' }
+      ]
+    }
+  ];
+
+  function showDoloresMenu() {
+    if (!chatMessages) return;
+
+    // Limpiar cualquier selector anterior
+    const prevSelector = document.getElementById('dolor-selector');
+    if (prevSelector) prevSelector.remove();
+
+    const div = document.createElement('div');
+    div.id = 'dolor-selector';
+    div.className = 'message ai-message';
+    div.style.maxWidth = '100%';
+
+    const opciones = TIPOS_DOLOR.map((t, i) => `
+      <button class="dolor-tipo-btn" onclick="window.showDolorSubtypes(${i})" style="
+        display:flex; align-items:center; gap:10px;
+        background:var(--primary-light); color:var(--primary);
+        border:1.5px solid rgba(47,93,124,0.2);
+        padding:10px 14px; border-radius:12px; width:100%;
+        font-family:'Poppins',sans-serif; font-size:0.88rem;
+        font-weight:500; cursor:pointer; text-align:left;
+        transition:all 0.2s; margin-bottom:6px;">
+        <span style="font-size:1.3rem;">${t.emoji}</span>
+        <span>${t.label}</span>
+      </button>`).join('');
+
+    div.innerHTML = `
+      <div class="message-avatar">AI</div>
+      <div class="message-content" style="max-width:100%;">
+        <p>¿Dónde o cómo es el dolor que sentís?</p>
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:2px;">
+          ${opciones}
+        </div>
+        <span class="message-time">${getShortTime()}</span>
+      </div>`;
+
+    chatMessages.appendChild(div);
+    scrollToBottom();
+  }
+
+  window.showDolorSubtypes = function(tipoIndex) {
+    const tipo = TIPOS_DOLOR[tipoIndex];
+    if (!tipo) return;
+
+    // Reemplazar el selector principal con los subtipos
+    const prevSelector = document.getElementById('dolor-selector');
+    if (prevSelector) prevSelector.remove();
+
+    const div = document.createElement('div');
+    div.id = 'dolor-selector';
+    div.className = 'message ai-message';
+    div.style.maxWidth = '100%';
+
+    const opciones = tipo.subtypes.map((s, i) => `
+      <button class="dolor-sub-btn" onclick="window.enviarDolor(${tipoIndex}, ${i})" style="
+        display:flex; align-items:flex-start; gap:10px;
+        background:var(--surface); color:var(--text);
+        border:1.5px solid var(--border);
+        padding:10px 14px; border-radius:10px; width:100%;
+        font-family:'Poppins',sans-serif; font-size:0.85rem;
+        cursor:pointer; text-align:left;
+        transition:all 0.2s; margin-bottom:6px;">
+        <span style="color:var(--primary);font-size:1rem;flex-shrink:0;">•</span>
+        <span>${s.label}</span>
+      </button>`).join('');
+
+    div.innerHTML = `
+      <div class="message-avatar">${tipo.emoji}</div>
+      <div class="message-content" style="max-width:100%;">
+        <p><strong>${tipo.label}</strong> — ¿Podés describir mejor cómo es?</p>
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:2px;">
+          ${opciones}
+        </div>
+        <button onclick="window.showDoloresMenu()" style="
+          background:none; border:none; color:var(--text-sec);
+          font-family:'Poppins',sans-serif; font-size:0.78rem;
+          cursor:pointer; margin-top:8px; padding:0; text-decoration:underline;">
+          ← Volver a tipos de dolor
+        </button>
+        <span class="message-time">${getShortTime()}</span>
+      </div>`;
+
+    chatMessages.appendChild(div);
+    scrollToBottom();
+  };
+
+  window.showDoloresMenu = showDoloresMenu;
+
+  window.enviarDolor = function(tipoIndex, subIndex) {
+    const sub = TIPOS_DOLOR[tipoIndex]?.subtypes[subIndex];
+    if (!sub) return;
+
+    // Eliminar el selector
+    const prevSelector = document.getElementById('dolor-selector');
+    if (prevSelector) prevSelector.remove();
+
+    // Enviar el mensaje como si el usuario lo hubiera escrito
+    sendMessage(sub.msg);
+  };
+
+
   // Quick buttons
   quickBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const action  = btn.getAttribute('data-action');
       const symptom = btn.getAttribute('data-symptom');
       if (action === 'search-drug') sendMessage('Buscar medicamento');
+      else if (action === 'dolor-menu') showDoloresMenu();
       else if (symptom) sendMessage(symptom);
     });
   });

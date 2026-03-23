@@ -979,3 +979,34 @@ body {
   .message-content { border: 2px solid var(--text); }
   .btn-primary, .btn-auth { border: 2px solid var(--text); }
 }
+
+/* ───────────────────────────────
+   SELECTOR DE TIPO DE DOLOR
+   ─────────────────────────────── */
+.dolor-tipo-btn:hover {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+  transform: translateX(3px);
+}
+.dolor-tipo-btn:hover span:first-child {
+  filter: brightness(10);
+}
+
+.dolor-sub-btn:hover {
+  background: var(--primary-light) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+.dolor-sub-btn:hover span:first-child {
+  color: var(--primary) !important;
+}
+
+/* Animación de entrada del selector */
+#dolor-selector {
+  animation: fadeIn 0.25s ease;
+}
+#dolor-selector .message-content {
+  width: 100%;
+  max-width: 420px;
+}
