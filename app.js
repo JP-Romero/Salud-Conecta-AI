@@ -438,27 +438,75 @@ document.addEventListener('DOMContentLoaded', () => {
   const DRUG_KEYWORDS = ['pastilla', 'medicamento', 'droga', 'jarabe', 'tratamiento', 'para que sirve', 'dosis', 'medicina'];
 
   const COMMON_DRUGS = [
-    'ibuprofeno', 'paracetamol', 'aspirina', 'amoxicilina', 'omeprazol',
-    'loratadina', 'metformina', 'losartan', 'amlodipino', 'diclofenaco',
-    'acetaminofen', 'naproxeno', 'cetirizina', 'prednisona', 'azitromicina'
+    // Analgésicos y antiinflamatorios
+    'ibuprofeno','paracetamol','aspirina','diclofenaco','dipirona','metamizol',
+    'naproxeno','ketorolaco','acetaminofen','alopurinol',
+    // Antibióticos
+    'amoxicilina','azitromicina','metronidazol','ciprofloxacina','cotrimoxazol',
+    'bactrim','doxiciclina','ceftriaxona','clindamicina','ampicilina',
+    // Gastrointestinal
+    'omeprazol','ranitidina','loperamida','metoclopramida','plasil',
+    // Cardiovascular
+    'enalapril','losartan','amlodipina','amlodipino','atenolol','furosemida',
+    'hidroclorotiazida','simvastatina','clopidogrel','digoxina','warfarina',
+    // Respiratorio
+    'salbutamol','loratadina','cetirizina','clorfeniramina','ipratropio',
+    // Endocrinología
+    'metformina','glibenclamida','insulina','levotiroxina','prednisona',
+    'dexametasona',
+    // Neurología/Psiquiatría
+    'diazepam','carbamazepina','fluoxetina','amitriptilina','haloperidol',
+    'valproico',
+    // Vitaminas y suplementos
+    'acido folico','sulfato ferroso','vitamina c','vitamina b12','calcio',
+    // Antiparasitarios/Antivirales
+    'albendazol','metronidazol','aciclovir','fluconazol','ivermectina',
+    'permetrina','cloroquina','nitazoxanida','tinidazol','mebendazol','furazolidona',
+    // Respiratorio adicional
+    'ambroxol','bromhexina','guaifenesina','dextrometorfano','oximetazolina','xilometazolina',
+    // Dermatología
+    'clotrimazol','hidrocortisona','miconazol','nistatina','terbinafina','ketoconazol',
+    'bacitracina','iodopovidona','acido salicilico','piritionato de zinc','minoxidil',
+    // Antihistamínicos adicionales
+    'difenhidramina','fexofenadina','cetirizina','dimenhidrinato',
+    // Gastrointestinal adicional
+    'simeticona','carbon activado','bisacodilo','fenazopiridina','famotidina',
+    'subsalicilato de bismuto','pancreatina',
+    // Analgésicos adicionales
+    'naproxeno','acido mefenamico','ergotamina',
+    // Otros
+    'lagrimas artificiales','suero fisiologico nasal','multivitaminico',
+    // Ginecología
+    'misoprostol','oxitocina'
   ];
 
   const DRUG_NAME_MAPPING = {
-    'paracetamol':   'acetaminophen',
-    'acetaminofen':  'acetaminophen',
-    'ibuprofeno':    'ibuprofen',
-    'aspirina':      'aspirin',
-    'amoxicilina':   'amoxicillin',
-    'omeprazol':     'omeprazole',
-    'loratadina':    'loratadine',
-    'metformina':    'metformin',
-    'losartan':      'losartan',
-    'amlodipino':    'amlodipine',
-    'diclofenaco':   'diclofenac',
-    'naproxeno':     'naproxen',
-    'cetirizina':    'cetirizine',
-    'prednisona':    'prednisone',
-    'azitromicina':  'azithromycin'
+    'paracetamol':'acetaminophen','acetaminofen':'acetaminophen',
+    'ibuprofeno':'ibuprofen','aspirina':'aspirin',
+    'amoxicilina':'amoxicillin','azitromicina':'azithromycin',
+    'omeprazol':'omeprazole','ranitidina':'ranitidine',
+    'loperamida':'loperamide','metoclopramida':'metoclopramide',
+    'loratadina':'loratadine','cetirizina':'cetirizine',
+    'clorfeniramina':'chlorpheniramine','salbutamol':'albuterol',
+    'metformina':'metformin','glibenclamida':'glibenclamide',
+    'losartan':'losartan','amlodipino':'amlodipine','amlodipina':'amlodipine',
+    'enalapril':'enalapril','atenolol':'atenolol','furosemida':'furosemide',
+    'hidroclorotiazida':'hydrochlorothiazide','simvastatina':'simvastatin',
+    'clopidogrel':'clopidogrel','digoxina':'digoxin','warfarina':'warfarin',
+    'diclofenaco':'diclofenac','naproxeno':'naproxen',
+    'dipirona':'metamizole','metamizol':'metamizole',
+    'ketorolaco':'ketorolac','alopurinol':'allopurinol',
+    'prednisona':'prednisone','dexametasona':'dexamethasone',
+    'levotiroxina':'levothyroxine','ciprofloxacina':'ciprofloxacin',
+    'cotrimoxazol':'trimethoprim-sulfamethoxazole','doxiciclina':'doxycycline',
+    'ceftriaxona':'ceftriaxone','albendazol':'albendazole',
+    'metronidazol':'metronidazole','aciclovir':'acyclovir',
+    'fluconazol':'fluconazole','ivermectina':'ivermectin',
+    'permetrina':'permethrin','clotrimazol':'clotrimazole',
+    'diazepam':'diazepam','carbamazepina':'carbamazepine',
+    'fluoxetina':'fluoxetine','amitriptilina':'amitriptyline',
+    'haloperidol':'haloperidol','cetirizina':'cetirizine',
+    'azitromicina':'azithromycin'
   };
 
   const MEDICAL_TERMS_ES = {
