@@ -3,9 +3,9 @@
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 📌 VERSIÓN: 7.3.0
-📌 CAMBIOS v10: Expansión BD Granada + LABORATORIOS
+📌 CAMBIOS v11: Fix truncado + Sincronización recursos
 📌 ESTRATEGIAS:
-   - Shell (HTML/CSS/JS local): Cache-First
+   - Shell (HTML/CSS/JS local): Network-First (Actualización rápida)
    - Leaflet / CDN:             Cache-First (larga duración)
    - openFDA:                   Network-First con fallback a cache
    - Anthropic API:             Network-Only (nunca cachear respuestas de IA)
@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v10';
+const CACHE_VERSION   = 'v11';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;
