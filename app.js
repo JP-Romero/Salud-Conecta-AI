@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.2.0
-📌 CAMBIOS: Fix truncado IA · Mejora updates · Login PIN
+📌 VERSIÓN: 7.3.0
+📌 CAMBIOS: Expansión BD Granada · LABORATORIOS · Fix truncado
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -1367,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push('=======================================');
     lines.push(`Fecha: ${now}`);
     lines.push(`Ubicación: ${includeLocationCheckbox?.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
-    lines.push(`Versión: 6.0.0`);
+    lines.push(`Versión: 7.3.0`);
     lines.push('');
 
     if (includeSummaryCheckbox?.checked) {
@@ -1401,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lines.push('-------------------------------------------');
     lines.push('⚠️ No es diagnóstico médico. Emergencias: 128');
-    lines.push('Salud-Conecta AI v6.0.0');
+    lines.push('Salud-Conecta AI v7.3.0');
     return lines.join('\n');
   }
 
@@ -1868,5 +1868,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('🏥 Salud-Conecta AI v7.2.0 iniciada · Worker:', WORKER_URL);
+  console.log('🏥 Salud-Conecta AI v7.3.0 iniciada · Worker:', WORKER_URL);
 });
