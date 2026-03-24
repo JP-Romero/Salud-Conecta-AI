@@ -1,41 +1,37 @@
-
 import asyncio
 from playwright.async_api import async_playwright
-import os
 
-async def verify_long_response():
+async def run():
     async with async_playwright() as p:
         browser = await p.chromium.launch()
-        context = await browser.new_context(viewport={'width': 1280, 'height': 800})
-        page = await context.new_page()
+        page = await browser.new_page()
+        await page.goto('file:///app/index.html')
 
-        # Go to the app
-        await page.goto('http://localhost:8080')
+        await page.evaluate("""() => {
+            localStorage.setItem('sc_users', JSON.stringify({'user_test': {pinHash: '1', createdAt: new Date().toISOString()}}));
+            sessionStorage.setItem('sc_session', JSON.stringify({userId: 'user_test', loginAt: Date.now()}));
+            localStorage.setItem('sc_consent', 'true');
+        }""")
+        await page.reload()
 
-        # Login
-        await page.fill('input[type="password"]', '1234')
-        await page.click('button:has-text("Entrar")')
+        # Ask for something that exists in the database to see the full list of pharmacies
+        await page.fill('#user-input', 'paracetamol')
+        await page.click('#btn-send')
 
-        # Wait for chat
-        await page.wait_for_selector('.chat-container')
+        await page.wait_for_selector('.ai-message:nth-child(3)') # Wait for the pharmacy list
+        await asyncio.sleep(2)
 
-        # Send a message that should trigger a long response
-        # Using a prompt that asks for detailed information
-        await page.fill('#chat-input', 'Dame una lista detallada de todos los centros de salud en Granada y qué servicios ofrecen cada uno.')
-        await page.click('#send-btn')
+        await page.screenshot(path='pharmacy_list_full.png', full_page=True)
 
-        # Wait for the AI response (it might take a while)
-        # We wait for the message to appear and then wait for it to stop "typing" or just wait a few seconds
-        await asyncio.sleep(5)
-
-        # Take a screenshot of the chat
-        await page.screenshot(path='/home/jules/verification/long_response.png')
-
-        # Check if "Leer más" is visible
-        read_more_visible = await page.is_visible('.read-more-btn')
-        print(f"Read more button visible: {read_more_visible}")
+        # Count items in the pharmacy list
+        count = await page.evaluate("""() => {
+            const messages = Array.from(document.querySelectorAll('.message-content p'));
+            const pharmacyMsg = messages.find(p => p.textContent.includes('Puedes conseguirlo en estas farmacias'));
+            if (!pharmacyMsg) return 0;
+            return pharmacyMsg.textContent.split('\\n•').length - 1;
+        }""")
+        print(f"Pharmacies shown: {count}")
 
         await browser.close()
 
-if __name__ == "__main__":
-    asyncio.run(verify_long_response())
+asyncio.run(run())

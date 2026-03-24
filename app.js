@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const horario = facility.horario || '';
       const telefono = facility.telefono || '';
-      const seguros = facility.seguros ? facility.seguros.slice(0,2).join(', ') : '';
+      const seguros = facility.seguros ? facility.seguros.join(', ') : '';
 
       marker.bindPopup(`
         <strong>${name}</strong><br>
@@ -984,13 +984,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.expandDrugContent = function(contentId, btn) {
-    const el = document.getElementById(contentId);
-    if (el) {
-      el.style.webkitLineClamp = 'unset';
-      el.style.maxHeight = 'none';
-      el.style.overflow = 'visible';
-      if (btn) btn.style.display = 'none';
-    }
+    // Legacy support: expand is now handled by removing line-clamp in CSS
+    if (btn) btn.style.display = 'none';
   };
 
   async function fetchDrugInfo(drugName) {
@@ -1006,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (medBD) {
       showTyping(false);
       const drugData = {
-        name: medBD.nombre_es + (medBD.nombres_comerciales.length > 0 ? ` (${medBD.nombres_comerciales.slice(0,3).join(', ')})` : ''),
+        name: medBD.nombre_es + (medBD.nombres_comerciales.length > 0 ? ` (${medBD.nombres_comerciales.join(', ')})` : ''),
         usage:          medBD.uso_principal,
         warnings:       `${medBD.contraindicaciones}. Efectos secundarios: ${medBD.efectos_secundarios}`,
         source:         'Base de datos local — Nicaragua ✓',
@@ -1019,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         const farmacias = buscarCentrosPorCategoria('farmacia');
         if (farmacias?.length > 0) {
-          addMessage(`💊 Puedes conseguirlo en estas farmacias de Granada:\n\n${farmacias.slice(0,5).map(f => `• ${f.nombre} (${f.horario})`).join('\n')}`, 'ai', null, getShortTime());
+          addMessage(`💊 Puedes conseguirlo en estas farmacias de Granada:\n\n${farmacias.map(f => `• ${f.nombre} (${f.horario})`).join('\n')}`, 'ai', null, getShortTime());
         }
       }, 500);
       return;
@@ -1070,20 +1065,16 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="drug-card">
           <div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">${data.name}</h4></div>
           <div class="drug-section"><div class="drug-section-title">Uso principal</div>
-            <div class="drug-section-content" id="${contentId}">${data.usage}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${contentId}', this)">Leer más</button></div>
+            <div class="drug-section-content" id="${contentId}">${data.usage}</div></div>
           ${data.dosis ? `
             <div class="drug-section"><div class="drug-section-title">Dosis adulto</div>
-            <div class="drug-section-content" id="${dosisId}">${data.dosis}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${dosisId}', this)">Leer más</button></div>` : ''}
+            <div class="drug-section-content" id="${dosisId}">${data.dosis}</div></div>` : ''}
           <div class="drug-section"><div class="drug-section-title">Advertencias</div>
-            <div class="drug-section-content" id="${warnId}">${data.warnings}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${warnId}', this)">Leer más</button></div>
+            <div class="drug-section-content" id="${warnId}">${data.warnings}</div></div>
           ${data.requiere_receta ? `<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color:var(--danger);">Sí — Consulta médica obligatoria</div></div>` : ''}
           ${data.precio ? `
             <div class="drug-section"><div class="drug-section-title">Precio aproximado</div>
-            <div class="drug-section-content" id="${precioId}">${data.precio}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${precioId}', this)">Leer más</button></div>` : ''}
+            <div class="drug-section-content" id="${precioId}">${data.precio}</div></div>` : ''}
           <div class="drug-footer">${data.source}</div>
         </div>
         <p class="message-disclaimer">No te automediques. Consulta con tu farmacéutico o médico.</p>
@@ -1113,11 +1104,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="drug-card">
           <div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">${data.name}</h4></div>
           <div class="drug-section"><div class="drug-section-title">Uso indicado</div>
-            <div class="drug-section-content" id="${contentId}">${data.usage}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${contentId}', this)">Leer más</button></div>
+            <div class="drug-section-content" id="${contentId}">${data.usage}</div></div>
           <div class="drug-section"><div class="drug-section-title">Advertencias</div>
-            <div class="drug-section-content" id="${warnId}">${data.warnings}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${warnId}', this)">Leer más</button></div>
+            <div class="drug-section-content" id="${warnId}">${data.warnings}</div></div>
           <div class="drug-footer">${data.source}</div>
         </div>
         <p class="message-disclaimer">No te automediques. Consulta con tu médico o farmacéutico.</p>
@@ -1145,8 +1134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p>Información sobre <strong>${sintoma.nombre}</strong>:</p>
         <div style="background:#e9f5ff;border-left:4px solid ${urgenciaColor};padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">
           <strong>Nivel de atención: ${sintoma.urgencia_default === 'ALTA' ? '🔴 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '🟡 Moderado' : '🟢 Leve'}</strong>
-          <p id="${descId}" class="drug-section-content" style="margin:6px 0 0;font-size:0.8rem; -webkit-line-clamp: 4;">${sintoma.descripcion}</p>
-          <button class="btn-expand-drug" onclick="expandDrugContent('${descId}', this)">Leer más</button>
+          <p id="${descId}" class="drug-section-content" style="margin:6px 0 0;font-size:0.8rem;">${sintoma.descripcion}</p>
         </div>
         <div class="drug-card">
           <div class="drug-card-header"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en casa</h4></div>
@@ -1154,19 +1142,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <div id="${cuidId}" class="drug-section-content">
               <ul style="margin:0;padding-left:20px;">${sintoma.cuidados_casa.map(c => `<li>${c}</li>`).join('')}</ul>
             </div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${cuidId}', this)">Leer más</button>
           </div>
           <div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">🩺</span><h4 class="drug-title">¿Cuándo consultar médico?</h4></div>
           <div class="drug-section">
             <div id="${consId}" class="drug-section-content">
               <ul style="margin:0;padding-left:20px;">${sintoma.cuando_consultar.map(c => `<li>${c}</li>`).join('')}</ul>
             </div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${consId}', this)">Leer más</button>
           </div>
           <div class="drug-card-header" style="margin-top:12px;"><span class="drug-icon">📋</span><h4 class="drug-title">Causas comunes</h4></div>
           <div class="drug-section">
             <div id="${causasId}" class="drug-section-content">${sintoma.causas_comunes.join(', ')}</div>
-            <button class="btn-expand-drug" onclick="expandDrugContent('${causasId}', this)">Leer más</button>
           </div>
           <div class="drug-footer">Fuente: Base de datos local — Nicaragua ✓</div>
         </div>
