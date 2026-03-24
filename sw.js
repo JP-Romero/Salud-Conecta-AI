@@ -32,7 +32,6 @@ const SHELL_ASSETS = [
   './app.js',
   './base-datos-salud.js',
   './manifest.json',
-  './logotipo.jpeg',
   './icon-48.png',
   './icon-72.png',
   './icon-96.png',
