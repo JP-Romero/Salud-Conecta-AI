@@ -63,7 +63,7 @@ self.addEventListener('install', event => {
         console.log('[SW v6] Cacheando CDN (Leaflet)…');
         return cache.addAll(CDN_ASSETS);
       })
-    ]).then(() => self.skipWaiting())
+    ])
   );
 });
 
