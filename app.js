@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.3.0
-📌 CAMBIOS: Expansión BD Granada · LABORATORIOS · Fix truncado
+📌 VERSIÓN: 7.3.1
+📌 CAMBIOS: Branding Update (Nuevo logo y colores) · Sync Granada
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -659,11 +659,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function crearIconoCategoria(categoria, emergencia) {
     const colores = {
       hospital:   { bg: '#d90429', emoji: '🏥' },
-      clinica:    { bg: '#2F5D7C', emoji: '🏥' },
-      farmacia:   { bg: '#5FAF4E', emoji: '💊' },
-      doctors:    { bg: '#3FA7A3', emoji: '👨‍⚕️' },
-      laboratory: { bg: '#7CCB5A', emoji: '🔬' },
-      health:     { bg: '#2F5D7C', emoji: '🏥' }
+      clinica:    { bg: '#2E7DBB', emoji: '🏥' },
+      farmacia:   { bg: '#30A050', emoji: '💊' },
+      doctors:    { bg: '#68B4E3', emoji: '👨‍⚕️' },
+      laboratory: { bg: '#A4D84E', emoji: '🔬' },
+      health:     { bg: '#2E7DBB', emoji: '🏥' }
     };
     const c = colores[categoria] || colores.health;
     const border = emergencia ? '3px solid #fff' : '2px solid #fff';
@@ -696,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
     appState.userMarker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: '',
-        html: '<div style="background:#0077b6;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(0,119,182,0.3),0 2px 6px rgba(0,0,0,0.3);"></div>',
+        html: '<div style="background:#2E7DBB;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(46,125,187,0.3),0 2px 6px rgba(0,0,0,0.3);"></div>',
         iconSize: [18, 18], iconAnchor: [9, 9]
       })
     }).addTo(appState.map).bindPopup('<strong>📍 Tu ubicación</strong>').openPopup();
@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${seguros  ? `🏥 ${seguros}<br>` : ''}
         <br><a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}"
           target="_blank"
-          style="background:#2F5D7C;color:white;padding:5px 10px;border-radius:6px;text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:4px;">
+          style="background:#2E7DBB;color:white;padding:5px 10px;border-radius:6px;text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:4px;">
           Cómo llegar ↗
         </a>`);
       appState.healthMarkers.push(marker);
@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function addSintomaCard(sintoma, timestamp) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ai-message';
-    const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : sintoma.urgencia_default === 'MEDIA' ? '#f77f00' : '#0077b6';
+    const urgenciaColor = sintoma.urgencia_default === 'ALTA' ? '#d90429' : sintoma.urgencia_default === 'MEDIA' ? '#f39c12' : '#2E7DBB';
     const descId   = getUniqueId('sintoma-desc');
     const cuidId   = getUniqueId('sintoma-cuid');
     const consId   = getUniqueId('sintoma-cons');
@@ -1318,7 +1318,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let urgencyBadge = '';
     if (sender === 'ai' && urgency) {
-      const colors  = { ALTA: '#d90429', MEDIA: '#f77f00', BAJA: '#0077b6' };
+      const colors  = { ALTA: '#d90429', MEDIA: '#f39c12', BAJA: '#2E7DBB' };
       const labels  = { ALTA: '🔴 Urgente', MEDIA: '🟡 Moderado', BAJA: '🟢 Leve' };
       urgencyBadge = `<div style="background:${colors[urgency]};color:white;padding:4px 10px;border-radius:4px;font-size:0.75rem;margin-bottom:8px;display:inline-block;">${labels[urgency]}</div>`;
     }
@@ -1367,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push('=======================================');
     lines.push(`Fecha: ${now}`);
     lines.push(`Ubicación: ${includeLocationCheckbox?.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
-    lines.push(`Versión: 7.3.0`);
+    lines.push(`Versión: 7.3.1`);
     lines.push('');
 
     if (includeSummaryCheckbox?.checked) {
@@ -1401,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lines.push('-------------------------------------------');
     lines.push('⚠️ No es diagnóstico médico. Emergencias: 128');
-    lines.push('Salud-Conecta AI v7.3.0');
+    lines.push('Salud-Conecta AI v7.3.1');
     return lines.join('\n');
   }
 
@@ -1868,5 +1868,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('🏥 Salud-Conecta AI v7.3.0 iniciada · Worker:', WORKER_URL);
+  console.log('🏥 Salud-Conecta AI v7.3.1 iniciada · Worker:', WORKER_URL);
 });
