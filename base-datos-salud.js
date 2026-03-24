@@ -2,9 +2,9 @@
 ═══════════════════════════════════════════════════════════════
 BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.1.0
-📌 ÚLTIMA ACTUALIZACIÓN: 2026-03-27
-📌 CAMBIOS v7.1:
+📌 VERSIÓN: 7.2.0
+📌 ÚLTIMA ACTUALIZACIÓN: 2026-03-28
+📌 CAMBIOS v7.2:
 - +80 medicamentos nuevos del PDF Comercial F.A (27/01/2026)
 - Precios actualizados según lista vigente Laboratorio Ramos
 - Nuevas categorías: Material médico, Dispositivos, Higiene
@@ -12,8 +12,8 @@ BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
 */
 
-const VERSION_BASE_DATOS = '7.1.0';
-const ULTIMA_ACTUALIZACION = '2026-03-27';
+const VERSION_BASE_DATOS = '7.2.0';
+const ULTIMA_ACTUALIZACION = '2026-03-28';
 
 // ═══════════════════════════════════════════════════════════════
 //  🏥 HOSPITALES
