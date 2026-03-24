@@ -304,7 +304,7 @@ const FARMACIAS = [
     nombre: 'Farmacia El Galeno',
     direccion: 'Barrio Campo de Aterrizaje, Granada',
     telefono: '2552-9988', emergencia: false,
-    lat: 11.9300, lng: -85.9720,
+    lat: 11.934452297850745, lng: -85.95600128172312,
     horario: '7am-10pm',
     servicios: ['medicamentos','consulta_farmaceutica'],
     disponible: true, verificado: true,
