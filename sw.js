@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.1.0
-📌 CAMBIOS v8: Banner actualizacion + selector dolor
+📌 VERSIÓN: 7.2.0
+📌 CAMBIOS v9: Solución truncado IA + Mejora de actualizaciones
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Cache-First
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v8';
+const CACHE_VERSION   = 'v9';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;
@@ -127,9 +127,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 7. Shell local (HTML, CSS, JS, manifest) — Cache-First
+  // 7. Shell local (HTML, CSS, JS, manifest) — Network-First (para que las actualizaciones lleguen rápido)
   if (url.origin === self.location.origin) {
-    event.respondWith(cacheFirstStrategy(event.request, CACHE_SHELL));
+    event.respondWith(networkFirstStrategy(event.request, CACHE_SHELL, 20));
     return;
   }
 
