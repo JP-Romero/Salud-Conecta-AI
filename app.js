@@ -1803,11 +1803,16 @@ document.addEventListener('DOMContentLoaded', () => {
           const btnUpdate = document.getElementById('btn-update-app');
           if (!banner) return;
 
+          console.log('✨ Nueva versión detectada. Mostrando banner...');
           banner.style.display = 'flex';
+          banner.style.opacity = '1';
+          banner.style.pointerEvents = 'auto';
 
           // Al hacer clic en Actualizar → activar SW nuevo → recargar
           if (btnUpdate) {
-            btnUpdate.addEventListener('click', () => {
+            btnUpdate.addEventListener('click', (e) => {
+              e.preventDefault();
+              console.log('🔄 Activando nueva versión...');
               activarSWNuevo(worker);
             }, { once: true });
           }
