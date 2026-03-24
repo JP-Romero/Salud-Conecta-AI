@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.2.0
-📌 CAMBIOS v9: Solución truncado IA + Mejora de actualizaciones
+📌 VERSIÓN: 7.3.0
+📌 CAMBIOS v10: Expansión BD Granada + LABORATORIOS
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Cache-First
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v9';
+const CACHE_VERSION   = 'v10';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;
