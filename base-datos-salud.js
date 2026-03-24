@@ -115,15 +115,15 @@ const CLINICAS = [
   },
   {
     id: 7, categoria: 'clinica',
-    nombre: 'Centro de Salud Palmira',
+    nombre: 'Centro de Salud Palmira (Antiguo)',
     direccion: 'Barrio Palmira, Granada',
     telefono: '2552-1000', emergencia: false,
-    lat: 11.9455, lng: -85.9445,
+    lat: 11.9385, lng: -85.9492, // Corregido según ubicación Pedro José Chamorro / Shell Palmira
     horario: 'Lun-Vie 7am-5pm',
     servicios: ['consulta','vacunacion','curaciones','medicina_natural'],
     disponible: true, verificado: true,
     barrio: 'Palmira',
-    notas: 'Centro de Salud MINSA. Atención gratuita.',
+    notas: 'Centro de Salud MINSA. Referido comúnmente como C.S. Palmira por su ubicación cerca de la antigua Shell.',
     seguros: ['MINSA','Atención gratuita']
   },
   {
