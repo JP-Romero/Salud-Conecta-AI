@@ -1,21 +1,21 @@
 /* ═══════════════════════════════════════════════════════════════
-   SALUD-CONECTA AI — Estilos v7.0.0
-   Paleta: #2F5D7C · #5FAF4E · #3FA7A3 | Tipografía: Poppins
+   SALUD-CONECTA AI — Estilos v7.3.1 (Branding Update)
+   Paleta: #2E7DBB · #204E84 · #30A050 · #A4D84E
    ═══════════════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 :root {
-  --primary:        #2F5D7C;
-  --primary-dark:   #1e3d52;
-  --primary-light:  #e8f2f8;
-  --green:          #5FAF4E;
-  --green-dark:     #3d8a3d;
-  --green-light:    #edf7eb;
-  --teal:           #3FA7A3;
-  --teal-dark:      #2a7a77;
-  --teal-light:     #e5f5f4;
-  --lime:           #7CCB5A;
-  --bg:             #f4f7f9;
+  --primary:        #2E7DBB;
+  --primary-dark:   #204E84;
+  --primary-light:  #eaf2f8;
+  --green:          #30A050;
+  --green-dark:     #268040;
+  --green-light:    #ebf5ef;
+  --teal:           #68B4E3;
+  --teal-dark:      #5290b6;
+  --teal-light:     #f0f7fb;
+  --lime:           #A4D84E;
+  --bg:             #f8fafc;
   --surface:        #ffffff;
   --text:           #1a2e3b;
   --text-sec:       #5a7080;
@@ -25,7 +25,7 @@
   --warning:        #f39c12;
   --warning-light:  #fef9e7;
   --ai-bubble:      #edf5fb;
-  --user-bubble:    #2F5D7C;
+  --user-bubble:    #2E7DBB;
   --radius:         16px;
   --radius-sm:      10px;
   --radius-xs:      7px;
@@ -54,7 +54,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem 1.5rem;
-  background: linear-gradient(155deg, #1e3d52 0%, #2F5D7C 50%, #3FA7A3 100%);
+  background: linear-gradient(155deg, #204E84 0%, #2E7DBB 50%, #68B4E3 100%);
   position: relative;
   overflow: hidden;
 }
@@ -63,7 +63,7 @@ body {
   position: absolute;
   top: -80px; right: -80px;
   width: 280px; height: 280px;
-  background: rgba(95,175,78,0.10);
+  background: rgba(48,160,80,0.10);
   border-radius: 50%;
 }
 .auth-screen::after {
@@ -71,7 +71,7 @@ body {
   position: absolute;
   bottom: -60px; left: -60px;
   width: 200px; height: 200px;
-  background: rgba(63,167,163,0.10);
+  background: rgba(104,180,227,0.10);
   border-radius: 50%;
 }
 
