@@ -144,8 +144,7 @@ const CLINICAS = [
     nombre: 'Centro de Salud Pedro José Chamorro',
     direccion: 'Shell Palmira 1/2 Cuadra al sur, Barrio Calle Palmira',
     telefono: '2552-0550', emergencia: false,
-    lat:  11.924589442797954, lng: -85.95514966023043,
-    
+    lat: 11.9385, lng: -85.9492,
     horario: 'Lun-Vie 7am-5pm',
     servicios: ['consulta','vacunacion','curaciones','control_nino_sano'],
     disponible: true, verificado: true,
@@ -304,7 +303,7 @@ const FARMACIAS = [
     nombre: 'Farmacia El Galeno',
     direccion: 'Barrio Campo de Aterrizaje, Granada',
     telefono: '2552-9988', emergencia: false,
-    lat: 11.934452297850745, lng: -85.95600128172312,
+    lat: 11.9300, lng: -85.9720,
     horario: '7am-10pm',
     servicios: ['medicamentos','consulta_farmaceutica'],
     disponible: true, verificado: true,
