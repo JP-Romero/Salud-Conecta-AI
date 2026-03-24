@@ -1145,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p>Información sobre <strong>${sintoma.nombre}</strong>:</p>
         <div style="background:#e9f5ff;border-left:4px solid ${urgenciaColor};padding:12px;margin:12px 0;border-radius:8px;font-size:0.85rem;color:#0369a1;">
           <strong>Nivel de atención: ${sintoma.urgencia_default === 'ALTA' ? '🔴 Urgente' : sintoma.urgencia_default === 'MEDIA' ? '🟡 Moderado' : '🟢 Leve'}</strong>
-          <p id="${descId}" class="drug-section-content" style="margin:6px 0 0;font-size:0.8rem; -webkit-line-clamp: 2;">${sintoma.descripcion}</p>
+          <p id="${descId}" class="drug-section-content" style="margin:6px 0 0;font-size:0.8rem; -webkit-line-clamp: 4;">${sintoma.descripcion}</p>
           <button class="btn-expand-drug" onclick="expandDrugContent('${descId}', this)">Leer más</button>
         </div>
         <div class="drug-card">
@@ -1191,12 +1191,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const RESPONSES = {
       HIGH: {
         text:    '🔴 URGENCIA ALTA — Los síntomas que describes pueden indicar una condición grave.',
-        action:  'Llama al 128 ahora o dirígete inmediatamente al Hospital Virgen de la Asistencia (Tel: 2552-2600, 24h) o al Hospital Alemán Nicaragüense (Tel: 2552-3000).',
+        action:  'Llama al 128 ahora o dirígete inmediatamente al Hospital Amistad Japón Nicaragua (Tel: 2552-7050, 24h, público) o al Hospital SERMESA (Tel: 2552-4444).',
         urgency: 'ALTA'
       },
       MEDIUM: {
         text:    '🟡 URGENCIA MEDIA — Deberías consultar con un profesional pronto.',
-        action:  'Programa una cita en los próximos 1-2 días. Puedes ir al Hospital Virgen de la Asistencia o a la Clínica Familiar del MINSA. ¿Quieres ver centros cercanos en el mapa?',
+        action:  'Programa una cita en los próximos 1-2 días. Puedes ir al Centro de Salud Jorge Sinforoso Bravo o a tu centro de salud local del MINSA. ¿Quieres ver centros cercanos en el mapa?',
         urgency: 'MEDIA'
       },
       LOW: {
