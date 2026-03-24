@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.0.0
-📌 CAMBIOS: Login PIN · Perfil de salud · Rediseño marca
+📌 VERSIÓN: 7.2.0
+📌 CAMBIOS: Fix truncado IA · Mejora updates · Login PIN
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -1868,5 +1868,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('🏥 Salud-Conecta AI v7.0.0 iniciada · Worker:', WORKER_URL);
+  console.log('🏥 Salud-Conecta AI v7.2.0 iniciada · Worker:', WORKER_URL);
 });
