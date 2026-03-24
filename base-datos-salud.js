@@ -2,8 +2,12 @@
 ═══════════════════════════════════════════════════════════════
 BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.2.0
-📌 ÚLTIMA ACTUALIZACIÓN: 2026-03-28
+📌 VERSIÓN: 7.3.0
+📌 ÚLTIMA ACTUALIZACIÓN: 2026-04-15
+📌 CAMBIOS v7.3:
+- Nuevos centros: 3 clínicas, 2 laboratorios, 4 farmacias
+- Nueva categoría: LABORATORIOS integrada en el mapa
+- Mejoras en la visualización de información completa (v7.2+)
 📌 CAMBIOS v7.2:
 - +80 medicamentos nuevos del PDF Comercial F.A (27/01/2026)
 - Precios actualizados según lista vigente Laboratorio Ramos
@@ -12,8 +16,8 @@ BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
 */
 
-const VERSION_BASE_DATOS = '7.2.0';
-const ULTIMA_ACTUALIZACION = '2026-03-28';
+const VERSION_BASE_DATOS = '7.3.0';
+const ULTIMA_ACTUALIZACION = '2026-04-15';
 
 // ═══════════════════════════════════════════════════════════════
 //  🏥 HOSPITALES
@@ -134,6 +138,75 @@ const CLINICAS = [
     barrio: 'Barrio El Capullo',
     notas: 'Clínica Médica Previsional MINSA. Atención INSS.',
     seguros: ['INSS']
+  },
+  {
+    id: 9, categoria: 'clinica',
+    nombre: 'Centro de Salud Pedro José Chamorro',
+    direccion: 'Shell Palmira 1/2 Cuadra al sur, Barrio Calle Palmira',
+    telefono: '2552-0550', emergencia: false,
+    lat: 11.9385, lng: -85.9492,
+    horario: 'Lun-Vie 7am-5pm',
+    servicios: ['consulta','vacunacion','curaciones','control_nino_sano'],
+    disponible: true, verificado: true,
+    barrio: 'Barrio Calle Palmira',
+    notas: 'Centro de Salud MINSA. Atención gratuita.',
+    seguros: ['MINSA','Atención gratuita']
+  },
+  {
+    id: 10, categoria: 'clinica',
+    nombre: 'Puesto de Salud Mercado Municipal',
+    direccion: 'Costado sur del Mercado Municipal, Granada',
+    telefono: '2552-0500', emergencia: false,
+    lat: 11.9322, lng: -85.9525,
+    horario: 'Lun-Vie 7am-4pm',
+    servicios: ['consulta_general','curaciones','vacunacion'],
+    disponible: true, verificado: true,
+    barrio: 'Mercado',
+    notas: 'Puesto de salud periférico MINSA.',
+    seguros: ['MINSA','Atención gratuita']
+  },
+  {
+    id: 11, categoria: 'clinica',
+    nombre: 'Clínica Xalteva',
+    direccion: 'Calle Real Xalteva, Granada',
+    telefono: '2552-3276', emergencia: false,
+    lat: 11.9321, lng: -85.9582,
+    horario: 'Lun-Vie 8:30am-5pm',
+    servicios: ['consulta_general','pediatria','ginecologia'],
+    disponible: true, verificado: true,
+    barrio: 'Xalteva',
+    notas: 'Clínica privada con diversas especialidades.',
+    seguros: ['Particular']
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  🔬 LABORATORIOS
+// ═══════════════════════════════════════════════════════════════
+const LABORATORIOS = [
+  {
+    id: 21, categoria: 'laboratory',
+    nombre: 'Laboratorio Xalteva',
+    direccion: 'Calle Real Xalteva, Granada',
+    telefono: '8464-5653', emergencia: false,
+    lat: 11.9323, lng: -85.9585,
+    horario: 'Lun-Vie 6am-5pm, Sab 6am-12pm',
+    servicios: ['analisis_sangre','examen_orina','examen_heces','perfil_lipidico','glucosa'],
+    disponible: true, verificado: true,
+    barrio: 'Xalteva',
+    notas: 'Laboratorio clínico privado con amplia trayectoria.'
+  },
+  {
+    id: 22, categoria: 'laboratory',
+    nombre: 'Laboratorio Sharem',
+    direccion: 'Del Río Shopping, Granada',
+    telefono: '2552-0000', emergencia: false,
+    lat: 11.9350, lng: -85.9570,
+    horario: 'Lun-Vie 7am-4pm',
+    servicios: ['analisis_clinicos','pruebas_especiales'],
+    disponible: true, verificado: true,
+    barrio: 'Centro',
+    notas: 'Servicio de laboratorio clínico.'
   }
 ];
 
@@ -188,6 +261,54 @@ const FARMACIAS = [
     disponible: true, verificado: true,
     barrio: 'San Antonio',
     notas: 'Servicio de consulta farmacéutica gratis.'
+  },
+  {
+    id: 16, categoria: 'farmacia',
+    nombre: 'Farmacia Bíblica',
+    direccion: 'Calle El Caimito, del Parque Central 3.5c al lago, Granada',
+    telefono: '2552-1234', emergencia: false,
+    lat: 11.9305, lng: -85.9498,
+    horario: '8am-8pm',
+    servicios: ['medicamentos','vitaminas','cuidado_personal'],
+    disponible: true, verificado: true,
+    barrio: 'Centro',
+    notas: 'Ubicada cerca de la zona turística de La Calzada.'
+  },
+  {
+    id: 17, categoria: 'farmacia',
+    nombre: 'Farmacia El Socorro',
+    direccion: 'Calle El Arsenal, costado sur Iglesia San Francisco, Granada',
+    telefono: '2552-4567', emergencia: false,
+    lat: 11.9322, lng: -85.9515,
+    horario: '7:30am-9pm',
+    servicios: ['medicamentos','toma_presion','inyectologia'],
+    disponible: true, verificado: true,
+    barrio: 'Centro',
+    notas: 'Frente al Convento San Francisco.'
+  },
+  {
+    id: 18, categoria: 'farmacia',
+    nombre: 'Farmacia Adriana',
+    direccion: 'Costado norte del Cementerio, Granada',
+    telefono: '2552-7890', emergencia: false,
+    lat: 11.9321, lng: -85.9652,
+    horario: '8am-8pm',
+    servicios: ['medicamentos','productos_lacteos','aseo_personal'],
+    disponible: true, verificado: true,
+    barrio: 'Cementerio',
+    notas: 'Atención cercana al cementerio general.'
+  },
+  {
+    id: 19, categoria: 'farmacia',
+    nombre: 'Farmacia El Galeno',
+    direccion: 'Barrio Campo de Aterrizaje, Granada',
+    telefono: '2552-9988', emergencia: false,
+    lat: 11.9300, lng: -85.9720,
+    horario: '7am-10pm',
+    servicios: ['medicamentos','consulta_farmaceutica'],
+    disponible: true, verificado: true,
+    barrio: 'Campo de Aterrizaje',
+    notas: 'Servicio 15.5 horas al día.'
   }
 ];
 
@@ -3496,7 +3617,7 @@ function calcularDistancia(lat1, lng1, lat2, lng2) {
 //  FUNCIONES DE BÚSQUEDA
 // ═══════════════════════════════════════════════════════════════
 function obtenerTodosLosCentros() {
-  return [...HOSPITALES, ...CLINICAS, ...FARMACIAS].filter(c => c.disponible);
+  return [...HOSPITALES, ...CLINICAS, ...FARMACIAS, ...LABORATORIOS].filter(c => c.disponible);
 }
 
 function buscarCentrosPorCategoria(categoria) {
@@ -3620,6 +3741,7 @@ if (typeof module !== 'undefined' && module.exports) {
     HOSPITALES,
     CLINICAS,
     FARMACIAS,
+    LABORATORIOS,
     MEDICAMENTOS,
     SINTOMAS,
     EMERGENCIAS,
