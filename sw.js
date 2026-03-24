@@ -3,7 +3,7 @@
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 📌 VERSIÓN: 7.3.0
-📌 CAMBIOS v11: Fix truncado + Sincronización recursos
+📌 CAMBIOS v12: Branding Update (Nuevo logo y colores)
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Network-First (Actualización rápida)
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v11';
+const CACHE_VERSION   = 'v12';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;
@@ -32,7 +32,7 @@ const SHELL_ASSETS = [
   './app.js',
   './base-datos-salud.js',
   './manifest.json',
-  './imagotipo.jpeg',
+  './logotipo.jpeg',
   './icon-48.png',
   './icon-72.png',
   './icon-96.png',
