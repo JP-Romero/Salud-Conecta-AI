@@ -144,7 +144,8 @@ const CLINICAS = [
     nombre: 'Centro de Salud Pedro José Chamorro',
     direccion: 'Shell Palmira 1/2 Cuadra al sur, Barrio Calle Palmira',
     telefono: '2552-0550', emergencia: false,
-    lat: 11.9385, lng: -85.9492,
+    lat:  11.924589442797954, lng: -85.95514966023043,
+    
     horario: 'Lun-Vie 7am-5pm',
     servicios: ['consulta','vacunacion','curaciones','control_nino_sano'],
     disponible: true, verificado: true,
