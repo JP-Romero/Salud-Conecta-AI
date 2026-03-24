@@ -904,7 +904,7 @@ body {
 .drug-title { font-weight: 700; color: var(--primary); font-size: 0.92rem; margin: 0; }
 .drug-section { margin-bottom: 0.65rem; }
 .drug-section-title { font-size: 0.7rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-.drug-section-content { font-size: 0.86rem; color: var(--text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.drug-section-content { font-size: 0.86rem; color: var(--text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 .drug-footer { margin-top: 0.65rem; font-size: 0.7rem; color: var(--text-sec); font-style: italic; text-align: right; }
 .btn-expand-drug { background: none; border: none; color: var(--primary); font-family: 'Poppins', sans-serif; font-size: 0.76rem; cursor: pointer; padding: 0; margin-top: 3px; text-decoration: underline; }
 .drug-warning-banner {
