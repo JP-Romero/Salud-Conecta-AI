@@ -44,8 +44,8 @@ INSTRUCCIONES:
 8. Si el usuario pregunta por opciones (ej: "qué farmacias hay"), menciona TODAS las que aparezcan en el CONTEXTO LOCAL, no solo una.
 9. NUNCA proporciones diagnósticos médicos definitivos.
 10. Si hay información en el CONTEXTO LOCAL sobre dosis, cítala textualmente como referencia informativa, aclarando que no reemplaza la indicación de un médico o farmacéutico.
-9. Usa un tono preventivo y orientador.
-10. Termina SIEMPRE con: "⚕️ Esto es orientación informativa. Consulta con un profesional de salud."`;
+11. Usa un tono preventivo y orientador.
+12. Termina SIEMPRE con: "⚕️ Esto es orientación informativa. Consulta con un profesional de salud."`;
 
 export default {
   async fetch(request, env) {
