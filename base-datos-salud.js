@@ -16,8 +16,8 @@ BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
 */
 
-const VERSION_BASE_DATOS = '7.3.0';
-const ULTIMA_ACTUALIZACION = '2026-04-15';
+const VERSION_BASE_DATOS = '7.3.3';
+const ULTIMA_ACTUALIZACION = '2026-03-25';
 
 // ═══════════════════════════════════════════════════════════════
 //  🏥 HOSPITALES
@@ -598,23 +598,6 @@ const MEDICAMENTOS = [
     precio_aproximado: '45.50-115 C$ (según presentación: jarabe adulto 73C$, pediátrico 45.50C$, gotas 97-115C$)',
     embarazo: 'Categoría C — Consultar médico'
   },
-  {
-    id: 164,
-    nombre_es: 'Bromhexina',
-    nombre_en: 'Bromhexine',
-    nombres_comerciales: ['Bisolvon','Bromhexina MK','Broncleer'],
-    sinonimos: ['bromhexina','bisolvon','flema','tos','expectorante'],
-    categoria: 'Mucolítico',
-    uso_principal: 'Tos con secreciones espesas, bronquitis, sinusitis con congestión',
-    dosis_adulto: '8 mg tres veces al día',
-    dosis_nino: 'Jarabe: 4 mg tres veces al día (2-12 años)',
-    contraindicaciones: 'Alergia a bromhexina. Precaución en úlcera péptica.',
-    efectos_secundarios: 'Náuseas, malestar gastrointestinal leve.',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '26.50-33 C$ (según presentación)',
-    embarazo: 'Categoría C — Evitar en primer trimestre'
-  },
   // ════════════════════════════════════════════════════════
   //  GRUPO 4 — CARDIOVASCULAR
   // ════════════════════════════════════════════════════════
@@ -773,23 +756,6 @@ const MEDICAMENTOS = [
     requiere_receta: false,
     precio_aproximado: '19.50-300 C$ (según presentación: gel 29.50-60.50C$, tabletas 60-101C$, complejo B 300C$)',
     embarazo: 'Categoría D en 3er trimestre — CONTRAINDICADO'
-  },
-  {
-    id: 133,
-    nombre_es: 'Naproxeno',
-    nombre_en: 'Naproxen',
-    nombres_comerciales: ['Aleve','Naproxeno MK','Flanax','Naproliv'],
-    sinonimos: ['naproxeno','aleve','flanax','para el dolor','antiinflamatorio','naproliv'],
-    categoria: 'AINE (antiinflamatorio)',
-    uso_principal: 'Dolor muscular, artritis, cólicos menstruales',
-    dosis_adulto: '250-500 mg dos veces al día',
-    dosis_nino: 'Mayores de 12 años: 250 mg dos veces al día',
-    contraindicaciones: 'Úlcera, insuficiencia renal, embarazo avanzado',
-    efectos_secundarios: 'Malestar gástrico, retención de líquidos',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '239-327.50 C$ (según presentación)',
-    embarazo: 'Categoría C — Contraindicado en 3er trimestre'
   },
   {
     id: 134,
@@ -1818,26 +1784,6 @@ const MEDICAMENTOS = [
     precio_aproximado: '78-526 C$ (según presentación)',
     embarazo: 'Categoría C — Consultar médico'
   },
-  // ════════════════════════════════════════════════════════
-  //  GRUPO 14 — ANTIEMÉTICOS Y ANTIVÉRTIGO
-  // ════════════════════════════════════════════════════════
-  {
-    id: 147,
-    nombre_es: 'Dimenhidrinato',
-    nombre_en: 'Dimenhydrinate',
-    nombres_comerciales: ['Dramamine','Dimenhidrinato MK','Vertirosan','Dramavol'],
-    sinonimos: ['dimenhidrinato','dramamine','mareo','viaje','vomito','dramavol'],
-    categoria: 'Antivomitivo / Antimareo',
-    uso_principal: 'Mareo por movimiento, náuseas, vértigo',
-    dosis_adulto: '50-100 mg cada 4-6 horas',
-    dosis_nino: 'Mayores de 2 años: 1-1.5 mg/kg cada 6-8 horas',
-    contraindicaciones: 'Glaucoma, asma, retención urinaria',
-    efectos_secundarios: 'Somnolencia, boca seca, visión borrosa',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '10-110 C$ (según presentación)',
-    embarazo: 'Categoría B — Consultar médico'
-  },
   {
     id: 83,
     nombre_es: 'Dimenhidrinato',
@@ -2030,23 +1976,6 @@ const MEDICAMENTOS = [
     requiere_receta: false,
     precio_aproximado: '37.50-195 C$ (según presentación)',
     embarazo: 'Categoría B — Generalmente seguro'
-  },
-  {
-    id: 156,
-    nombre_es: 'Simeticona',
-    nombre_en: 'Simethicone',
-    nombres_comerciales: ['Gas-X','Luftal','Simeticona MK','Carminol'],
-    sinonimos: ['simeticona','gases','flatulencia','hinchazon','carminol'],
-    categoria: 'Antiflatulento',
-    uso_principal: 'Gases, flatulencia, hinchazón abdominal',
-    dosis_adulto: '40-125 mg después de comidas',
-    dosis_nino: '20-40 mg después de cada comida',
-    contraindicaciones: 'Alergia a componentes',
-    efectos_secundarios: 'Ninguno significativo',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '45.50-165.50 C$ (según presentación)',
-    embarazo: 'Categoría C — Generalmente segura'
   },
   {
     id: 75,
@@ -2507,7 +2436,7 @@ const MEDICAMENTOS = [
   //  GRUPO 27 — INFUSIONES Y TÉS MEDICINALES
   // ════════════════════════════════════════════════════════
   {
-    id: 163,
+    id: 181,
     nombre_es: 'Té de Manzanilla',
     nombre_en: 'Chamomile Tea',
     nombres_comerciales: ['Manzate','Té Manzanilla'],
@@ -2524,7 +2453,7 @@ const MEDICAMENTOS = [
     embarazo: 'Categoría A — Seguro en moderación'
   },
   {
-    id: 164,
+    id: 182,
     nombre_es: 'Té de Jengibre',
     nombre_en: 'Ginger Tea',
     nombres_comerciales: ['Té Jengibre/Limón','Manzate Jengibre'],
@@ -2559,43 +2488,6 @@ const MEDICAMENTOS = [
     requiere_receta: false,
     precio_aproximado: '31.50-43.50 C$',
     embarazo: 'Categoría A — Seguro'
-  },
-  // ════════════════════════════════════════════════════════
-  //  GRUPO 29 — ANTIDIARREICOS ADICIONALES
-  // ════════════════════════════════════════════════════════
-  {
-    id: 145,
-    nombre_es: 'Loperamida',
-    nombre_en: 'Loperamide',
-    nombres_comerciales: ['Imodium','Loperamida MK','Tape-C'],
-    sinonimos: ['loperamida','imodium','antidiarreico','diarrea','tape-c'],
-    categoria: 'Antidiarreico',
-    uso_principal: 'Diarrea aguda no complicada',
-    dosis_adulto: '4 mg inicio, luego 2 mg tras cada deposición (MÁX 16 mg/día)',
-    dosis_nino: 'Mayores de 2 años: según peso',
-    contraindicaciones: 'Diarrea con sangre, fiebre alta, menores de 2 años',
-    efectos_secundarios: 'Estreñimiento, náuseas, dolor abdominal',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '180 C$ (100 cápsulas)',
-    embarazo: 'Categoría C — Evitar en 1er trimestre'
-  },
-  {
-    id: 146,
-    nombre_es: 'Subsalicilato de Bismuto',
-    nombre_en: 'Bismuth Subsalicylate',
-    nombres_comerciales: ['Pepto-Bismol','Bismuto MK'],
-    sinonimos: ['peptobismol','bismuto','estomago','nauseas','diarrea'],
-    categoria: 'Antidiarreico / Antiemético',
-    uso_principal: 'Diarrea leve, náuseas, malestar estomacal',
-    dosis_adulto: '525 mg cada 30-60 min (MÁX 8 dosis/día)',
-    dosis_nino: 'Mayores de 12 años: dosis adulto',
-    contraindicaciones: 'Menores de 12 años, alergia a salicilatos',
-    efectos_secundarios: 'Heces y lengua negra (NORMAL)',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '80.50-145 C$ (según presentación)',
-    embarazo: 'Categoría C — Evitar en 3er trimestre'
   },
   // ════════════════════════════════════════════════════════
   //  GRUPO 30 — NEUROLÓGICOS / PSIQUIATRÍA ADICIONAL
@@ -3118,7 +3010,7 @@ const MEDICAMENTOS = [
     embarazo: 'Categoría C — Evitar en primer trimestre'
   },
   {
-    id: 66,
+    id: 180,
     nombre_es: 'Guaifenesina',
     nombre_en: 'Guaifenesin',
     nombres_comerciales: ['Robitussin','Guaifenesina MK','Humibid'],
@@ -3262,26 +3154,6 @@ const MEDICAMENTOS = [
     precio_aproximado: '20-50 C$ (tabletas)',
     embarazo: 'Categoría C — Uso permitido para malaria en embarazo'
   },
-  // ════════════════════════════════════════════════════════
-  //  GRUPO 42 — ANTIEMÉTICOS ADICIONALES
-  // ════════════════════════════════════════════════════════
-  {
-    id: 148,
-    nombre_es: 'Metoclopramida',
-    nombre_en: 'Metoclopramide',
-    nombres_comerciales: ['Plasil','Primperan','Metoclopramida MK'],
-    sinonimos: ['metoclopramida','plasil','vomito','nausea','antinausea'],
-    categoria: 'Antiemético / Procinético',
-    uso_principal: 'Náuseas, vómitos, reflujo gastroesofágico',
-    dosis_adulto: '10 mg tres veces al día (MÁX 5 días)',
-    dosis_nino: '0.1 mg/kg tres veces al día',
-    contraindicaciones: 'Epilepsia, hemorragia GI, obstrucción intestinal',
-    efectos_secundarios: 'Somnolencia, movimientos involuntarios',
-    disponible_nicaragua: true,
-    requiere_receta: false,
-    precio_aproximado: '270 C$ (100 tabletas)',
-    embarazo: 'Categoría B — Consultar médico'
-  }
 ];
 
 // ═══════════════════════════════════════════════════════════════
