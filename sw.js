@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v13';
+const CACHE_VERSION   = 'v14';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;
@@ -32,15 +32,15 @@ const SHELL_ASSETS = [
   './app.js',
   './base-datos-salud.js',
   './manifest.json',
-  './icon-48.png',
-  './icon-72.png',
-  './icon-96.png',
-  './icon-144.png',
-  './icon-180.png',
-  './icon-192.png',
-  './icon-512.png',
-  './icon-192-maskable.png',
-  './icon-512-maskable.png'
+  './icon-48-v14.png',
+  './icon-72-v14.png',
+  './icon-96-v14.png',
+  './icon-144-v14.png',
+  './icon-180-v14.png',
+  './icon-192-v14.png',
+  './icon-512-v14.png',
+  './icon-192-maskable-v14.png',
+  './icon-512-maskable-v14.png'
 ];
 
 // CDN assets — Leaflet
