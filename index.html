@@ -1,110 +1,611 @@
-{
-  "name": "Salud-Conecta AI",
-  "short_name": "SaludConecta AI",
-  "description": "Orientación de salud preventiva con IA para Granada, Nicaragua.",
-  "version": "7.3.2",
-  "start_url": "./index.html",
-  "scope": "./",
-  "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "background_color": "#ffffff",
-  "theme_color": "#2E7DBB",
-  "orientation": "portrait-primary",
-  "lang": "es-NI",
-  "dir": "ltr",
-  "categories": ["health", "medical", "utilities"],
+<!DOCTYPE html>
+<html lang="es-NI">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salud-Conecta AI</title>
+  <link rel="icon" type="image/png" href="icon-192.png?v=13">
+  <link rel="apple-touch-icon" href="icon-180.png?v=13">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="manifest" href="manifest.json?v=13">
+  <meta name="theme-color" content="#2E7DBB">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SaludConecta">
+  <!-- v7.3.2 -->
+  <link rel="stylesheet" href="styles.css?v=13">
+</head>
+<body>
 
-  "icons": [
-    {
-      "src": "icon-48.png?v=13",
-      "sizes": "48x48",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-72.png?v=13",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-96.png?v=13",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-144.png?v=13",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-180.png?v=13",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-192.png?v=13",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png?v=13",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-192-maskable.png?v=13",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "icon-512-maskable.png?v=13",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
+  <!-- ══════════════════════════════════════
+       🔐 PANTALLA DE AUTENTICACIÓN (PIN)
+       ══════════════════════════════════════ -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
 
-  "shortcuts": [
-    {
-      "name": "Emergencia — llamar al 133",
-      "short_name": "Emergencia",
-      "description": "Números de emergencia de Granada",
-      "url": "./index.html?action=emergency",
-      "icons": [{ "src": "icon-96.png?v=13", "sizes": "96x96" }]
-    },
-    {
-      "name": "Centros de salud cercanos",
-      "short_name": "Mapa",
-      "description": "Hospitales, clínicas y farmacias cerca",
-      "url": "./index.html?action=map",
-      "icons": [{ "src": "icon-96.png?v=13", "sizes": "96x96" }]
-    },
-    {
-      "name": "Buscar medicamento",
-      "short_name": "Medicamentos",
-      "description": "Información de medicamentos en Granada",
-      "url": "./index.html?action=drug",
-      "icons": [{ "src": "icon-96.png?v=13", "sizes": "96x96" }]
-    }
-  ],
+      <div class="auth-logo">
+        <img src="icon-512.png?v=13" alt="Salud-Conecta AI" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'">
+        <div id="logo-fallback" class="auth-logo-fallback" style="display:none;">🏥</div>
+        <div class="auth-app-name">Salud-Conecta <span>AI</span></div>
+        <div class="auth-tagline">Granada, Nicaragua</div>
+      </div>
 
-  "screenshots": [
-    {
-      "label": "Chat de orientación de salud",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "src": "icon-512.png?v=13"
-    }
-  ],
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="showAuthTab('login')">Entrar</button>
+        <button class="auth-tab" id="tab-register" onclick="showAuthTab('register')">Registrarme</button>
+      </div>
 
-  "prefer_related_applications": false,
-  "launch_handler": { "client_mode": "focus-existing" }
-}
+      <!-- Login -->
+      <div id="form-login" class="auth-form">
+        <div>
+          <div class="pin-label">Ingresa tu PIN de 4 dígitos</div>
+          <div class="pin-input-row">
+            <input class="pin-digit" id="login-p1" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="login-p2" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="login-p3" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="login-p4" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+          </div>
+          <div class="pin-hint">Tu PIN es privado y solo se guarda en este dispositivo</div>
+        </div>
+        <div id="login-error" class="auth-error">PIN incorrecto. Intenta de nuevo.</div>
+        <button class="btn-auth" id="btn-login" onclick="doLogin()">Entrar</button>
+      </div>
+
+      <!-- Registro -->
+      <div id="form-register" class="auth-form" style="display:none;">
+        <div class="form-field">
+          <label>Tu nombre</label>
+          <input type="text" id="reg-name" placeholder="Ej: María González" autocomplete="off">
+        </div>
+        <div>
+          <div class="pin-label">Elige un PIN de 4 dígitos</div>
+          <div class="pin-input-row">
+            <input class="pin-digit" id="reg-p1" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="reg-p2" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="reg-p3" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            <input class="pin-digit" id="reg-p4" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+          </div>
+          <div class="pin-hint">No olvides tu PIN — es la única forma de entrar</div>
+        </div>
+        <div id="register-error" class="auth-error"></div>
+        <button class="btn-auth" id="btn-register" onclick="doRegister()">Crear mi cuenta</button>
+      </div>
+
+      <div class="auth-footer-note">
+        Tu información nunca sale de este dispositivo.<br>
+        Emergencias: llama al <strong>128</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       🔒 MODAL DE PRIVACIDAD
+       ══════════════════════════════════════ -->
+  <div id="privacy-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚠️ Aviso importante de salud</h2>
+      </div>
+      <div class="modal-body">
+        <p><strong>Salud-Conecta AI</strong> es una herramienta de orientación preventiva, <u>no un servicio médico profesional</u>.</p>
+        <ul class="privacy-list">
+          <li>🔒 <strong>Privacidad:</strong> Tus datos se guardan solo en este dispositivo. Nadie más los ve.</li>
+          <li>🚑 <strong>Emergencias:</strong> Si tenés dolor de pecho o no podés respirar, llamá al 128 ahora.</li>
+          <li>🤖 <strong>IA:</strong> Las respuestas son orientativas y pueden tener errores. Siempre consultá al médico.</li>
+          <li>🗺️ <strong>Mapa:</strong> La ubicación se usa solo para mostrar centros cercanos y no se guarda.</li>
+          <li>💊 <strong>Medicamentos:</strong> Información orientativa. Verificá siempre con tu farmacéutico.</li>
+        </ul>
+        <div class="checkbox-container">
+          <input type="checkbox" id="accept-terms">
+          <label for="accept-terms">Leí y acepto los términos de uso y privacidad.</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-enter" class="btn-primary" disabled>Comenzar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       🏠 APP PRINCIPAL
+       ══════════════════════════════════════ -->
+  <main id="app-content" style="display:none;">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <img src="icon-192.png?v=13" alt="Logo" onerror="this.style.display='none';document.getElementById('header-logo-fallback').style.display='flex'">
+        <div id="header-logo-fallback" class="header-logo-fallback" style="display:none;">🏥</div>
+        <div class="header-title">
+          <div class="header-app-name">Salud-Conecta <span>AI</span></div>
+          <div class="header-subtitle">Granada, Nicaragua</div>
+        </div>
+      </div>
+      <div class="header-actions" style="position:relative;">
+        <div id="header-update-badge" class="header-update-badge" title="Nueva versión disponible"></div>
+        <button id="btn-profile" class="btn-profile" title="Mi perfil">
+          <span class="user-initial" id="user-initial">?</span>
+          <span id="user-short-name">Perfil</span>
+        </button>
+        <button id="btn-export" class="btn-export" title="Exportar conversación">📤</button>
+        <button id="btn-emergency" class="btn-emergency">🚑 128</button>
+      </div>
+    </header>
+
+    <!-- Chat -->
+    <div class="chat-container">
+      <div id="chat-messages" class="chat-messages">
+        <div class="message ai-message">
+          <div class="message-avatar">
+            <img src="icon-96.png?v=13" alt="AI" onerror="this.textContent='AI';this.style.fontSize='0.6rem'">
+          </div>
+          <div class="message-content">
+            <p id="welcome-msg">¡Bendiciones! Soy tu asistente de salud en Granada. ¿Cómo te sentís hoy?</p>
+            <p class="message-disclaimer">Podés describir tus síntomas, preguntar por medicamentos o buscar centros de salud cercanos.</p>
+            <span class="message-time">Ahora</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="typing-indicator" class="typing-indicator" style="display:none;">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="quick-actions">
+          <button class="quick-btn" data-action="dolor-menu">🤕 Dolor</button>
+          <button class="quick-btn" data-symptom="Fiebre">🌡️ Fiebre</button>
+          <button class="quick-btn" data-symptom="Tos">😮‍💨 Tos</button>
+          <button class="quick-btn" data-action="search-drug">💊 Medicamentos</button>
+          <button class="quick-btn" data-symptom="Mapa">🗺️ Centros</button>
+          <button class="quick-btn" data-symptom="Reportar">📝 Reportar</button>
+        </div>
+        <div class="input-wrapper">
+          <input type="text" id="user-input" placeholder="Describí tus síntomas..." autocomplete="off">
+          <button id="btn-voice" class="btn-voice" title="Hablar (voz)" aria-label="Activar voz">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <button id="btn-send" class="btn-send" aria-label="Enviar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Perfil de usuario -->
+    <div id="profile-container" class="profile-container" style="display:none;">
+      <div class="profile-header">
+        <div class="profile-avatar-large" id="profile-avatar-icon">👤</div>
+        <div class="profile-header-info">
+          <h2 id="profile-header-name">Mi Perfil</h2>
+          <p id="profile-header-sub">Información de salud personal</p>
+        </div>
+        <button class="btn-close-profile" id="btn-close-profile">✕</button>
+      </div>
+      <div class="profile-body">
+
+        <!-- Datos personales -->
+        <div class="profile-section">
+          <div class="profile-section-title">Datos personales</div>
+          <div class="profile-grid">
+            <div class="profile-field full">
+              <label>Nombre completo</label>
+              <input type="text" id="pf-name" placeholder="Tu nombre">
+            </div>
+            <div class="profile-field">
+              <label>Fecha de nacimiento</label>
+              <input type="date" id="pf-birthdate">
+            </div>
+            <div class="profile-field">
+              <label>Sexo</label>
+              <select id="pf-sex">
+                <option value="">Seleccionar</option>
+                <option value="F">Femenino</option>
+                <option value="M">Masculino</option>
+                <option value="O">Otro</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label>Barrio / dirección</label>
+              <input type="text" id="pf-address" placeholder="Ej: Barrio San Antonio">
+            </div>
+            <div class="profile-field">
+              <label>Teléfono</label>
+              <input type="tel" id="pf-phone" placeholder="Ej: 8888-0000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos físicos -->
+        <div class="profile-section">
+          <div class="profile-section-title">Datos físicos</div>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <label>Tipo de sangre</label>
+              <select id="pf-blood">
+                <option value="">No sé</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label>Peso (kg)</label>
+              <input type="number" id="pf-weight" placeholder="Ej: 65" min="10" max="300">
+            </div>
+            <div class="profile-field">
+              <label>Talla / altura (cm)</label>
+              <input type="number" id="pf-height" placeholder="Ej: 165" min="50" max="250">
+            </div>
+            <div class="profile-field">
+              <label>Embarazada</label>
+              <select id="pf-pregnant">
+                <option value="no">No</option>
+                <option value="si">Sí</option>
+                <option value="na">No aplica</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enfermedades crónicas -->
+        <div class="profile-section">
+          <div class="profile-section-title">Enfermedades crónicas</div>
+          <div class="toggle-group">
+            <div class="toggle-item">
+              <span class="toggle-item-label">Diabetes</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-diabetes">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Hipertensión (presión alta)</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-hypertension">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Asma</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-asthma">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Enfermedad del corazón</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-heart">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Enfermedad renal</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-kidney">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <span class="toggle-item-label">Enfermedad del hígado</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pf-liver">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Otras condiciones -->
+        <div class="profile-section">
+          <div class="profile-section-title">Otras condiciones</div>
+          <div class="profile-grid">
+            <div class="profile-field full">
+              <label>Alergias conocidas</label>
+              <input type="text" id="pf-allergies" placeholder="Ej: Penicilina, mariscos, ninguna">
+            </div>
+            <div class="profile-field full">
+              <label>Medicamentos que toma regularmente</label>
+              <input type="text" id="pf-meds" placeholder="Ej: Metformina, Losartan, ninguno">
+            </div>
+            <div class="profile-field full">
+              <label>Otras enfermedades o condiciones</label>
+              <input type="text" id="pf-other" placeholder="Ej: Artritis, tiroides...">
+            </div>
+          </div>
+        </div>
+
+        <!-- Contacto de emergencia -->
+        <div class="profile-section">
+          <div class="profile-section-title">Contacto de emergencia</div>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <label>Nombre</label>
+              <input type="text" id="pf-ec-name" placeholder="Nombre del familiar">
+            </div>
+            <div class="profile-field">
+              <label>Teléfono</label>
+              <input type="tel" id="pf-ec-phone" placeholder="Ej: 8888-0000">
+            </div>
+          </div>
+        </div>
+
+        <!-- App y Actualizaciones -->
+        <div class="profile-section">
+          <div class="profile-section-title">App y Actualizaciones</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg); padding:10px 12px; border-radius:var(--radius-xs); border:2px solid var(--border);">
+              <div style="font-size:0.86rem; color:var(--text-sec);">Versión actual</div>
+              <div style="font-size:0.86rem; font-weight:600; color:var(--primary);">v7.3.2</div>
+            </div>
+            <button id="btn-check-update" class="btn-secondary" style="padding:10px; font-size:0.84rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span>🔄</span> Buscar actualizaciones
+            </button>
+            <div id="update-status-msg" style="font-size:0.75rem; text-align:center; color:var(--text-sec); display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Cambiar PIN -->
+        <div class="profile-section">
+          <div class="profile-section-title">Seguridad</div>
+          <div style="margin-bottom:8px;">
+            <div class="pin-label" style="text-align:left;margin-bottom:8px;">Nuevo PIN (dejar vacío para no cambiar)</div>
+            <div class="pin-input-row" style="justify-content:flex-start;">
+              <input class="pin-digit" id="pf-pin1" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+              <input class="pin-digit" id="pf-pin2" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+              <input class="pin-digit" id="pf-pin3" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+              <input class="pin-digit" id="pf-pin4" type="password" inputmode="numeric" maxlength="1" autocomplete="off">
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <button class="btn-secondary" id="btn-cancel-profile">Cancelar</button>
+          <button class="btn-primary" id="btn-save-profile">💾 Guardar</button>
+        </div>
+
+        <button class="btn-logout" id="btn-logout">Cerrar sesión</button>
+      </div>
+    </div>
+
+    <!-- Mapa -->
+    <div id="map-container" class="map-container" style="display:none;">
+      <div class="map-header">
+        <h3>🏥 Centros de salud cercanos</h3>
+        <div class="map-header-actions">
+          <button id="btn-add-center" class="btn-add-center">+ Agregar</button>
+          <button id="btn-close-map" class="btn-close-map">✕</button>
+        </div>
+      </div>
+      <div id="map" class="map"></div>
+      <div class="map-loading" id="map-loading" style="display:none;">Buscando centros de salud en tu zona…</div>
+      <div class="map-results" id="map-results"></div>
+      <div class="map-footer">
+        <small>📍 OpenStreetMap — ¿Falta un centro? Tocá + Agregar</small>
+      </div>
+    </div>
+
+    <!-- Formulario reporte -->
+    <div id="report-form-container" class="report-form-container" style="display:none;">
+      <div class="form-header">
+        <h3>📝 Reportar centro de salud</h3>
+        <button id="btn-close-form" class="btn-close-form">✕</button>
+      </div>
+      <div class="form-body">
+        <p class="form-description">Ayudá a mejorar el mapa reportando centros que no aparecen.</p>
+        <form id="report-form">
+          <div class="form-group">
+            <label>Nombre del centro *</label>
+            <input type="text" id="center-name" required placeholder="Ej: Farmacia San Juan">
+          </div>
+          <div class="form-group">
+            <label>Tipo de centro *</label>
+            <select id="center-type" required>
+              <option value="">Seleccioná…</option>
+              <option value="hospital">🏥 Hospital</option>
+              <option value="clinic">🏥 Clínica</option>
+              <option value="pharmacy">💊 Farmacia</option>
+              <option value="doctors">👨‍⚕️ Consultorio</option>
+              <option value="laboratory">🔬 Laboratorio</option>
+              <option value="other">📍 Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Dirección / Barrio</label>
+            <input type="text" id="center-address" placeholder="Ej: Barrio San Antonio">
+          </div>
+          <div class="form-group">
+            <label>Teléfono (opcional)</label>
+            <input type="tel" id="center-phone" placeholder="Ej: 2552-0000">
+          </div>
+          <div class="form-group">
+            <label>Horario (opcional)</label>
+            <input type="text" id="center-hours" placeholder="Ej: 24 horas / Lun-Vie 8am-6pm">
+          </div>
+          <div class="form-group location-info">
+            <label>📍 Ubicación</label>
+            <div id="location-status" class="location-status">
+              <span class="loading">Obteniendo ubicación…</span>
+            </div>
+            <input type="hidden" id="center-lat" required>
+            <input type="hidden" id="center-lng" required>
+          </div>
+          <div class="form-group">
+            <label>Notas adicionales (opcional)</label>
+            <textarea id="center-notes" rows="3" placeholder="Ej: Tiene estacionamiento, acepta INSS…"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="btn-cancel-report" class="btn-secondary">Cancelar</button>
+            <button type="submit" class="btn-primary">💾 Guardar</button>
+          </div>
+        </form>
+        <div class="form-footer">
+          <small>📌 Los reportes se guardan en tu dispositivo. Podés exportarlos para contribuir a OpenStreetMap.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista reportes -->
+    <div id="reports-list-container" class="reports-list-container" style="display:none;">
+      <div class="form-header">
+        <h3>📋 Mis reportes guardados</h3>
+        <button id="btn-close-reports" class="btn-close-form">✕</button>
+      </div>
+      <div class="form-body">
+        <div id="reports-list-content"></div>
+        <div class="export-section">
+          <button id="btn-export-reports-json" class="btn-primary">💾 Exportar como JSON</button>
+          <button id="btn-export-reports-csv" class="btn-secondary">📊 Exportar como CSV</button>
+          <button id="btn-clear-reports" class="btn-danger">🗑️ Eliminar todos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer-banner">
+      <p>⚠️ No reemplaza la consulta médica. Emergencias: <strong>128</strong></p>
+    </div>
+  </main>
+
+  <!-- 🚨 Modal Emergencia -->
+  <div id="emergency-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="color:var(--danger);">🚨 Emergencia médica</h2>
+      </div>
+      <div class="modal-body">
+        <p>Si estás en Granada con alguno de estos síntomas, actúá ahora:</p>
+        <ul class="emergency-list">
+          <li>💔 Dolor o presión en el pecho</li>
+          <li>😮‍💨 Dificultad severa para respirar</li>
+          <li>🩸 Sangrado abundante</li>
+          <li>🧠 Confusión o pérdida del conocimiento</li>
+          <li>⚡ Convulsiones o parálisis súbita</li>
+        </ul>
+        <a href="tel:128" class="btn-emergency-call">📞 Llamar al 128 — Emergencias nacionales</a>
+        <button id="btn-show-map-emergency" class="btn-secondary" style="background:var(--primary);color:white;border-color:var(--primary);">🗺️ Ver centros de urgencias cercanos</button>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-emergency" class="btn-secondary">Entendido, volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📤 Modal Exportación -->
+  <div id="export-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📤 Exportar conversación</h2>
+      </div>
+      <div class="modal-body">
+        <p><strong>Advertencia:</strong> Este archivo contiene información de salud. Compartilo con responsabilidad.</p>
+        <div class="export-options">
+          <div class="checkbox-container">
+            <input type="checkbox" id="anonymize-export" checked>
+            <label for="anonymize-export">Ocultar información personal (recomendado)</label>
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="include-location" checked>
+            <label for="include-location">Incluir ubicación aproximada (Granada)</label>
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="include-med-history" checked>
+            <label for="include-med-history">Incluir historial de medicamentos</label>
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="include-summary" checked>
+            <label for="include-summary">Incluir resumen clínico para médico</label>
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="include-profile">
+            <label for="include-profile">Incluir datos del perfil de salud</label>
+          </div>
+        </div>
+        <div class="export-actions">
+          <button id="btn-export-txt" class="btn-primary">💾 Descargar como .txt</button>
+          <button id="btn-export-copy" class="btn-secondary">📋 Copiar al portapapeles</button>
+        </div>
+        <div id="export-feedback" class="export-feedback" style="display:none;">✅ ¡Exportado exitosamente!</div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-export" class="btn-secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔄 Banner de nueva versión disponible -->
+  <div id="update-banner" style="display:none;">
+    <div class="update-banner-content">
+      <span class="update-banner-icon">🆕</span>
+      <div class="update-banner-text">
+        <strong>Nueva versión disponible</strong>
+        <p>Hay mejoras listas para instalar.</p>
+      </div>
+      <button id="btn-update-app" class="btn-update">Actualizar</button>
+      <button id="btn-dismiss-update" class="btn-dismiss-update" onclick="document.getElementById('update-banner').style.display='none'" title="Cerrar">✕</button>
+    </div>
+  </div>
+
+  <!-- 📥 Banner de Instalación (PWA) -->
+  <div id="install-banner" class="install-banner" style="display:none;">
+    <div class="install-banner-content">
+      <div class="install-icon">📲</div>
+      <div class="install-text">
+        <strong>Instalar Salud-Conecta AI</strong>
+        <p>Acceso rápido y mejor experiencia sin usar navegador.</p>
+      </div>
+      <button id="btn-install" class="btn-install">Instalar</button>
+      <button id="btn-dismiss-install" class="btn-dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- 📋 Modal de Instrucciones de Instalación -->
+  <div id="install-instructions-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📲 Cómo instalar la App</h2>
+      </div>
+      <div class="modal-body">
+        <div id="install-steps-chrome">
+          <p>Para instalar en <strong>Android / Chrome</strong>:</p>
+          <ol class="privacy-list" style="padding-left: 2rem; list-style: decimal;">
+            <li>Tocá los tres puntos (⋮) en la esquina superior.</li>
+            <li>Seleccioná <strong>"Instalar aplicación"</strong> o "Agregar a la pantalla de inicio".</li>
+          </ol>
+        </div>
+        <div id="install-steps-safari" style="display:none;">
+          <p>Para instalar en <strong>iPhone / Safari</strong>:</p>
+          <ol class="privacy-list" style="padding-left: 2rem; list-style: decimal;">
+            <li>Tocá el botón <strong>Compartir</strong> (cuadrado con flecha ↑).</li>
+            <li>Buscá y tocá en <strong>"Agregar a inicio"</strong> (ícono +).</li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-install-instructions" class="btn-secondary">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="base-datos-salud.js?v=13"></script>
+  <script src="app.js?v=13"></script>
+</body>
+</html>
