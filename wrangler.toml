@@ -11,4 +11,4 @@ compatibility_flags = ["nodejs_compat"]
 #   wrangler secret put ANTHROPIC_API_KEY
 #   wrangler secret put ALLOWED_ORIGIN
 APP_NAME = "Salud-Conecta AI"
-APP_VERSION = "6.0.0"
+APP_VERSION = "7.3.3"
