@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.3.2
-📌 CAMBIOS v13: Force Icon Update and Persistent Update Indicator
+📌 VERSIÓN: 7.3.3
+📌 CAMBIOS v15: Maintenance Update · Database Clean up
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Network-First (Actualización rápida)
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v14';
+const CACHE_VERSION   = 'v15';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;

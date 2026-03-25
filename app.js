@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.3.2
-📌 CAMBIOS: Persistent Update Indicator · Mobile Icon Force Refresh
+📌 VERSIÓN: 7.3.3
+📌 CAMBIOS: Maintenance Update · Database Clean up
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -1016,15 +1016,12 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchDrugInfo(drugName) {
     // Cache para evitar búsquedas repetidas
     if (appState.drugCache[drugName]) {
-      showTyping(false);
       addDrugCardLocal(appState.drugCache[drugName], getShortTime());
       return;
     }
 
-    showTyping(true);
     const medBD = buscarMedicamento(drugName);
     if (medBD) {
-      showTyping(false);
       const drugData = {
         name: medBD.nombre_es + (medBD.nombres_comerciales.length > 0 ? ` (${medBD.nombres_comerciales.join(', ')})` : ''),
         categoria:      medBD.categoria,
@@ -1063,10 +1060,8 @@ document.addEventListener('DOMContentLoaded', () => {
         warnings:translateMedicalText(result.warnings_and_cautions?.[0] || result.adverse_reactions?.[0] || 'Consulte a su médico.'),
         source:  'Fuente: openFDA (EE.UU.) — Verificar con farmacéutico en Nicaragua'
       };
-      showTyping(false);
       addDrugCard(drugData, getShortTime());
     } catch {
-      showTyping(false);
       addMessage(`No encontré información sobre "${drugName}". En Granada, consulta en farmacias como Del Pueblo, San Nicolás o Cruz Verde.`, 'ai', null, getShortTime());
     }
   }
@@ -1247,74 +1242,75 @@ document.addEventListener('DOMContentLoaded', () => {
     addMessage(text, 'user', null, timestamp);
     if (userInput) userInput.value = '';
     if (btnSend) btnSend.disabled = true;
-    showTyping(true);
 
     const lowerText = text.toLowerCase();
 
-    // ── GESTIÓN DE CONTEXTO (Mejorado v7.3.4: Conversacional-First) ──
-    let contextData = { meds: [], symptoms: [], centers: [] };
-    
-    // 1. Recolectar Medicamentos
-    contextData.meds = typeof buscarMultiplesMedicamentos === 'function' 
-      ? buscarMultiplesMedicamentos(lowerText) 
-      : (buscarMedicamento(lowerText) ? [buscarMedicamento(lowerText)] : []);
-    
-    // 2. Recolectar Síntomas
-    contextData.symptoms = typeof buscarMultiplesSintomas === 'function'
-      ? buscarMultiplesSintomas(lowerText)
-      : (buscarSintoma(lowerText) ? [buscarSintoma(lowerText)] : []);
-
-    // 3. Recolectar Centros (si menciona palabras clave)
-    const keywordsCentros = ['mapa','centro','hospital','farmacia','clinica','cerca','laboratorio'];
-    if (keywordsCentros.some(k => lowerText.includes(k))) {
-      const location = await getUserLocation();
-      contextData.centers = await searchHealthFacilities(location.lat, location.lng, 5000);
-    }
-
-    // ── ACCIONES VISUALES (Intercepción no excluyente) ──
-    
-    // Mostrar tarjetas de medicamentos detectados
-    contextData.meds.forEach(m => {
-      appState.medicationSearches.push({ drug: m.nombre_es, timestamp: getLocalTimestamp(), query: text });
-      fetchDrugInfo(m.nombre_es); 
-    });
-
-    // Mostrar tarjetas de síntomas detectados
-    contextData.symptoms.forEach(s => {
-      addSintomaCard(s, getShortTime());
-    });
-
-    // Abrir mapa si se pide explícitamente
-    if (keywordsCentros.some(k => lowerText.includes(k))) {
-      showNearbyHealthCenters();
-    }
-
-    // Comandos directos (estos sí cortan el flujo de IA por ser utilitarios)
-    if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
-      showTyping(false); initReportForm(); enableInput(); return;
-    }
-    if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
-      showTyping(false); showReportsList(); enableInput(); return;
-    }
-
-    // ── LLAMADA A LA IA CON CONTEXTO COMPLETO ──
-    let contextPrompt = "";
-    if (contextData.meds.length > 0) contextPrompt += `\n[MEDICAMENTOS ENCONTRADOS: ${JSON.stringify(contextData.meds)}]`;
-    if (contextData.symptoms.length > 0) contextPrompt += `\n[SÍNTOMAS ENCONTRADOS: ${JSON.stringify(contextData.symptoms)}]`;
-    if (contextData.centers.length > 0) {
-      // Incluimos más centros para que la IA tenga la lista completa de Granada
-      contextPrompt += `\n[CENTROS CERCANOS EN GRANADA: ${JSON.stringify(contextData.centers.slice(0, 20))}]`;
-    }
-
-    const textWithContext = contextPrompt 
-      ? `${text}\n\nCONTEXTO LOCAL (USA ESTO PARA RESPONDER DETALLADAMENTE Y NO LO CORTES):${contextPrompt}` 
-      : text;
-
-    // Si el worker falla (sin internet, no desplegado), usa respuestas básicas automáticamente
-    showTyping(true);
     try {
+      showTyping(true);
+      // ── GESTIÓN DE CONTEXTO (Mejorado v7.3.3: Conversacional-First) ──
+      let contextData = { meds: [], symptoms: [], centers: [] };
+
+      // 1. Recolectar Medicamentos
+      contextData.meds = typeof buscarMultiplesMedicamentos === 'function'
+        ? buscarMultiplesMedicamentos(lowerText)
+        : (buscarMedicamento(lowerText) ? [buscarMedicamento(lowerText)] : []);
+
+      // 2. Recolectar Síntomas
+      contextData.symptoms = typeof buscarMultiplesSintomas === 'function'
+        ? buscarMultiplesSintomas(lowerText)
+        : (buscarSintoma(lowerText) ? [buscarSintoma(lowerText)] : []);
+
+      // 3. Recolectar Centros (si menciona palabras clave)
+      const keywordsCentros = ['mapa','centro','hospital','farmacia','clinica','cerca','laboratorio'];
+      if (keywordsCentros.some(k => lowerText.includes(k))) {
+        const location = await getUserLocation();
+        contextData.centers = await searchHealthFacilities(location.lat, location.lng, 5000);
+      }
+
+      // ── ACCIONES VISUALES (Intercepción no excluyente) ──
+
+      // Mostrar tarjetas de medicamentos detectados en paralelo para mayor velocidad
+      if (contextData.meds.length > 0) {
+        const drugPromises = contextData.meds.map(m => {
+          appState.medicationSearches.push({ drug: m.nombre_es, timestamp: getLocalTimestamp(), query: text });
+          return fetchDrugInfo(m.nombre_es);
+        });
+        await Promise.all(drugPromises);
+      }
+
+      // Mostrar tarjetas de síntomas detectados
+      contextData.symptoms.forEach(s => {
+        addSintomaCard(s, getShortTime());
+      });
+
+      // Abrir mapa si se pide explícitamente
+      if (keywordsCentros.some(k => lowerText.includes(k))) {
+        showNearbyHealthCenters();
+      }
+
+      // Comandos directos (estos sí cortan el flujo de IA por ser utilitarios)
+      if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
+        showTyping(false); initReportForm(); enableInput(); return;
+      }
+      if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
+        showTyping(false); showReportsList(); enableInput(); return;
+      }
+
+      // ── LLAMADA A LA IA CON CONTEXTO COMPLETO ──
+      let contextPrompt = "";
+      if (contextData.meds.length > 0) contextPrompt += `\n[MEDICAMENTOS ENCONTRADOS: ${JSON.stringify(contextData.meds)}]`;
+      if (contextData.symptoms.length > 0) contextPrompt += `\n[SÍNTOMAS ENCONTRADOS: ${JSON.stringify(contextData.symptoms)}]`;
+      if (contextData.centers.length > 0) {
+        // Incluimos más centros para que la IA tenga la lista completa de Granada
+        contextPrompt += `\n[CENTROS CERCANOS EN GRANADA: ${JSON.stringify(contextData.centers.slice(0, 20))}]`;
+      }
+
+      const textWithContext = contextPrompt
+        ? `${text}\n\nCONTEXTO LOCAL (USA ESTO PARA RESPONDER DETALLADAMENTE Y NO LO CORTES):${contextPrompt}`
+        : text;
+
+      // Si el worker falla (sin internet, no desplegado), usa respuestas básicas automáticamente
       const response = await callClaudeAPI(textWithContext);
-      showTyping(false);
       if (response) {
         const urgency = detectUrgencyFromResponse(response);
         addMessage(response, 'ai', urgency, getShortTime());
@@ -1324,13 +1320,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const mock = generateMockResponse(urgency);
         addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
       }
-    } catch {
-      showTyping(false);
+    } catch (error) {
+      console.error('Error en sendMessage:', error);
       const urgency = detectUrgency(text);
       const mock = generateMockResponse(urgency);
       addMessage(mock.text + '\n\n' + mock.action, 'ai', mock.urgency, getShortTime());
+    } finally {
+      showTyping(false);
+      enableInput();
     }
-    enableInput();
   }
 
   function enableInput(placeholder = 'Describe tus síntomas...') {
@@ -1395,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push('=======================================');
     lines.push(`Fecha: ${now}`);
     lines.push(`Ubicación: ${includeLocationCheckbox?.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
-    lines.push(`Versión: 7.3.1`);
+    lines.push(`Versión: 7.3.3`);
     lines.push('');
 
     if (includeSummaryCheckbox?.checked) {
@@ -1429,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lines.push('-------------------------------------------');
     lines.push('⚠️ No es diagnóstico médico. Emergencias: 128');
-    lines.push('Salud-Conecta AI v7.3.1');
+    lines.push('Salud-Conecta AI v7.3.3');
     return lines.join('\n');
   }
 
@@ -1946,5 +1944,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('🏥 Salud-Conecta AI v7.3.2 iniciada · Worker:', WORKER_URL);
+  console.log('🏥 Salud-Conecta AI v7.3.3 iniciada · Worker:', WORKER_URL);
 });
