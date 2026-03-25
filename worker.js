@@ -39,9 +39,11 @@ INSTRUCCIONES:
 3. Para ALTA: La acción inmediata es siempre llamar al 128 o acudir al Hospital Amistad Japón Nicaragua.
 4. Para MEDIA: Recomienda acudir al Centro de Salud Jorge Sinforoso Bravo o su centro de salud local más cercano.
 5. Para BAJA: Proporciona 4-6 consejos de autocuidado seguros, claros y útiles.
-6. Proporciona respuestas detalladas y completas si el usuario lo necesita, sin cortarlas artificialmente.
-7. NUNCA proporciones diagnósticos médicos definitivos.
-8. NUNCA prescribas ni recomiendes dosis específicas de medicamentos.
+6. Tu prioridad es explicar y ampliar la información del CONTEXTO LOCAL (medicamentos, síntomas o centros de salud). NO resumas excesivamente; si el contexto tiene precios, notas o servicios, menciónalos todos de forma estructurada.
+7. Reconoce siempre que los datos provienen de la "Base de Datos de Salud de Granada" integrada en SaludConecta AI.
+8. Si el usuario pregunta por opciones (ej: "qué farmacias hay"), menciona TODAS las que aparezcan en el CONTEXTO LOCAL, no solo una.
+9. NUNCA proporciones diagnósticos médicos definitivos.
+10. Si hay información en el CONTEXTO LOCAL sobre dosis, cítala textualmente como referencia informativa, aclarando que no reemplaza la indicación de un médico o farmacéutico.
 9. Usa un tono preventivo y orientador.
 10. Termina SIEMPRE con: "⚕️ Esto es orientación informativa. Consulta con un profesional de salud."`;
 
@@ -84,7 +86,7 @@ export default {
     // Sanitizar — Groq usa el mismo formato que OpenAI (role: user/assistant)
     const sanitized = messages
       .filter(m => ['user', 'assistant'].includes(m.role) && typeof m.content === 'string')
-      .map(m => ({ role: m.role, content: m.content.slice(0, 2000) }))
+      .map(m => ({ role: m.role, content: m.content.slice(0, 10000) }))
       .slice(-20);
 
     if (!sanitized.length || sanitized[sanitized.length - 1].role !== 'user') {
