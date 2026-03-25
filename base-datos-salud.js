@@ -3642,13 +3642,30 @@ function buscarCentrosCercanos(lat, lng, radioMetros = 2000) {
  * v7.1: incluye búsqueda ampliada en campo `sinonimos` y normaliza tildes.
  */
 function buscarMedicamento(nombre) {
+  const results = buscarMultiplesMedicamentos(nombre);
+  return results.length > 0 ? results[0] : null;
+}
+
+/**
+ * Busca todos los medicamentos que coincidan con el término.
+ */
+function buscarMultiplesMedicamentos(nombre) {
   const lower = normalizar(nombre);
-  return MEDICAMENTOS.find(m =>
-    normalizar(m.nombre_es).includes(lower) ||
-    normalizar(m.nombre_en).includes(lower) ||
-    m.nombres_comerciales.some(n => normalizar(n).includes(lower)) ||
-    (m.sinonimos && m.sinonimos.some(s => normalizar(s).includes(lower) || lower.includes(normalizar(s))))
-  ) || null;
+  if (lower.length < 3) return [];
+  return MEDICAMENTOS.filter(m => {
+    const n_es = normalizar(m.nombre_es);
+    const n_en = normalizar(m.nombre_en);
+    return n_es.includes(lower) || lower.includes(n_es) ||
+           n_en.includes(lower) || lower.includes(n_en) ||
+           m.nombres_comerciales.some(n => {
+             const c = normalizar(n);
+             return c.includes(lower) || lower.includes(c);
+           }) ||
+           (m.sinonimos && m.sinonimos.some(s => {
+             const sn = normalizar(s);
+             return sn.includes(lower) || lower.includes(sn);
+           }));
+  });
 }
 
 function obtenerTodosLosMedicamentos() { return MEDICAMENTOS; }
@@ -3662,32 +3679,26 @@ function obtenerTodosLosMedicamentos() { return MEDICAMENTOS; }
  * 4. El nombre del síntoma está contenido en el texto
  */
 function buscarSintoma(texto) {
+  const results = buscarMultiplesSintomas(texto);
+  return results.length > 0 ? results[0] : null;
+}
+
+/**
+ * Busca todos los síntomas que coincidan con el término.
+ */
+function buscarMultiplesSintomas(texto) {
   const lower = normalizar(texto);
+  if (lower.length < 3) return [];
   
-  // 1. Coincidencia exacta en nombre
-  let found = SINTOMAS.find(s => normalizar(s.nombre) === lower);
-  if (found) return found;
-  
-  // 2. El texto coincide con algún sinónimo exactamente
-  found = SINTOMAS.find(s =>
-    s.sinonimos && s.sinonimos.some(sin => normalizar(sin) === lower)
-  );
-  if (found) return found;
-  
-  // 3. El texto contiene algún sinónimo (ej: "tengo dolor de cabeza fuerte")
-  found = SINTOMAS.find(s =>
-    s.sinonimos && s.sinonimos.some(sin => lower.includes(normalizar(sin)))
-  );
-  if (found) return found;
-  
-  // 4. El texto contiene el nombre del síntoma
-  found = SINTOMAS.find(s => lower.includes(normalizar(s.nombre)));
-  if (found) return found;
-  
-  // 5. El nombre del síntoma contiene el texto (búsqueda parcial)
-  found = SINTOMAS.find(s => normalizar(s.nombre).includes(lower) && lower.length > 3);
-  
-  return found || null;
+  return SINTOMAS.filter(s => {
+    const n = normalizar(s.nombre);
+    const inName = n === lower || lower.includes(n) || n.includes(lower);
+    const inSynonyms = s.sinonimos && s.sinonimos.some(sin => {
+      const sn = normalizar(sin);
+      return sn === lower || lower.includes(sn) || sn.includes(lower);
+    });
+    return inName || inSynonyms;
+  });
 }
 
 function obtenerTodosLosSintomas() { return SINTOMAS; }
