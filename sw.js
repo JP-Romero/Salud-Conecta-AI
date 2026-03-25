@@ -56,11 +56,11 @@ self.addEventListener('install', event => {
   event.waitUntil(
     Promise.all([
       caches.open(CACHE_SHELL).then(cache => {
-        console.log('[SW v6] Cacheando shell…');
+        console.log(`[SW ${CACHE_VERSION}] Cacheando shell…`);
         return cache.addAll(SHELL_ASSETS);
       }),
       caches.open(CACHE_CDN).then(cache => {
-        console.log('[SW v6] Cacheando CDN (Leaflet)…');
+        console.log(`[SW ${CACHE_VERSION}] Cacheando CDN (Leaflet)…`);
         return cache.addAll(CDN_ASSETS);
       })
     ])
@@ -77,7 +77,7 @@ self.addEventListener('activate', event => {
         keys
           .filter(key => !ALL_CACHES.includes(key))
           .map(key => {
-            console.log('[SW v6] Eliminando caché viejo:', key);
+            console.log(`[SW ${CACHE_VERSION}] Eliminando caché viejo:`, key);
             return caches.delete(key);
           })
       )
