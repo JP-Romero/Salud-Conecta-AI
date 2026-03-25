@@ -1002,12 +1002,15 @@ document.addEventListener('DOMContentLoaded', () => {
       showTyping(false);
       const drugData = {
         name: medBD.nombre_es + (medBD.nombres_comerciales.length > 0 ? ` (${medBD.nombres_comerciales.join(', ')})` : ''),
+        categoria:      medBD.categoria,
         usage:          medBD.uso_principal,
         warnings:       `${medBD.contraindicaciones}. Efectos secundarios: ${medBD.efectos_secundarios}`,
         source:         'Base de datos local — Nicaragua ✓',
         dosis:          medBD.dosis_adulto,
+        dosis_nino:     medBD.dosis_nino,
         requiere_receta: medBD.requiere_receta,
-        precio:         medBD.precio_aproximado
+        precio:         medBD.precio_aproximado,
+        embarazo:       medBD.embarazo
       };
       appState.drugCache[drugName] = drugData;
       addDrugCardLocal(drugData, getShortTime());
@@ -1064,13 +1067,22 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="drug-card">
           <div class="drug-card-header"><span class="drug-icon">Rx</span><h4 class="drug-title">${data.name}</h4></div>
+          ${data.categoria ? `
+            <div class="drug-section"><div class="drug-section-title">Categoría</div>
+            <div class="drug-section-content">${data.categoria}</div></div>` : ''}
           <div class="drug-section"><div class="drug-section-title">Uso principal</div>
             <div class="drug-section-content" id="${contentId}">${data.usage}</div></div>
           ${data.dosis ? `
             <div class="drug-section"><div class="drug-section-title">Dosis adulto</div>
             <div class="drug-section-content" id="${dosisId}">${data.dosis}</div></div>` : ''}
+          ${data.dosis_nino ? `
+            <div class="drug-section"><div class="drug-section-title">Dosis niños</div>
+            <div class="drug-section-content">${data.dosis_nino}</div></div>` : ''}
           <div class="drug-section"><div class="drug-section-title">Advertencias</div>
             <div class="drug-section-content" id="${warnId}">${data.warnings}</div></div>
+          ${data.embarazo ? `
+            <div class="drug-section"><div class="drug-section-title">Embarazo</div>
+            <div class="drug-section-content">${data.embarazo}</div></div>` : ''}
           ${data.requiere_receta ? `<div class="drug-section"><div class="drug-section-title">Requiere receta</div><div class="drug-section-content" style="color:var(--danger);">Sí — Consulta médica obligatoria</div></div>` : ''}
           ${data.precio ? `
             <div class="drug-section"><div class="drug-section-title">Precio aproximado</div>
@@ -1137,6 +1149,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <p id="${descId}" class="drug-section-content" style="margin:6px 0 0;font-size:0.8rem;">${sintoma.descripcion}</p>
         </div>
         <div class="drug-card">
+          ${sintoma.categoria ? `
+            <div class="drug-section"><div class="drug-section-title">Categoría</div>
+            <div class="drug-section-content">${sintoma.categoria}</div></div>` : ''}
           <div class="drug-card-header"><span class="drug-icon">🏠</span><h4 class="drug-title">Cuidados en casa</h4></div>
           <div class="drug-section">
             <div id="${cuidId}" class="drug-section-content">
@@ -1230,22 +1245,23 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // 3. MEDICAMENTO DIRECTO
-    const foundDrugDirect = COMMON_DRUGS.find(d =>
-      lowerText === d || lowerText.startsWith(d + ' ') || lowerText.endsWith(' ' + d) ||
-      lowerText.includes(' ' + d + ' ')
-    );
+    // 3. MEDICAMENTO DIRECTO (Mejorado v7.3.3: Búsqueda dinámica en la base de datos)
+    const medEncontrado = buscarMedicamento(lowerText);
     const isDrugQuery   = DRUG_KEYWORDS.some(k => lowerText.includes(k));
-    const foundDrugKw   = COMMON_DRUGS.find(d => lowerText.includes(d));
 
-    if (foundDrugDirect || (isDrugQuery && foundDrugKw)) {
-      const drugName = foundDrugDirect || foundDrugKw;
-      appState.medicationSearches.push({ drug: drugName, timestamp: getLocalTimestamp(), query: text });
-      setTimeout(() => {
-        fetchDrugInfo(drugName);
-        enableInput();
-      }, 800);
-      return;
+    if (medEncontrado || isDrugQuery) {
+      // Si ya lo encontramos o si pregunta por "medicamento", intentamos extraer el nombre
+      const drugName = medEncontrado ? medEncontrado.nombre_es :
+                       COMMON_DRUGS.find(d => lowerText.includes(d));
+
+      if (drugName) {
+        appState.medicationSearches.push({ drug: drugName, timestamp: getLocalTimestamp(), query: text });
+        setTimeout(() => {
+          fetchDrugInfo(drugName);
+          enableInput();
+        }, 800);
+        return;
+      }
     }
 
     // 4. MAPA / CENTROS
