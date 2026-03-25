@@ -16,8 +16,8 @@ BASE DE DATOS DE SALUD — Salud-Conecta AI (Granada, Nicaragua)
 ═══════════════════════════════════════════════════════════════
 */
 
-const VERSION_BASE_DATOS = '7.3.3';
-const ULTIMA_ACTUALIZACION = '2026-03-25';
+const VERSION_BASE_DATOS = '7.3.5';
+export const ULTIMA_ACTUALIZACION = "2025-02-21";
 
 // ═══════════════════════════════════════════════════════════════
 //  🏥 HOSPITALES

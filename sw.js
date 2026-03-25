@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.3.3
-📌 CAMBIOS v15: Maintenance Update · Database Clean up
+📌 VERSIÓN: 7.3.5
+📌 CAMBIOS v16: Icon Cache Busting & Versioning
 📌 ESTRATEGIAS:
    - Shell (HTML/CSS/JS local): Network-First (Actualización rápida)
    - Leaflet / CDN:             Cache-First (larga duración)
@@ -14,7 +14,7 @@ SERVICE WORKER — Salud-Conecta AI
 ═══════════════════════════════════════════════════════════════
 */
 
-const CACHE_VERSION   = 'v15';
+const CACHE_VERSION   = 'v16';
 const CACHE_SHELL     = `salud-conecta-shell-${CACHE_VERSION}`;
 const CACHE_CDN       = `salud-conecta-cdn-${CACHE_VERSION}`;
 const CACHE_FDA       = `salud-conecta-fda-${CACHE_VERSION}`;
@@ -32,15 +32,15 @@ const SHELL_ASSETS = [
   './app.js',
   './base-datos-salud.js',
   './manifest.json',
-  './icon-48-v14.png',
-  './icon-72-v14.png',
-  './icon-96-v14.png',
-  './icon-144-v14.png',
-  './icon-180-v14.png',
-  './icon-192-v14.png',
-  './icon-512-v14.png',
-  './icon-192-maskable-v14.png',
-  './icon-512-maskable-v14.png'
+  './icon-48-v16.png',
+  './icon-72-v16.png',
+  './icon-96-v16.png',
+  './icon-144-v16.png',
+  './icon-180-v16.png',
+  './icon-192-v16.png',
+  './icon-512-v16.png',
+  './icon-192-maskable-v16.png',
+  './icon-512-maskable-v16.png'
 ];
 
 // CDN assets — Leaflet

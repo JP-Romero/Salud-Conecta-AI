@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.3.3
-📌 CAMBIOS: Maintenance Update · Database Clean up
+📌 VERSIÓN: 7.3.5
+📌 CAMBIOS: Icon Cache Busting & Versioning
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -1247,7 +1247,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       showTyping(true);
-      // ── GESTIÓN DE CONTEXTO (Mejorado v7.3.3: Conversacional-First) ──
+      // ── GESTIÓN DE CONTEXTO (Mejorado v7.3.5: Conversacional-First) ──
       let contextData = { meds: [], symptoms: [], centers: [] };
 
       // 1. Recolectar Medicamentos
@@ -1393,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push('=======================================');
     lines.push(`Fecha: ${now}`);
     lines.push(`Ubicación: ${includeLocationCheckbox?.checked ? 'Granada, Nicaragua' : '[Ocultada]'}`);
-    lines.push(`Versión: 7.3.3`);
+    lines.push(`Versión: 7.3.5`);
     lines.push('');
 
     if (includeSummaryCheckbox?.checked) {
@@ -1427,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lines.push('-------------------------------------------');
     lines.push('⚠️ No es diagnóstico médico. Emergencias: 128');
-    lines.push('Salud-Conecta AI v7.3.3');
+    lines.push('Salud-Conecta AI v7.3.5');
     return lines.join('\n');
   }
 
@@ -1944,5 +1944,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('🏥 Salud-Conecta AI v7.3.3 iniciada · Worker:', WORKER_URL);
+  console.log('🏥 Salud-Conecta AI v7.3.5 iniciada · Worker:', WORKER_URL);
 });
