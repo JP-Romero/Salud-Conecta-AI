@@ -13,7 +13,7 @@ DESPLIEGUE:
 */
 
 const GROQ_MODEL     = 'llama-3.3-70b-versatile';
-const MAX_TOKENS     = 1500;
+const MAX_TOKENS     = 2000;
 const RATE_LIMIT_RPM = 20;
 const RATE_LIMIT_RPH = 200;
 
