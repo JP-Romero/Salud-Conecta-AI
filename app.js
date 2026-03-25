@@ -1788,16 +1788,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Service Worker con detección de actualización ──
   if ('serviceWorker' in navigator) {
-
     navigator.serviceWorker.register('./sw.js')
       .then(registration => {
-
-        // ── Función que activa el SW en espera ──
+        // Función que activa el SW en espera
         function activarSWNuevo(worker) {
-          worker.postMessage({ type: 'SKIP_WAITING' });
+          if (worker) worker.postMessage({ type: 'SKIP_WAITING' });
         }
 
-        // ── Muestra el banner de "nueva versión" ──
+        // Muestra el banner de "nueva versión"
         function mostrarBannerActualizacion(worker) {
           const banner = document.getElementById('update-banner');
           const btnUpdate = document.getElementById('btn-update-app');
@@ -1810,20 +1808,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Al hacer clic en Actualizar → activar SW nuevo → recargar
           if (btnUpdate) {
-            btnUpdate.addEventListener('click', (e) => {
+            btnUpdate.onclick = (e) => {
               e.preventDefault();
               console.log('🔄 Activando nueva versión...');
               activarSWNuevo(worker);
-            }, { once: true });
+            };
           }
         }
 
-        // ── Caso 1: Ya hay un SW en espera al cargar (refresh rápido) ──
+        // Caso 1: Ya hay un SW en espera al cargar
         if (registration.waiting) {
           mostrarBannerActualizacion(registration.waiting);
         }
 
-        // ── Caso 2: Un SW nuevo empieza a instalarse ──
+        // Caso 2: Un SW nuevo empieza a instalarse
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (!newWorker) return;
@@ -1836,15 +1834,14 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         });
 
-        // ── Caso 3: SW activó → recargar la página automáticamente ──
+        // Caso 3: SW activó → recargar la página automáticamente
         let recargando = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!recargando) {
             recargando = true;
-            window.location.reload();
+            setTimeout(() => { window.location.reload(); }, 200);
           }
         });
-
       })
       .catch(err => console.warn('SW error:', err));
 
@@ -1860,3 +1857,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('🏥 Salud-Conecta AI v7.3.1 iniciada · Worker:', WORKER_URL);
 });
+
