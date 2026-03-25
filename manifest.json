@@ -73,7 +73,7 @@
 
   "shortcuts": [
     {
-      "name": "Emergencia — llamar al 133",
+      "name": "Emergencia — llamar al 128",
       "short_name": "Emergencia",
       "description": "Números de emergencia de Granada",
       "url": "./index.html?action=emergency",
