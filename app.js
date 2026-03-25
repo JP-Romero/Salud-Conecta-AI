@@ -521,6 +521,23 @@ document.addEventListener('DOMContentLoaded', () => {
     'tablet': 'tableta', 'oral': 'oral', 'daily': 'diario'
   };
 
+  const SERVICIOS_LABELS = {
+    urgencias: 'Urgencias 24h', consulta: 'Consulta externa', hospitalizacion: 'Hospitalización',
+    laboratorio: 'Laboratorio clínico', rayos_x: 'Rayos X', cirugia: 'Cirugía',
+    pediatria: 'Pediatría', ginecologia: 'Ginecología', maternidad: 'Maternidad',
+    oncologia: 'Oncología', medicina_natural: 'Medicina natural', ultrasonido: 'Ultrasonido',
+    farmacia: 'Farmacia', vacunacion: 'Vacunación', curaciones: 'Curaciones',
+    control_nino_sano: 'Control niño sano', planificacion_familiar: 'Planificación familiar',
+    fisioterapia: 'Fisioterapia', especialidades: 'Especialidades', consulta_general: 'Consulta general',
+    analisis_sangre: 'Análisis de sangre', examen_orina: 'Examen de orina', examen_heces: 'Examen de heces',
+    perfil_lipidico: 'Perfil lipídico', glucosa: 'Glucosa', analisis_clinicos: 'Análisis clínicos',
+    pruebas_especiales: 'Pruebas especiales', toma_presion: 'Toma de presión', medicion_glucosa: 'Medición de glucosa',
+    productos_naturales: 'Productos naturales', cosmeticos: 'Cosméticos', vitaminas: 'Vitaminas',
+    cuidado_bebe: 'Cuidado de bebé', leche_formula: 'Leche de fórmula', consultorio_farmaceutico: 'Consultorio farmacéutico',
+    cuidado_personal: 'Cuidado personal', inyectologia: 'Inyectología', productos_lacteos: 'Productos lácteos',
+    aseo_personal: 'Aseo personal', consulta_farmaceutica: 'Consulta farmacéutica'
+  };
+
   // ═══════════════════════════════════════════════════════════════
   //  CLAUDE API — VÍA PROXY BACKEND (worker.js)
   //  La API key vive en el servidor. El usuario nunca la ve ni toca.
@@ -704,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => appState.map.invalidateSize(), 100);
   }
 
-  async function searchHealthFacilities(lat, lng, radius = 2000) {
+  async function searchHealthFacilities(lat, lng, radius = 10000) {
     const centrosBD = obtenerTodosLosCentros();
     if (centrosBD.length > 0) {
       // CORRECCIÓN BUG: Propiedad 'distance' consistente (era 'distancia' en el sort)
@@ -769,19 +786,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const horario = facility.horario || '';
       const telefono = facility.telefono || '';
       const seguros = facility.seguros ? facility.seguros.join(', ') : '';
+      const notas = facility.notas || '';
+      const serviciosList = facility.servicios ? facility.servicios.map(s => SERVICIOS_LABELS[s] || s).join(', ') : '';
 
       marker.bindPopup(`
-        <strong>${name}</strong><br>
-        <span style="color:#666;font-size:0.85em;">${tipoLabel} · ${distance}m</span><br>
-        ${address ? `📍 ${address}<br>` : ''}
-        ${horario  ? `🕐 ${horario}<br>` : ''}
-        ${telefono ? `📞 ${telefono}<br>` : ''}
-        ${seguros  ? `🏥 ${seguros}<br>` : ''}
-        <br><a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}"
-          target="_blank"
-          style="background:#2E7DBB;color:white;padding:5px 10px;border-radius:6px;text-decoration:none;font-size:0.82rem;display:inline-block;margin-top:4px;">
-          Cómo llegar ↗
-        </a>`);
+        <div style="min-width:200px;">
+          <strong>${name}</strong><br>
+          <span style="color:#666;font-size:0.85em;">${tipoLabel} · ${distance}m</span><hr style="margin:5px 0;border:0;border-top:1px solid #eee;">
+          ${address ? `📍 ${address}<br>` : ''}
+          ${horario  ? `🕐 ${horario}<br>` : ''}
+          ${telefono ? `📞 ${telefono}<br>` : ''}
+          ${serviciosList ? `<div style="font-size:0.8em;margin-top:4px;">✨ <b>Servicios:</b> ${serviciosList}</div>` : ''}
+          ${seguros  ? `<div style="font-size:0.8em;">🏥 <b>Seguros:</b> ${seguros}</div>` : ''}
+          ${notas ? `<div style="font-size:0.8em;color:var(--text-sec);font-style:italic;margin-top:4px;">ℹ️ ${notas}</div>` : ''}
+          <br><a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}"
+            target="_blank"
+            style="background:#2E7DBB;color:white;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.82rem;display:inline-block;width:100%;text-align:center;">
+            Cómo llegar ↗
+          </a>
+        </div>`);
       appState.healthMarkers.push(marker);
 
       // Ícono emoji por tipo para la lista
@@ -799,6 +822,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="map-result-name">${name}</div>
           <div class="map-result-type">${tipoLabel} · ${distance}m${address ? ' · ' + address : ''}</div>
           ${horario ? `<div class="map-result-horario">🕐 ${horario}</div>` : ''}
+          ${serviciosList ? `<div style="font-size:0.72rem;color:var(--text-sec);margin-top:2px;">✨ ${serviciosList}</div>` : ''}
+          ${notas ? `<div style="font-size:0.72rem;color:var(--text-sec);font-style:italic;margin-top:2px;">ℹ️ ${notas}</div>` : ''}
         </div>
         <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&origin=${userLat},${userLng}"
            class="btn-directions" target="_blank" rel="noopener">Ir ↗</a>`;
@@ -1004,7 +1029,8 @@ document.addEventListener('DOMContentLoaded', () => {
         name: medBD.nombre_es + (medBD.nombres_comerciales.length > 0 ? ` (${medBD.nombres_comerciales.join(', ')})` : ''),
         categoria:      medBD.categoria,
         usage:          medBD.uso_principal,
-        warnings:       `${medBD.contraindicaciones}. Efectos secundarios: ${medBD.efectos_secundarios}`,
+        contraindicaciones: medBD.contraindicaciones,
+        efectos_secundarios: medBD.efectos_secundarios,
         source:         'Base de datos local — Nicaragua ✓',
         dosis:          medBD.dosis_adulto,
         dosis_nino:     medBD.dosis_nino,
@@ -1078,8 +1104,15 @@ document.addEventListener('DOMContentLoaded', () => {
           ${data.dosis_nino ? `
             <div class="drug-section"><div class="drug-section-title">Dosis niños</div>
             <div class="drug-section-content">${data.dosis_nino}</div></div>` : ''}
-          <div class="drug-section"><div class="drug-section-title">Advertencias</div>
-            <div class="drug-section-content" id="${warnId}">${data.warnings}</div></div>
+          ${data.contraindicaciones ? `
+            <div class="drug-section"><div class="drug-section-title">Contraindicaciones</div>
+            <div class="drug-section-content">${data.contraindicaciones}</div></div>` : ''}
+          ${data.efectos_secundarios ? `
+            <div class="drug-section"><div class="drug-section-title">Efectos secundarios</div>
+            <div class="drug-section-content">${data.efectos_secundarios}</div></div>` : ''}
+          ${data.warnings ? `
+            <div class="drug-section"><div class="drug-section-title">Advertencias</div>
+            <div class="drug-section-content" id="${warnId}">${data.warnings}</div></div>` : ''}
           ${data.embarazo ? `
             <div class="drug-section"><div class="drug-section-title">Embarazo</div>
             <div class="drug-section-content">${data.embarazo}</div></div>` : ''}
@@ -1218,75 +1251,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lowerText = text.toLowerCase();
 
-    // 1. SÍNTOMAS ESPECÍFICOS DE LA BD LOCAL (con cache)
-    const cacheKey = lowerText.trim();
-    let sintomaEncontrado = appState.symptomCache[cacheKey];
-    if (sintomaEncontrado === undefined) {
-      sintomaEncontrado = buscarSintoma(lowerText) || null;
-      appState.symptomCache[cacheKey] = sintomaEncontrado;
-    }
-    if (sintomaEncontrado) {
-      appState.medicationSearches.push({ drug: sintomaEncontrado.nombre, timestamp: getLocalTimestamp(), query: text });
-      setTimeout(() => {
-        showTyping(false);
-        addSintomaCard(sintomaEncontrado, getShortTime());
-        enableInput();
-      }, 800);
-      return;
-    }
+    // ── GESTIÓN DE CONTEXTO (Mejorado v7.3.4: Conversacional-First) ──
+    let contextData = { meds: [], symptoms: [], centers: [] };
+    
+    // 1. Recolectar Medicamentos
+    contextData.meds = typeof buscarMultiplesMedicamentos === 'function' 
+      ? buscarMultiplesMedicamentos(lowerText) 
+      : (buscarMedicamento(lowerText) ? [buscarMedicamento(lowerText)] : []);
+    
+    // 2. Recolectar Síntomas
+    contextData.symptoms = typeof buscarMultiplesSintomas === 'function'
+      ? buscarMultiplesSintomas(lowerText)
+      : (buscarSintoma(lowerText) ? [buscarSintoma(lowerText)] : []);
 
-    // 2. SOLICITUD DE MEDICAMENTO
-    if (lowerText === 'buscar medicamento' || lowerText === 'medicamento') {
-      setTimeout(() => {
-        showTyping(false);
-        addMessage('Claro, ¿qué medicamento buscas? Escribe su nombre (ej: Paracetamol, Ibuprofeno, Omeprazol) y te doy información detallada.', 'ai', null, getShortTime());
-        enableInput('Escribe el nombre del medicamento...');
-      }, 400);
-      return;
+    // 3. Recolectar Centros (si menciona palabras clave)
+    const keywordsCentros = ['mapa','centro','hospital','farmacia','clinica','cerca','laboratorio'];
+    if (keywordsCentros.some(k => lowerText.includes(k))) {
+      const location = await getUserLocation();
+      contextData.centers = await searchHealthFacilities(location.lat, location.lng, 5000);
     }
 
-    // 3. MEDICAMENTO DIRECTO (Mejorado v7.3.3: Búsqueda dinámica en la base de datos)
-    const medEncontrado = buscarMedicamento(lowerText);
-    const isDrugQuery   = DRUG_KEYWORDS.some(k => lowerText.includes(k));
+    // ── ACCIONES VISUALES (Intercepción no excluyente) ──
+    
+    // Mostrar tarjetas de medicamentos detectados
+    contextData.meds.forEach(m => {
+      appState.medicationSearches.push({ drug: m.nombre_es, timestamp: getLocalTimestamp(), query: text });
+      fetchDrugInfo(m.nombre_es); 
+    });
 
-    if (medEncontrado || isDrugQuery) {
-      // Si ya lo encontramos o si pregunta por "medicamento", intentamos extraer el nombre
-      const drugName = medEncontrado ? medEncontrado.nombre_es : 
-                       COMMON_DRUGS.find(d => lowerText.includes(d));
+    // Mostrar tarjetas de síntomas detectados
+    contextData.symptoms.forEach(s => {
+      addSintomaCard(s, getShortTime());
+    });
 
-      if (drugName) {
-        appState.medicationSearches.push({ drug: drugName, timestamp: getLocalTimestamp(), query: text });
-        setTimeout(() => {
-          fetchDrugInfo(drugName);
-          enableInput();
-        }, 800);
-        return;
-      }
+    // Abrir mapa si se pide explícitamente
+    if (keywordsCentros.some(k => lowerText.includes(k))) {
+      showNearbyHealthCenters();
     }
 
-    // 4. MAPA / CENTROS
-    if (['mapa','centro','hospital','farmacia','clinica','cerca'].some(k => lowerText.includes(k))) {
-      setTimeout(() => { showTyping(false); showNearbyHealthCenters(); enableInput(); }, 600);
-      return;
-    }
-
-    // 5. REPORTAR
+    // Comandos directos (estos sí cortan el flujo de IA por ser utilitarios)
     if (lowerText.includes('reportar') || lowerText.includes('agregar centro')) {
-      setTimeout(() => { showTyping(false); initReportForm(); enableInput(); }, 600);
-      return;
+      showTyping(false); initReportForm(); enableInput(); return;
     }
-
-    // 6. VER REPORTES
     if (lowerText.includes('mis reportes') || lowerText.includes('ver reportes')) {
-      setTimeout(() => { showTyping(false); showReportsList(); enableInput(); }, 600);
-      return;
+      showTyping(false); showReportsList(); enableInput(); return;
     }
 
-    // 7. TRIAGE — CLAUDE API vía worker backend
+    // ── LLAMADA A LA IA CON CONTEXTO COMPLETO ──
+    let contextPrompt = "";
+    if (contextData.meds.length > 0) contextPrompt += `\n[MEDICAMENTOS ENCONTRADOS: ${JSON.stringify(contextData.meds)}]`;
+    if (contextData.symptoms.length > 0) contextPrompt += `\n[SÍNTOMAS ENCONTRADOS: ${JSON.stringify(contextData.symptoms)}]`;
+    if (contextData.centers.length > 0) {
+      // Incluimos más centros para que la IA tenga la lista completa de Granada
+      contextPrompt += `\n[CENTROS CERCANOS EN GRANADA: ${JSON.stringify(contextData.centers.slice(0, 20))}]`;
+    }
+
+    const textWithContext = contextPrompt 
+      ? `${text}\n\nCONTEXTO LOCAL (USA ESTO PARA RESPONDER DETALLADAMENTE Y NO LO CORTES):${contextPrompt}` 
+      : text;
+
     // Si el worker falla (sin internet, no desplegado), usa respuestas básicas automáticamente
     showTyping(true);
     try {
-      const response = await callClaudeAPI(text);
+      const response = await callClaudeAPI(textWithContext);
       showTyping(false);
       if (response) {
         const urgency = detectUrgencyFromResponse(response);
