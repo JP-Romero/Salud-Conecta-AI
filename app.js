@@ -2,8 +2,8 @@
 ═══════════════════════════════════════════════════════════════
 SALUD-CONECTA AI — App Principal
 ═══════════════════════════════════════════════════════════════
-📌 VERSIÓN: 7.3.1
-📌 CAMBIOS: Branding Update (Nuevo logo y colores) · Sync Granada
+📌 VERSIÓN: 7.3.2
+📌 CAMBIOS: Persistent Update Indicator · Mobile Icon Force Refresh
 ═══════════════════════════════════════════════════════════════
 */
 
@@ -1787,35 +1787,45 @@ document.addEventListener('DOMContentLoaded', () => {
   initVoiceInput();
 
   // ── Service Worker con detección de actualización ──
+  let waitingWorker = null;
+
+  function activarSWNuevo() {
+    if (waitingWorker) {
+      console.log('🔄 Activando nueva versión...');
+      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    }
+  }
+
+  function mostrarBannerActualizacion(worker) {
+    waitingWorker = worker;
+    const banner = document.getElementById('update-banner');
+    const badge  = document.getElementById('header-update-badge');
+    const btnUpdate = document.getElementById('btn-update-app');
+    const statusMsg = document.getElementById('update-status-msg');
+
+    if (banner) {
+      console.log('✨ Nueva versión detectada. Mostrando banner...');
+      banner.style.display = 'flex';
+      banner.style.opacity = '1';
+    }
+    if (badge) badge.style.display = 'block';
+    if (statusMsg) {
+      statusMsg.textContent = '¡Nueva versión lista! Toca actualizar.';
+      statusMsg.style.display = 'block';
+      statusMsg.style.color = 'var(--green-dark)';
+    }
+
+    if (btnUpdate) {
+      btnUpdate.onclick = (e) => {
+        e.preventDefault();
+        activarSWNuevo();
+      };
+    }
+  }
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(registration => {
-        // Función que activa el SW en espera
-        function activarSWNuevo(worker) {
-          if (worker) worker.postMessage({ type: 'SKIP_WAITING' });
-        }
-
-        // Muestra el banner de "nueva versión"
-        function mostrarBannerActualizacion(worker) {
-          const banner = document.getElementById('update-banner');
-          const btnUpdate = document.getElementById('btn-update-app');
-          if (!banner) return;
-
-          console.log('✨ Nueva versión detectada. Mostrando banner...');
-          banner.style.display = 'flex';
-          banner.style.opacity = '1';
-          banner.style.pointerEvents = 'auto';
-
-          // Al hacer clic en Actualizar → activar SW nuevo → recargar
-          if (btnUpdate) {
-            btnUpdate.onclick = (e) => {
-              e.preventDefault();
-              console.log('🔄 Activando nueva versión...');
-              activarSWNuevo(worker);
-            };
-          }
-        }
-
         // Caso 1: Ya hay un SW en espera al cargar
         if (registration.waiting) {
           mostrarBannerActualizacion(registration.waiting);
@@ -1855,6 +1865,43 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  console.log('🏥 Salud-Conecta AI v7.3.1 iniciada · Worker:', WORKER_URL);
-});
+  // ── Botón manual de búsqueda de actualizaciones en Perfil ──
+  const btnCheckUpdate = document.getElementById('btn-check-update');
+  const updateStatusMsg = document.getElementById('update-status-msg');
 
+  if (btnCheckUpdate) {
+    btnCheckUpdate.addEventListener('click', () => {
+      if (waitingWorker) {
+        mostrarBannerActualizacion(waitingWorker);
+        return;
+      }
+
+      if (updateStatusMsg) {
+        updateStatusMsg.textContent = 'Buscando actualizaciones...';
+        updateStatusMsg.style.display = 'block';
+        updateStatusMsg.style.color = 'var(--text-sec)';
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg) {
+            reg.update().then(() => {
+              setTimeout(() => {
+                if (!reg.waiting && !reg.installing) {
+                  if (updateStatusMsg) {
+                    updateStatusMsg.textContent = 'La aplicación ya está actualizada.';
+                    updateStatusMsg.style.color = 'var(--primary)';
+                  }
+                }
+              }, 1500);
+            }).catch(() => {
+              if (updateStatusMsg) updateStatusMsg.textContent = 'Error al buscar actualizaciones.';
+            });
+          }
+        });
+      }
+    });
+  }
+
+  console.log('🏥 Salud-Conecta AI v7.3.2 iniciada · Worker:', WORKER_URL);
+});
