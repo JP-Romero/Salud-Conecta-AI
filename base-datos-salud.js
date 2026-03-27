@@ -60,7 +60,7 @@ const HOSPITALES = [
     direccion: 'Costado norte del Parque Sandino, Barrio Estación',
     telefono: '2552-0600',
     emergencia: false,
-    lat: 11.9302, lng: -85.9581,
+    lat: 11.937938712871903, lng: -85.9561060599778,
     horario: 'Lun-Vie 7am-8pm, Sab-Dom 7am-12pm',
     servicios: ['urgencias','consulta','vacunacion','maternidad','pediatria','laboratorio','medicina_natural','curaciones'],
     disponible: true, verificado: true,
